@@ -3,11 +3,14 @@
 #include <fstream>
 #include <string>
 
+using std::string;
+using std::cin;
 using std::cout;
 using std::endl;
 using std::string;
 using std::ifstream;
 using std::istreambuf_iterator;
+using std::make_shared;
 
 using nlohmann::json;
 
@@ -31,10 +34,16 @@ int main() {
 		std::exit(0);
 	}
 
-	Server server(address, port);
-	server.start();
+	auto deviceManager = make_shared<DeviceManager>(0xEE00);
+	Server server(deviceManager, address, port);
+	std::string command;
 	while(true) {
-		std::cin.ignore();
+		std::getline(cin,  command);
+		if(command == "start") {
+			server.start();
+		} else if(command == "stop") {
+			server.stop();
+		}
 	}
 	return 0;
 }

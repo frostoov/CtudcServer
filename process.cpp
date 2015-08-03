@@ -1,43 +1,43 @@
 #include <thread>
 #include <iostream>
-#include "handler.hpp"
+#include "process.hpp"
 
 using std::thread;
 
-ProcessHandler::ProcessHandler()
+Process::Process()
 	: mIsActive(false),
 	  mIsInLoop(false) { }
 
-ProcessHandler::~ProcessHandler() {
+Process::~Process() {
 	stop();
 }
 
-bool ProcessHandler::start() {
+bool Process::start() {
 	if(mIsActive == true)
 		return false;
 	setActive(true);
-	thread(&ProcessHandler::workerLoop, this).detach();
+	thread(&Process::workerLoop, this).detach();
 	return true;
 }
 
-void ProcessHandler::stop() {
+void Process::stop() {
 	setActive(false);
 	while(isInLoop());
 }
 
-bool ProcessHandler::isActive() const {
+bool Process::isActive() const {
 	return mIsActive;
 }
 
-void ProcessHandler::setActive(bool flag) {
+void Process::setActive(bool flag) {
 	mIsActive = flag;
 }
 
-void ProcessHandler::setLoop(bool flag) {
+void Process::setLoop(bool flag) {
 	mIsInLoop = flag;
 }
 
-bool ProcessHandler::isInLoop() const {
+bool Process::isInLoop() const {
 	return mIsInLoop;
 }
 

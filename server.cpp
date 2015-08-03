@@ -1,45 +1,49 @@
-#include <thread>
 #include <iostream>
+#include <thread>
 #include "server.hpp"
 
 using std::string;
-using std::thread;
 using std::cerr;
 using std::cout;
 using std::endl;
 using std::exception;
 using std::make_shared;
+using std::thread;
 
 using boost::asio::ip::address;
 
 using caen::Module;
 
-Server::Server(const string& ipAdrress, uint16_t port)
-	: mDevice(make_shared<Module>(0xEE00)),
-	  mAcceptor(mIoService, Endpoint(IpAddress::from_string(ipAdrress), port))
+Server::Server(DeviceManagerPtr deviceManager, const string& ipAdrress, uint16_t port)
+	: mDeviceManager(deviceManager),
+	  mAcceptor(mIoService, Endpoint(IpAddress::from_string(ipAdrress), port)),
+	  mSocket(mIoService)
 {}
 
-void Server::workerLoop() {
-	setLoop(true);
-	while(isActive()) {
-		try {
-			Socket socket(mIoService);
-			accept(socket);
-			cout << "Accepted connection: " << socket.remote_endpoint().address().to_string() << endl;
-			SessionPtr newSession = make_shared<Session>(mDevice, std::move(socket), [this](SessionPtr session) {
+void Server::start() {
+	mIoService.reset();
+	doAccept();
+	thread([this]() {mIoService.run();}).detach();
+}
+
+void Server::stop() {
+	mSessions.clear();
+	mAcceptor.cancel();
+	mIoService.stop();
+}
+
+void Server::doAccept() {
+	mAcceptor.async_accept(mSocket, [this](boost::system::error_code errCode) {
+		if(!errCode) {
+			cout << "Accepted connection: " << mSocket.remote_endpoint().address().to_string() << endl;
+			SessionPtr newSession = make_shared<Session>(mDeviceManager, std::move(mSocket), [this](SessionPtr session) {
 				mSessions.remove(session);
 			});
 			mSessions.push_back(newSession);
 			newSession->start();
-		} catch(const exception& e) {
-			cerr << "Error during acception: " << e.what() << endl;
+		} else {
+			cerr << "error: " << errCode.message() << endl;
 		}
-	}
-	setLoop(false);
-	mSessions.clear();
+		doAccept();
+	});
 }
-
-void Server::accept(Socket& socket) {
-	mAcceptor.accept(socket);
-}
-

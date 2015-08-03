@@ -3,274 +3,51 @@
 #include "session.hpp"
 
 using std::string;
+using std::array;
 using std::cout;
 using std::endl;
 using std::cerr;
 
 using nlohmann::json;
+using boost::system::error_code;
 
-using caen::Module;
-using tdcdata::Lsb;
-using tdcdata::EdgeDetection;
 
-Session::Session(ModulePtr device, Socket&& socket, DestroyCallback callback)
-	: mDevice(device),
+Session::Session(DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback callback)
+	: mDeviceManager(deviceManager),
 	  mSocket(std::move(socket)),
-	  mCallback(callback) {
-	mProcedures = createProcedures();
+	  mCallback(callback) { }
+
+void Session::start()
+{
+	doRecieve();
 }
 
-string Session::createAnswer(const Response& response) {
-	return json {
-		{"procedure", response.procedure},
-		{"output", response.output},
-		{"status", response.status},
-	} .dump();
-}
-
-Session::Procedures Session::createProcedures() {
-	return {
-		{"init",                   [&](const Query & query)	{ return this->init(query);}},
-		{"close",                  [&](const Query & query)	{ return this->close(query);}},
-		{"isInit",                 [&](const Query & query) { return this->isInit(query);}},
-		{"getSettings",            [&](const Query & query)	{ return this->getSettings(query);}},
-		{"setSettings",            [&](const Query & query)	{ return this->setSettings(query);}},
-		{"updateSettings",         [&](const Query & query) { return this->updateSettings(query);}},
-		{"getLog",                 [&](const Query & query)	{ return this->getLog(query);}},
-		{"setLog",                 [&](const Query & query) { return this->setLog(query);}},
-		{"setTriggerMode",	       [&](const Query & query)	{ return this->setTriggerMode(query);}},
-		{"setTriggerSubtraction",  [&](const Query & query)	{ return this->setTriggerSubtraction(query);}},
-		{"setTdcMeta",             [&](const Query & query)	{ return this->setTdcMeta(query);}},
-		{"setWindowWidth",         [&](const Query & query)	{ return this->setWindowWidth(query);}},
-		{"setWindowOffset",        [&](const Query & query)	{ return this->setWindowOffset(query);}},
-		{"setEdgeDetection",       [&](const Query & query)	{ return this->setEdgeDetection(query);}},
-		{"setLsb",                 [&](const Query & query)	{ return this->setLsb(query);}},
-		{"setAlmostFull",          [&](const Query & query)	{ return this->setAlmostFull(query);}},
-		{"setControl",             [&](const Query & query)	{ return this->setControl(query);}},
-		{"setDeadTime",            [&](const Query & query)	{ return this->setDeadTime(query);}},
-		{"setEventBLT",            [&](const Query & query)	{ return this->setEventBLT(query);}},
-	};
-}
-
-void Session::workerLoop() {
-	setLoop(true);
-	std::array<char, 65536> buffer;
-	std::string answer;
-	while(isActive()) {
-		try {
-			auto bytesRead = mSocket.receive(boost::asio::buffer(buffer));
+void Session::doRecieve() {
+	auto self(shared_from_this());
+	mSocket.async_receive(boost::asio::buffer(mBuffer), [this, self](error_code errCode, size_t length) {
+		string response;
+		if(!errCode) {
 			try {
-				std::string message(buffer.data(), bytesRead);
-				cout << "Received query:\n" << message << endl;
-				answer = handleMessage(json::parse(message));
+				string query(mBuffer.data(), length);
+				cout << "Received query:\n" << query << endl;
+				response = mDeviceManager->handleQuery(query);
 			} catch(const std::exception& e) {
-				answer = "Invalid request";
+				response = "Invalid query";
 			}
-			mSocket.send(boost::asio::buffer(answer));
-		} catch(const std::exception& e) {
-			cerr << e.what() << endl;
-			setActive(false);
+			doSend(response);
+			doRecieve();
+		} else {
+			cout << "Disconnected: " << mSocket.remote_endpoint().address().to_string() << endl;
+			mCallback(self);
 		}
-	}
-	cout << "Disconnected: " << mSocket.remote_endpoint().address().to_string() << endl;
-	setLoop(false);
-	mCallback(shared_from_this());
+	});
 }
 
-string Session::handleMessage(const json& message) {
-	Query query = {
-		message.at("procedure"),
-		message.at("input"),
-	};
-	const auto& procedure = mProcedures.at(query.procedure);
-	auto respone = procedure(query);
-	return createAnswer(respone);
-}
-
-Session::Response Session::isInit(const Query&) {
-	return {
-		"isInit",
-		json::array({mDevice->isInit()}),
-		true,
-	};
-}
-
-Session::Response Session::getSettings(const Query&) {
-	const auto& settings = mDevice->getSettings();
-	return {
-		"getSettings",
-		{
-
-			settings.getTriggerMode(),
-			settings.getTriggerSubtraction(),
-			settings.getTdcMeta(),
-			settings.getWindowWidth(),
-			settings.getWindowOffset(),
-			static_cast<uint16_t>(settings.getEdgeDetection()),
-			static_cast<uint16_t>(settings.getLsb()),
-			settings.getAlmostFull(),
-			settings.getControl(),
-			settings.getStatus(),
-			settings.getDeadTime(),
-			settings.getEventBLT()
-		},
-		true
-	};
-}
-
-Session::Response Session::updateSettings(const Query&) {
-	return {
-		"updateSettings",
-		json::array(),
-		mDevice->updateSettings(),
-	};
-}
-
-Session::Response Session::getLog(const Query&) {
-	json::array_t log;
-	while(mDevice->hasMessages())
-		log.push_back(mDevice->popMessage().first);
-	return {
-		"getLog",
-		log,
-		true,
-	};
-}
-
-Session::Response Session::init(const Query& query) {
-	return {
-		"init",
-		json::array(),
-		mDevice->initialize(),
-	};
-}
-
-Session::Response Session::close(const Query&) {
-	return {
-		"close",
-		json::array(),
-		mDevice->close(),
-	};
-}
-
-Session::Response Session::setSettings(const Query& query) {
-	tdcdata::Settings settings;
-	const auto& input = query.input;
-	settings.setTriggerMode( input.at(0) );
-	settings.setTriggerSubtraction( input.at(1) );
-	settings.setTdcMeta( input.at(2) );
-	settings.setWindowWidth( input.at(3) );
-	settings.setWindowOffset( input.at(4) );
-	uint16_t lsb = input.at(5);
-	settings.setEdgeDetection( static_cast<EdgeDetection>(lsb) );
-	uint16_t edgeDetection = input.at(5);
-	settings.setLsb( static_cast<Lsb>(edgeDetection) );
-	settings.setAlmostFull( input.at(7) );
-	settings.setControlRegister( input.at(8) );
-	settings.setDeadTime(input.at(9));
-	settings.setEventBLT(input.at(10));
-	return {
-		"setSettings",
-		json::array(),
-		mDevice->setSettings(settings),
-	};
-}
-
-Session::Response Session::setLog(const Query& query) {
-	mDevice->setLog(query.input.at(0));
-	return {
-		"setLog",
-		json::array(),
-		true,
-	};
-}
-
-Session::Response Session::setTriggerMode(const Query& query) {
-	return {
-		"setTriggerMode",
-		json::array(),
-		mDevice->setTriggerMode(query.input.front()),
-	};
-}
-
-Session::Response Session::setTriggerSubtraction(const Query& query) {
-	return {
-		"setTriggerSubtraction",
-		json::array(),
-		mDevice->setTriggerSubtraction(query.input.front()),
-	};
-}
-
-Session::Response Session::setTdcMeta(const Session::Query& query) {
-	return {
-		"setTdcMeta",
-		json::array(),
-		mDevice->setTdcMeta(query.input.front()),
-	};
-}
-
-Session::Response Session::setWindowWidth(const Session::Query& query) {
-	return {
-		"setWindowWidth",
-		json::array(),
-		mDevice->setWindowWidth(query.input.front()),
-	};
-}
-
-Session::Response Session::setWindowOffset(const Session::Query& query) {
-	return {
-		"setWindowOffset",
-		json::array(),
-		mDevice->setWindowOffset(query.input.front()),
-	};
-}
-
-Session::Response Session::setEdgeDetection(const Session::Query& query) {
-	auto edgeDetection = static_cast<uint16_t>(query.input.front());
-	return {
-		"setEdgeDetection",
-		json::array(),
-		mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
-	};
-}
-
-Session::Response Session::setLsb(const Session::Query& query) {
-	auto lsb = static_cast<uint16_t>(query.input.front());
-	return {
-		"setLsb",
-		json::array(),
-		mDevice->setLsb(static_cast<Lsb>(lsb)),
-	};
-}
-
-Session::Response Session::setAlmostFull(const Session::Query& query) {
-	return {
-		"setAlmostFull",
-		json::array(),
-		mDevice->setAlmostFull(query.input.front()),
-	};
-}
-
-Session::Response Session::setControl(const Session::Query& query) {
-	return {
-		"setControl",
-		json::array(),
-		mDevice->setControl(query.input.front()),
-	};
-}
-
-Session::Response Session::setDeadTime(const Session::Query& query) {
-	return {
-		"setDeadTime",
-		json::array(),
-		mDevice->setDeadTime(query.input.front()),
-	};
-}
-
-Session::Response Session::setEventBLT(const Session::Query& query) {
-	return {
-		"setEventBLT",
-		json::array(),
-		mDevice->setEventBLT(query.input.front()),
-	};
+void Session::doSend(const std::string& response) {
+	auto self(shared_from_this());
+	mSocket.async_send(boost::asio::buffer(response),[this, self](error_code errCode, size_t length) {
+		if(errCode) {
+			mCallback(self);
+		}
+	});
 }

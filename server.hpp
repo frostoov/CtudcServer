@@ -7,14 +7,11 @@
 
 #include <boost/asio.hpp>
 
-#include "caenTDC/tdcmodule.hpp"
 #include "session.hpp"
 
-#include "handler.hpp"
-
-class Server : public ProcessHandler {
+class Server {
 	using SessionPtr = std::shared_ptr<Session>;
-	using ModulePtr = std::shared_ptr<caen::Module>;
+	using DeviceManagerPtr = std::shared_ptr<DeviceManager>;
 	using SessionList = std::list<SessionPtr>;
 	using IoService = boost::asio::io_service;
 	using IpAddress = boost::asio::ip::address;
@@ -23,14 +20,16 @@ class Server : public ProcessHandler {
 	using Acceptor = TCP::acceptor;
 	using Endpoint = TCP::endpoint;
 public:
-	Server(const std::string& ipAdrress, uint16_t port);
+	Server(DeviceManagerPtr deviceManager, const std::string& ipAdrress, uint16_t port);
+	void start();
+	void stop();
 protected:
-	void workerLoop() override;
-	void accept(Socket& socket);
+	void doAccept();
 private:
-	ModulePtr mDevice;
+	DeviceManagerPtr mDeviceManager;
 	IoService mIoService;
 	Acceptor mAcceptor;
+	Socket mSocket;
 
 	SessionList mSessions;
 };

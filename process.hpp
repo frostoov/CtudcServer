@@ -2,15 +2,15 @@
 #define HANDLER_HPP
 
 
-class ProcessHandler
+class Process
 {
 public:
-	virtual ~ProcessHandler();
+	virtual ~Process();
 	virtual bool start();
 	virtual void stop();
 	bool isActive() const;
 protected:
-	ProcessHandler();
+	Process();
 	virtual void workerLoop() = 0;
 	void setActive(bool flag);
 	void setLoop(bool flag);
