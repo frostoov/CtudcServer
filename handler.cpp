@@ -10,7 +10,6 @@ ProcessHandler::ProcessHandler()
 
 ProcessHandler::~ProcessHandler() {
 	stop();
-	std::cout << "~Handler" << std::endl;
 }
 
 bool ProcessHandler::start() {

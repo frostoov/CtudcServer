@@ -20,12 +20,9 @@ Session::Session(ModulePtr device, Socket&& socket, DestroyCallback callback)
 	mProcedures = createProcedures();
 }
 
-Session::~Session() {
-	cout << "~Session" << endl;
-}
-
 string Session::createAnswer(const Response& response) {
 	return json {
+		{"procedure", response.procedure},
 		{"output", response.output},
 		{"status", response.status},
 	} .dump();
@@ -92,6 +89,7 @@ string Session::handleMessage(const json& message) {
 
 Session::Response Session::isInit(const Query&) {
 	return {
+		"isInit",
 		json::array({mDevice->isInit()}),
 		true,
 	};
@@ -99,7 +97,10 @@ Session::Response Session::isInit(const Query&) {
 
 Session::Response Session::getSettings(const Query&) {
 	const auto& settings = mDevice->getSettings();
-	return {{
+	return {
+		"getSettings",
+		{
+
 			settings.getTriggerMode(),
 			settings.getTriggerSubtraction(),
 			settings.getTdcMeta(),
@@ -119,21 +120,26 @@ Session::Response Session::getSettings(const Query&) {
 
 Session::Response Session::updateSettings(const Query&) {
 	return {
+		"updateSettings",
 		json::array(),
 		mDevice->updateSettings(),
 	};
 }
 
 Session::Response Session::getLog(const Query&) {
-	Response response;
+	json::array_t log;
 	while(mDevice->hasMessages())
-		response.output.push_back(mDevice->popMessage().first);
-	response.status = true;
-	return response;
+		log.push_back(mDevice->popMessage().first);
+	return {
+		"getLog",
+		log,
+		true,
+	};
 }
 
 Session::Response Session::init(const Query& query) {
 	return {
+		"init",
 		json::array(),
 		mDevice->initialize(),
 	};
@@ -141,6 +147,7 @@ Session::Response Session::init(const Query& query) {
 
 Session::Response Session::close(const Query&) {
 	return {
+		"close",
 		json::array(),
 		mDevice->close(),
 	};
@@ -163,6 +170,7 @@ Session::Response Session::setSettings(const Query& query) {
 	settings.setDeadTime(input.at(9));
 	settings.setEventBLT(input.at(10));
 	return {
+		"setSettings",
 		json::array(),
 		mDevice->setSettings(settings),
 	};
@@ -171,6 +179,7 @@ Session::Response Session::setSettings(const Query& query) {
 Session::Response Session::setLog(const Query& query) {
 	mDevice->setLog(query.input.at(0));
 	return {
+		"setLog",
 		json::array(),
 		true,
 	};
@@ -178,6 +187,7 @@ Session::Response Session::setLog(const Query& query) {
 
 Session::Response Session::setTriggerMode(const Query& query) {
 	return {
+		"setTriggerMode",
 		json::array(),
 		mDevice->setTriggerMode(query.input.front()),
 	};
@@ -185,6 +195,7 @@ Session::Response Session::setTriggerMode(const Query& query) {
 
 Session::Response Session::setTriggerSubtraction(const Query& query) {
 	return {
+		"setTriggerSubtraction",
 		json::array(),
 		mDevice->setTriggerSubtraction(query.input.front()),
 	};
@@ -192,6 +203,7 @@ Session::Response Session::setTriggerSubtraction(const Query& query) {
 
 Session::Response Session::setTdcMeta(const Session::Query& query) {
 	return {
+		"setTdcMeta",
 		json::array(),
 		mDevice->setTdcMeta(query.input.front()),
 	};
@@ -199,6 +211,7 @@ Session::Response Session::setTdcMeta(const Session::Query& query) {
 
 Session::Response Session::setWindowWidth(const Session::Query& query) {
 	return {
+		"setWindowWidth",
 		json::array(),
 		mDevice->setWindowWidth(query.input.front()),
 	};
@@ -206,6 +219,7 @@ Session::Response Session::setWindowWidth(const Session::Query& query) {
 
 Session::Response Session::setWindowOffset(const Session::Query& query) {
 	return {
+		"setWindowOffset",
 		json::array(),
 		mDevice->setWindowOffset(query.input.front()),
 	};
@@ -214,6 +228,7 @@ Session::Response Session::setWindowOffset(const Session::Query& query) {
 Session::Response Session::setEdgeDetection(const Session::Query& query) {
 	auto edgeDetection = static_cast<uint16_t>(query.input.front());
 	return {
+		"setEdgeDetection",
 		json::array(),
 		mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
 	};
@@ -222,6 +237,7 @@ Session::Response Session::setEdgeDetection(const Session::Query& query) {
 Session::Response Session::setLsb(const Session::Query& query) {
 	auto lsb = static_cast<uint16_t>(query.input.front());
 	return {
+		"setLsb",
 		json::array(),
 		mDevice->setLsb(static_cast<Lsb>(lsb)),
 	};
@@ -229,6 +245,7 @@ Session::Response Session::setLsb(const Session::Query& query) {
 
 Session::Response Session::setAlmostFull(const Session::Query& query) {
 	return {
+		"setAlmostFull",
 		json::array(),
 		mDevice->setAlmostFull(query.input.front()),
 	};
@@ -236,6 +253,7 @@ Session::Response Session::setAlmostFull(const Session::Query& query) {
 
 Session::Response Session::setControl(const Session::Query& query) {
 	return {
+		"setControl",
 		json::array(),
 		mDevice->setControl(query.input.front()),
 	};
@@ -243,6 +261,7 @@ Session::Response Session::setControl(const Session::Query& query) {
 
 Session::Response Session::setDeadTime(const Session::Query& query) {
 	return {
+		"setDeadTime",
 		json::array(),
 		mDevice->setDeadTime(query.input.front()),
 	};
@@ -250,6 +269,7 @@ Session::Response Session::setDeadTime(const Session::Query& query) {
 
 Session::Response Session::setEventBLT(const Session::Query& query) {
 	return {
+		"setEventBLT",
 		json::array(),
 		mDevice->setEventBLT(query.input.front()),
 	};

@@ -64,6 +64,7 @@ bool Module::close() {
 			auto status = CAENVME_End(mVmeHandle);
 			if (status != cvSuccess)
 				throw runtime_error(CAENVME_DecodeError(status));
+			mIsInit = false;
 		}
 	});
 }
@@ -453,6 +454,7 @@ void Module::readMicro(uint16_t* data, OpCode code, short num) {
 					*data = readReg16(Reg::micro);
 					++data;
 				} catch(const exception& e) {
+					pushMessage("Failed read micro");
 					initialize();
 					throw e;
 				}
@@ -475,6 +477,7 @@ void Module::writeMicro(uint16_t* data, OpCode code, short num) {
 					writeReg16(*data, Reg::micro);
 					++data;
 				} catch(const exception& e) {
+					pushMessage("Failed write micro");
 					initialize();
 					throw e;
 				}

@@ -22,6 +22,7 @@ class Session : public std::enable_shared_from_this<Session>, public ProcessHand
 		nlohmann::json::array_t   input;
 	};
 	struct Response {
+		nlohmann::json::string_t  procedure;
 		nlohmann::json::array_t   output;
 		nlohmann::json::boolean_t status;
 	};
@@ -29,7 +30,6 @@ class Session : public std::enable_shared_from_this<Session>, public ProcessHand
 	using Procedures = std::unordered_map<std::string, Procedure>;
 public:
 	Session(ModulePtr device,Socket&& socket, DestroyCallback callback);
-	~Session();
 protected:
 	std::string createAnswer(const Response& response);
 	Procedures createProcedures();
