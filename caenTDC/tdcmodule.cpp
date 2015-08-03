@@ -25,7 +25,9 @@ using std::this_thread::sleep_for;
 using std::string;
 
 Module::Module(const int32_t vmeAddress)
-	: mIsInit(false), mVmeHandle(0), mBaseAddress(vmeAddress) {
+	: mIsInit(false),
+	  mVmeHandle(0),
+	  mBaseAddress(vmeAddress) {
 	mSettings = getDefaultSettings();
 }
 
@@ -48,160 +50,171 @@ Settings Module::getDefaultSettings() {
 	return settings;
 }
 
-void Module::initialize() {
-	static const string message("Init: ");
-	try {
+bool Module::initialize() {
+	return doAction("Init: ", [&]() {
 		init();
 		updateSettings();
-		pushMessage(message + "success");
-	} catch(const exception& e) { pushMessage(message + e.what()); }
+	});
+
 }
 
-void Module::close() {
-	static const string message("Close: ");
-	try {
+bool Module::close() {
+	return doAction("Close: ",[&]() {
 		if(mIsInit) {
 			auto status = CAENVME_End(mVmeHandle);
 			if (status != cvSuccess)
 				throw runtime_error(CAENVME_DecodeError(status));
 		}
-		pushMessage(message + "success");
-	} catch(const exception& e) { pushMessage(message + e.what()); }
+	});
 }
 
-void Module::setSettings(const Settings& settings) {
-	setTriggerMode(settings.getTriggerMode());
-	setTriggerSubtraction(settings.getTriggerSubtraction());
-	setTDCMeta(settings.getTdcMeta());
-	setWindowWidth(settings.getWindowWidth());
-	setWindowOffset(settings.getWindowOffset());
-	setAlmostFull(settings.getAlmostFull());
-	setLSB(settings.getLsb());
-	setDetection(settings.getEdgeDetection());
-	setControl(settings.getControl());
-	setEventBLT(settings.getEventBLT());
-	setDeadTime(settings.getDeadTime());
+bool Module::setSettings(const Settings& settings) {
+	auto status = true;
+	status &= setTriggerMode(settings.getTriggerMode());
+	status &= setTriggerSubtraction(settings.getTriggerSubtraction());
+	status &= setTdcMeta(settings.getTdcMeta());
+	status &= setWindowWidth(settings.getWindowWidth());
+	status &= setWindowOffset(settings.getWindowOffset());
+	status &= setAlmostFull(settings.getAlmostFull());
+	status &= setLsb(settings.getLsb());
+	status &= setEdgeDetection(settings.getEdgeDetection());
+	status &= setControl(settings.getControl());
+	status &= setEventBLT(settings.getEventBLT());
+	status &= setDeadTime(settings.getDeadTime());
+	return status;
 }
 
-void Module::updateSettings() {
-	updateAlmostFull();
-	updateControl();
-	updateStatus();
-	updateMode();
-	updateLSB();
-	updateDetection();
-	updateDeadTime();
-	updateTriggerConfig();
-	updateEventBLT();
-	updateTdcMeta();
+bool Module::updateSettings() {
+	auto status = true;
+	status &= updateAlmostFull();
+	status &= updateControl();
+	status &= updateStatus();
+	status &= updateMode();
+	status &= updateLSB();
+	status &= updateDetection();
+	status &= updateDeadTime();
+	status &= updateTriggerConfig();
+	status &= updateEventBLT();
+	status &= updateTdcMeta();
+	return status;
 }
 
-void Module::doAction(const string& message, std::function<void()> func) {
+bool Module::doAction(const string& message, std::function<void()> func) {
 	try {
 		func();
 		pushMessage(message + "success");
+		return true;
 	} catch(const exception& e) {
 		pushMessage(message + e.what());
+		return false;
 	}
 }
 
-void Module::setLSB(tdcdata::Lsb lsb) {
+bool Module::setLsb(tdcdata::Lsb lsb) {
 	if (lsb != mSettings.getLsb())
-		doAction("Set LSB: ", [&]() {
-		auto value = static_cast<uint16_t>(lsb);
-		if (value > 2)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeMicro(&value, OpCode::setLSB);
-			mSettings.setLsb(lsb);
-		}
-	});
+		return doAction("Set LSB: ", [&]() {
+			auto value = static_cast<uint16_t>(lsb);
+			if (value > 2)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeMicro(&value, OpCode::setLSB);
+				mSettings.setLsb(lsb);
+			}
+		});
+	else return true;
 }
 
-void Module::setWindowWidth(uint16_t windowWidth) {
+bool Module::setWindowWidth(uint16_t windowWidth) {
 	windowWidth = (windowWidth / 25) * 25;
 	if (windowWidth != mSettings.getWindowWidth())
-		doAction("Set window width: ", [&]() {
-		uint16_t value = windowWidth / 25;
-		if (value < 1 || value > 4095)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeMicro(&value, OpCode::setWinWidth);
-			mSettings.setWindowWidth(windowWidth);
-		}
-	});
+		return doAction("Set window width: ", [&]() {
+			uint16_t value = windowWidth / 25;
+			if (value < 1 || value > 4095)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeMicro(&value, OpCode::setWinWidth);
+				mSettings.setWindowWidth(windowWidth);
+			}
+		});
+	else return true;
 }
 
-void Module::setWindowOffset(int16_t windowOffset) {
+bool Module::setWindowOffset(int16_t windowOffset) {
 	windowOffset = (windowOffset / 25) * 25;
 	if (windowOffset != mSettings.getWindowOffset())
-		doAction("Set window offset: ", [&]() {
-		uint16_t value = static_cast<uint16_t>(windowOffset / 25);
-		if (static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeMicro(&value, OpCode::setWinOffset);
-			mSettings.setWindowOffset(windowOffset);
-		}
-	});
+		return doAction("Set window offset: ", [&]() {
+			uint16_t value = static_cast<uint16_t>(windowOffset / 25);
+			if (static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeMicro(&value, OpCode::setWinOffset);
+				mSettings.setWindowOffset(windowOffset);
+			}
+		});
+	else return true;
 }
 
-void Module::setAlmostFull(uint16_t value) {
+bool Module::setAlmostFull(uint16_t value) {
 	if (value != mSettings.getAlmostFull())
-		doAction("Set almost Full: ", [&]() {
-		if (value < 1 || value > 32735)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeReg16(value, Reg::almostFull);
-			mSettings.setAlmostFull(value);
-		}
-	});
+		return doAction("Set almost Full: ", [&]() {
+			if (value < 1 || value > 32735)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeReg16(value, Reg::almostFull);
+				mSettings.setAlmostFull(value);
+			}
+		});
+	else return true;
 }
 
-void Module::setDetection(EdgeDetection edgeDetection) {
+bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
 	if (edgeDetection != mSettings.getEdgeDetection())
-		doAction("Set edge detection: ", [&]() {
-		auto value = static_cast<uint16_t>(edgeDetection);
-		if (value > 4)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeMicro(&value, OpCode::setDetection);
-			mSettings.setEdgeDetection(edgeDetection);
-		}
-	});
+		return doAction("Set edge detection: ", [&]() {
+			auto value = static_cast<uint16_t>(edgeDetection);
+			if (value > 4)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeMicro(&value, OpCode::setDetection);
+				mSettings.setEdgeDetection(edgeDetection);
+			}
+		});
+	else return true;
 }
 
-void Module::setControl(uint16_t control) {
+bool Module::setControl(uint16_t control) {
 	if (control != mSettings.getControl())
-		doAction("Set control register: ", [&]() {
-		writeReg16(control, Reg::controlReg);
-		mSettings.setControlRegister(control);
-	});
+		return doAction("Set control register: ", [&]() {
+			writeReg16(control, Reg::controlReg);
+			mSettings.setControlRegister(control);
+		});
+	else return true;
 }
 
-void Module::setDeadTime(uint16_t deadTime) {
+bool Module::setDeadTime(uint16_t deadTime) {
 	if (deadTime != mSettings.getDeadTime())
-		doAction("Set dead time: ", [&]() {
-		writeMicro(&deadTime, OpCode::setDeadTime);
-		mSettings.setDeadTime(deadTime);
-	});
+		return doAction("Set dead time: ", [&]() {
+			writeMicro(&deadTime, OpCode::setDeadTime);
+			mSettings.setDeadTime(deadTime);
+		});
+	else return true;
 }
 
-void Module::setEventBLT(uint16_t eventBLT) {
+bool Module::setEventBLT(uint16_t eventBLT) {
 	if(eventBLT == mSettings.getEventBLT())
-		doAction("Set event alignment: ", [&]() {
-		if(eventBLT > 255)
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		else {
-			writeReg16(eventBLT, Reg::eventBLT);
-			mSettings.setEventBLT(eventBLT);
-		}
-	});
+		return doAction("Set event alignment: ", [&]() {
+			if(eventBLT > 255)
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			else {
+				writeReg16(eventBLT, Reg::eventBLT);
+				mSettings.setEventBLT(eventBLT);
+			}
+		});
+	else return true;
 }
 
-void Module::setTriggerMode(bool flag) {
+bool Module::setTriggerMode(bool flag) {
 	if(flag != mSettings.getTriggerMode()) {
-		doAction("Set Trigger Mode: ", [&]() {
+		auto status = doAction("Set Trigger Mode: ", [&]() {
 			if (flag) {
 				writeMicro(nullptr, OpCode::setTriggerMatching);
 				mSettings.setTriggerMode(true);
@@ -210,68 +223,71 @@ void Module::setTriggerMode(bool flag) {
 				mSettings.setTriggerMode(false);
 			}
 		});
-		if(flag == false) setTriggerSubtraction(false);
-	}
+		if(flag == false) status &= setTriggerSubtraction(false);
+		return status;
+	} else return true;
 }
 
-void Module::setTriggerSubtraction(bool flag) {
+bool Module::setTriggerSubtraction(bool flag) {
 	if (flag != mSettings.getTriggerSubtraction())
-		doAction("Set trigger subtraction: ", [&]() {
-		if (flag && !mSettings.getTriggerMode())
-			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-		if (flag)
-			writeMicro(nullptr, OpCode::enableSubTrig);
-		else
-			writeMicro(nullptr, OpCode::disableSubTrig);
-		mSettings.setTriggerSubtraction(flag);
-	});
+		return doAction("Set trigger subtraction: ", [&]() {
+			if (flag && !mSettings.getTriggerMode())
+				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+			if (flag)
+				writeMicro(nullptr, OpCode::enableSubTrig);
+			else
+				writeMicro(nullptr, OpCode::disableSubTrig);
+			mSettings.setTriggerSubtraction(flag);
+		});
+	else return true;
 }
 
-void Module::setTDCMeta(bool flag) {
+bool Module::setTdcMeta(bool flag) {
 	if (flag != mSettings.getTdcMeta())
-		doAction("Set TDC metdata: ", [&]() {
-		if (flag)
-			writeMicro(nullptr, OpCode::enableTDCMeta);
-		else
-			writeMicro(nullptr, OpCode::disableTDCMeta);
-		mSettings.setTdcMeta(flag);
-	});
+		return doAction("Set TDC metdata: ", [&]() {
+			if (flag)
+				writeMicro(nullptr, OpCode::enableTDCMeta);
+			else
+				writeMicro(nullptr, OpCode::disableTDCMeta);
+			mSettings.setTdcMeta(flag);
+		});
+	else return true;
 }
 
-void Module::updateMode() {
-	doAction("Get Trigger Mode: ", [&] {
+bool Module::updateMode() {
+	return doAction("Get Trigger Mode: ", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getMode);
 		mSettings.setTriggerMode(value);
 	});
 }
 
-void Module::updateTdcMeta() {
-	doAction("Get Tdc Meta: ", [&] {
+bool Module::updateTdcMeta() {
+	return doAction("Get Tdc Meta: ", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::readTdcMeta);
 		mSettings.setTdcMeta(value);
 	});
 }
 
-void Module::updateDetection() {
-	doAction("Get Edge Detection: ", [&] {
+bool Module::updateDetection() {
+	return doAction("Get Edge Detection: ", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getDetection);
 		mSettings.setEdgeDetection(static_cast<EdgeDetection>(value));
 	});
 }
 
-void Module::updateDeadTime() {
-	doAction("Get DeadTime: ", [&] {
+bool Module::updateDeadTime() {
+	return doAction("Get DeadTime: ", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getDeadTime);
 		mSettings.setDeadTime(value);
 	});
 }
 
-void Module::updateLSB() {
-	doAction("Get Trigger Mode: ", [&] {
+bool Module::updateLSB() {
+	return doAction("Get Trigger Mode: ", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getLSB);
 		mSettings.setLsb(static_cast<Lsb>(value));
@@ -288,32 +304,32 @@ uint16_t Module::getMicroRev() {
 	return rev;
 }
 
-void Module::updateStatus() {
-	doAction("Get Status Register: ", [&] {
+bool Module::updateStatus() {
+	return doAction("Get Status Register: ", [&] {
 		mSettings.setStatusRegister(readReg16(Reg::statusReg));
 	});
 }
 
-void Module::updateControl() {
-	doAction("Get Status Register: ", [&] {
+bool Module::updateControl() {
+	return doAction("Get Status Register: ", [&] {
 		mSettings.setControlRegister(readReg16(Reg::controlReg));
 	});
 }
 
-void Module::updateAlmostFull() {
-	doAction("Get AlmostFull: ", [&] {
+bool Module::updateAlmostFull() {
+	return doAction("Get AlmostFull: ", [&] {
 		mSettings.setAlmostFull(readReg16(Reg::almostFull));
 	});
 }
 
-void Module::updateEventBLT() {
-	doAction("Get Event BLT Number: ", [&] {
+bool Module::updateEventBLT() {
+	return doAction("Get Event BLT Number: ", [&] {
 		mSettings.setEventBLT(readReg16(Reg::eventBLT));
 	});
 }
 
-void Module::updateTriggerConfig() {
-	doAction("Get trigger conf: ", [&] {
+bool Module::updateTriggerConfig() {
+	return doAction("Get trigger conf: ", [&] {
 		uint16_t conf[5];
 		readMicro(conf, OpCode::getTrigConf, 5);
 		mSettings.setWindowWidth(conf[0] * 25);
@@ -322,8 +338,8 @@ void Module::updateTriggerConfig() {
 	});
 }
 
-void Module::softwareClear() {
-	doAction("Software Clear: ", [&] {
+bool Module::softwareClear() {
+	return doAction("Software Clear: ", [&] {
 		writeReg16(1, Reg::softwareClear);
 	});
 }

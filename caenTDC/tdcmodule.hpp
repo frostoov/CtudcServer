@@ -20,41 +20,41 @@ class Module : public Subject {
 	bool isInit() const { return mIsInit; }
 	const char* getTitle() const override {return "CAENVME TDC";}
 
-	void initialize();
-	void close();
-	void setSettings(const tdcdata::Settings& mSettings);
-	void setLSB(tdcdata::Lsb lsb);
-	void setWindowWidth(uint16_t windowWidth);
-	void setWindowOffset(int16_t winOffset);
-	void setAlmostFull(uint16_t value);
-	void setDetection(tdcdata::EdgeDetection edgeDetection);
-	void setControl(uint16_t control);
-	void setDeadTime(uint16_t deadTime);
-	void setEventBLT(uint16_t eventBLT);
-	void setTriggerMode(bool flag);
-	void setTriggerSubtraction(bool flag);
-	void setTDCMeta(bool flag);
+	bool initialize();
+	bool close();
+	bool setSettings(const tdcdata::Settings& mSettings);
+	bool setLsb(tdcdata::Lsb lsb);
+	bool setWindowWidth(uint16_t windowWidth);
+	bool setWindowOffset(int16_t winOffset);
+	bool setAlmostFull(uint16_t value);
+	bool setEdgeDetection(tdcdata::EdgeDetection edgeDetection);
+	bool setControl(uint16_t control);
+	bool setDeadTime(uint16_t deadTime);
+	bool setEventBLT(uint16_t eventBLT);
+	bool setTriggerMode(bool flag);
+	bool setTriggerSubtraction(bool flag);
+	bool setTdcMeta(bool flag);
 
-	void updateMode();
-	void updateTdcMeta();
-	void updateDetection();
-	void updateDeadTime();
-	void updateLSB();
-	void updateStatus();
-	void updateControl();
-	void updateAlmostFull();
-	void updateEventBLT();
-	void updateTriggerConfig();
+	bool updateMode();
+	bool updateTdcMeta();
+	bool updateDetection();
+	bool updateDeadTime();
+	bool updateLSB();
+	bool updateStatus();
+	bool updateControl();
+	bool updateAlmostFull();
+	bool updateEventBLT();
+	bool updateTriggerConfig();
 
 
 	uint16_t getFirmwareRev();
 	uint16_t getMicroRev();
-	void     softwareClear();
+	bool softwareClear();
 
 	size_t readBlock(WordVector& buff, const Microseconds& delay = Microseconds::zero());
 	size_t getBlockSize() const;
 
-	void updateSettings();
+	bool updateSettings();
 	const tdcdata::Settings& getSettings() const { return mSettings; }
   protected:
 	void init();
@@ -66,7 +66,7 @@ class Module : public Subject {
 	void readMicro	(uint16_t* data, OpCode code, short num = 1);
 	void writeMicro	(uint16_t* data, OpCode code, short num = 1);
 
-	void doAction(const std::string& message, std::function<void()> func);
+	bool doAction(const std::string& message, std::function<void()> func);
 
 	void checkMicroRead();
 	void checkMicroWrite();

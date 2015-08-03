@@ -1,0 +1,93 @@
+{"procedure" : "init"}
+{"procedure" : "close"}
+{
+	"procedure" : "isInit",
+	"output" : [true]
+}
+{
+	"procedure" : "getSettings",
+	"output" : [
+		true,	/*TriggerMode*/
+		true,	/*TriggerSubtraction*/
+		true,	/*TdcMeta*/
+		0,		/*WindowWidth*/
+		1,		/*WindowOffset*/
+		2,		/*EdgeDetection*/
+		3,		/*Lsb*/
+		4,		/*AlmostFull*/
+		5,		/*Control*/
+		6,		/*status*/
+		7,		/*DeadTime*/
+		8		/*EventBLT*/
+	]
+}
+{
+	"procedure" : "setSettings",
+	"input" : [
+		true,	/*TriggerMode*/
+		true,	/*TriggerSubtraction*/
+		true,	/*TdcMeta*/
+		0,		/*WindowWidth*/
+		0,		/*WindowOffset*/
+		0,		/*EdgeDetection*/
+		0,		/*Lsb*/
+		0,		/*AlmostFull*/
+		0,		/*Control*/
+		0,		/*DeadTime*/
+		0		/*EventBLT*/
+	]
+
+}
+{ "procedure" : "updateSettings", }
+{
+	"procedure" : "getLog",
+	"output" : ["log"],
+}
+{
+	"procedure" : "setLog",
+	"input" : [true],
+}
+{
+	"procedure" : "setTriggerMode",
+	"input" : [0]
+}
+{
+	"procedure" : "setTriggerSubtraction",
+	"input" : [0]
+}
+{
+	"procedure" : "setTdcMeta",
+	"input" : [0]
+}
+{
+	"procedure" : "setWindowWidth",
+	"input" : [0]
+}
+{
+	"procedure" : "setWindowOffset",
+	"input" : [0]
+}
+{
+	"procedure" : "setEdgeDetection",
+	"input" : [0]
+}
+{
+	"procedure" : "setLsb",
+	"input" : [0]
+}
+{
+	"procedure" : "setAlmostFull",
+	"input" : [0]
+}
+{
+	"procedure" : "setControl",
+	"input" : [0]
+}
+{
+	"procedure" : "setDeadTime",
+	"input" : [0]
+}
+{
+	"procedure" : "setEventBLT",
+	"input" : [0]
+}
