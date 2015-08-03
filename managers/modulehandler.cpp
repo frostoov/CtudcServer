@@ -12,7 +12,7 @@ ProcessManager::ProcessManager(ModulePtr module, const ChannelConfig& config,
 	  mConfig(config),
 	  mIsActive(false),
 	  mIsInLoop(false),
-	  mIsProcDone(false),
+	  mIsProcDone(true),
 	  mProcTimeout(timeout) {}
 
 bool ProcessManager::checkTimeout(const SystemClock::time_point& startPoint) {

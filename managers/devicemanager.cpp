@@ -9,6 +9,7 @@ using tdcdata::Lsb;
 
 using std::string;
 using std::make_shared;
+
 DeviceManager::DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig)
 	: mDevice(make_shared<caen::Module>(vmeAddress)),
 	  mChannelConfig(channelConfig),
@@ -261,7 +262,7 @@ DeviceManager::Response DeviceManager::startRead(const DeviceManager::Query& que
 		json::array(),
 		false
 	};
-	if(processManager && processManager->isDone()) {
+	if(!processManager) {
 		processManager = createProcessManager(query);
 		response.status = processManager->start();
 	}

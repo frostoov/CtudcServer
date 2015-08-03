@@ -1,5 +1,4 @@
 #include <fstream>
-
 #include <tdcdata/tdcrecord.hpp>
 #include <tdcdata/serialization.hpp>
 #include <boost/filesystem.hpp>
@@ -34,8 +33,9 @@ ReadManager::ReadManager(ModulePtr module, const string& dirName,
 	  mFileType(DataSetType::Simple) {
 	auto dirPath = path(dirName);
 	if(exists(dirPath)) {
-		if(!is_directory(dirPath))
+		if(!is_directory(dirPath)) {
 			throw std::runtime_error("Invalid dir path");
+		}
 	} else {
 		create_directory(dirPath);
 	}
