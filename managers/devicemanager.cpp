@@ -1,14 +1,17 @@
 #include "devicemanager.hpp"
 #include "tdcdata/tdcsettings.hpp"
+#include "readmanager.hpp"
+#include "ctudcreadmanager.hpp"
 
 using nlohmann::json;
 using tdcdata::EdgeDetection;
 using tdcdata::Lsb;
 
 using std::string;
-
-DeviceManager::DeviceManager(int32_t vmeAddress)
-	: mDevice(vmeAddress),
+using std::make_shared;
+DeviceManager::DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig)
+	: mDevice(make_shared<caen::Module>(vmeAddress)),
+	  mChannelConfig(channelConfig),
 	  mProcedures(createProcedures()) { }
 
 DeviceManager::Procedures DeviceManager::createProcedures() {
@@ -32,6 +35,8 @@ DeviceManager::Procedures DeviceManager::createProcedures() {
 		{"setControl",             [&](const Query & query) { return this->setControl(query);}},
 		{"setDeadTime",            [&](const Query & query) { return this->setDeadTime(query);}},
 		{"setEventBLT",            [&](const Query & query) { return this->setEventBLT(query);}},
+		{"startRead",              [&](const Query & query) { return this->startRead(query);} },
+		{"stopRead",               [&](const Query & query) { return this->stopRead(query);} },
 	};
 }
 
@@ -55,7 +60,7 @@ string DeviceManager::convertResponse(const DeviceManager::Response& response) {
 		{"procedure", response.procedure},
 		{"output",    response.output},
 		{"status",    response.status},
-	}.dump();
+	} .dump();
 }
 
 DeviceManager::Procedure DeviceManager::getProcedure(const DeviceManager::Query& query) const {
@@ -66,7 +71,7 @@ DeviceManager::Response DeviceManager::init(const Query& query) {
 	return {
 		"init",
 		json::array(),
-		mDevice.initialize(),
+		mDevice->initialize(),
 	};
 }
 
@@ -74,20 +79,20 @@ DeviceManager::Response DeviceManager::close(const Query& query) {
 	return {
 		"close",
 		json::array(),
-		mDevice.close(),
+		mDevice->close(),
 	};
 }
 
 DeviceManager::Response DeviceManager::isInit(const Query& query) {
 	return {
 		"isInit",
-		json::array({mDevice.isInit()}),
+		json::array({mDevice->isInit()}),
 		true,
 	};
 }
 
 DeviceManager::Response DeviceManager::setLog(const Query& query) {
-	mDevice.setLog(query.input.at(0));
+	mDevice->setLog(query.input.at(0));
 	return {
 		"setLog",
 		json::array(),
@@ -97,8 +102,8 @@ DeviceManager::Response DeviceManager::setLog(const Query& query) {
 
 DeviceManager::Response DeviceManager::getLog(const Query& query) {
 	json::array_t log;
-	while(mDevice.hasMessages())
-		log.push_back(mDevice.popMessage().first);
+	while(mDevice->hasMessages())
+		log.push_back(mDevice->popMessage().first);
 	return {
 		"getLog",
 		log,
@@ -107,7 +112,7 @@ DeviceManager::Response DeviceManager::getLog(const Query& query) {
 }
 
 DeviceManager::Response DeviceManager::getSettings(const Query& query) {
-	const auto& settings = mDevice.getSettings();
+	const auto& settings = mDevice->getSettings();
 	return {
 		"getSettings",
 		{
@@ -133,7 +138,7 @@ DeviceManager::Response DeviceManager::updateSettings(const Query& query) {
 	return {
 		"updateSettings",
 		json::array(),
-		mDevice.updateSettings(),
+		mDevice->updateSettings(),
 	};
 }
 
@@ -156,7 +161,7 @@ DeviceManager::Response DeviceManager::setSettings(const Query& query) {
 	return {
 		"setSettings",
 		json::array(),
-		mDevice.setSettings(settings),
+		mDevice->setSettings(settings),
 	};
 }
 
@@ -164,7 +169,7 @@ DeviceManager::Response DeviceManager::setTriggerMode(const Query& query) {
 	return {
 		"setTriggerMode",
 		json::array(),
-		mDevice.setTriggerMode(query.input.front()),
+		mDevice->setTriggerMode(query.input.front()),
 	};
 }
 
@@ -172,7 +177,7 @@ DeviceManager::Response DeviceManager::setTriggerSubtraction(const Query& query)
 	return {
 		"setTriggerSubtraction",
 		json::array(),
-		mDevice.setTriggerSubtraction(query.input.front()),
+		mDevice->setTriggerSubtraction(query.input.front()),
 	};
 }
 
@@ -180,7 +185,7 @@ DeviceManager::Response DeviceManager::setTdcMeta(const Query& query) {
 	return {
 		"setTdcMeta",
 		json::array(),
-		mDevice.setTdcMeta(query.input.front()),
+		mDevice->setTdcMeta(query.input.front()),
 	};
 }
 
@@ -188,7 +193,7 @@ DeviceManager::Response DeviceManager::setWindowWidth(const Query& query) {
 	return {
 		"setWindowWidth",
 		json::array(),
-		mDevice.setWindowWidth(query.input.front()),
+		mDevice->setWindowWidth(query.input.front()),
 	};
 }
 
@@ -196,7 +201,7 @@ DeviceManager::Response DeviceManager::setWindowOffset(const Query& query) {
 	return {
 		"setWindowOffset",
 		json::array(),
-		mDevice.setWindowOffset(query.input.front()),
+		mDevice->setWindowOffset(query.input.front()),
 	};
 }
 
@@ -205,7 +210,7 @@ DeviceManager::Response DeviceManager::setEdgeDetection(const Query& query) {
 	return {
 		"setEdgeDetection",
 		json::array(),
-		mDevice.setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
+		mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
 	};
 }
 
@@ -214,7 +219,7 @@ DeviceManager::Response DeviceManager::setLsb(const Query& query) {
 	return {
 		"setLsb",
 		json::array(),
-		mDevice.setLsb(static_cast<Lsb>(lsb)),
+		mDevice->setLsb(static_cast<Lsb>(lsb)),
 	};
 }
 
@@ -222,7 +227,7 @@ DeviceManager::Response DeviceManager::setAlmostFull(const Query& query) {
 	return {
 		"setAlmostFull",
 		json::array(),
-		mDevice.setAlmostFull(query.input.front()),
+		mDevice->setAlmostFull(query.input.front()),
 	};
 }
 
@@ -230,7 +235,7 @@ DeviceManager::Response DeviceManager::setControl(const Query& query) {
 	return {
 		"setControl",
 		json::array(),
-		mDevice.setControl(query.input.front()),
+		mDevice->setControl(query.input.front()),
 	};
 }
 
@@ -238,7 +243,7 @@ DeviceManager::Response DeviceManager::setDeadTime(const Query& query) {
 	return {
 		"setDeadTime",
 		json::array(),
-		mDevice.setDeadTime(query.input.front()),
+		mDevice->setDeadTime(query.input.front()),
 	};
 }
 
@@ -246,7 +251,47 @@ DeviceManager::Response DeviceManager::setEventBLT(const Query& query) {
 	return {
 		"setEventBLT",
 		json::array(),
-		mDevice.setEventBLT(query.input.front()),
+		mDevice->setEventBLT(query.input.front()),
 	};
+}
+
+DeviceManager::Response DeviceManager::startRead(const DeviceManager::Query& query) {
+	Response response = {
+		"startRead",
+		json::array(),
+		false
+	};
+	if(processManager && processManager->isDone()) {
+		processManager = createProcessManager(query);
+		response.status = processManager->start();
+	}
+	return response;
+}
+
+DeviceManager::Response DeviceManager::stopRead(const DeviceManager::Query& query) {
+	if(processManager) {
+		processManager->stop();
+		processManager.reset();
+	}
+	return {
+		"stopRead",
+		json::array(),
+		true
+	};
+}
+
+DeviceManager::ProcessManagerPtr DeviceManager::createProcessManager(const Query& query) {
+	const string type = query.input.at(0);
+	const string dirName = query.input.at(1);
+	if(type == "simple")
+		return make_shared<caen::ReadManager>(mDevice, dirName, 10000, mChannelConfig);
+	else if (type == "ctudc") {
+		caen::CtudcReadManager::NetInfo netInfo{
+			"234.5.9.60", 25960,
+			"234.5.9.63", 25963,
+		};
+		return make_shared<caen::CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
+	} else
+		throw std::runtime_error("Invalid query");
 }
 

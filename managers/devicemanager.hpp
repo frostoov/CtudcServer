@@ -5,8 +5,11 @@
 
 
 #include "caen/tdcmodule.hpp"
+#include "modulehandler.hpp"
 
 class DeviceManager {
+	using DevicePtr = std::shared_ptr<caen::Module>;
+	using ProcessManagerPtr = std::shared_ptr<caen::ProcessManager>;
 	struct Query {
 		nlohmann::json::string_t  procedure;
 		nlohmann::json::array_t   input;
@@ -19,7 +22,7 @@ class DeviceManager {
 	using Procedure = std::function<Response(const Query&)>;
 	using Procedures = std::unordered_map<std::string, Procedure>;
 public:
-	DeviceManager(int32_t vmeAddress);
+	DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig);
 	std::string handleQuery(const std::string& rawQuery);
 protected:
 	Procedures createProcedures();
@@ -47,9 +50,16 @@ protected:
 	Response setControl(const Query& query);
 	Response setDeadTime(const Query& query);
 	Response setEventBLT(const Query& query);
+	Response startRead(const Query& query);
+	Response stopRead(const Query& query);
+
+	ProcessManagerPtr createProcessManager(const Query& query);
 
 private:
-	caen::Module mDevice;
+	DevicePtr mDevice;
+	ProcessManagerPtr processManager;
+	caen::ChannelConfig mChannelConfig;
+	size_t eventsPerFile;
 
 	Procedures mProcedures;
 };

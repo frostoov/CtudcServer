@@ -1,4 +1,5 @@
-#include "server.hpp"
+#include "net/server.hpp"
+#include "configparser/channelsconfigparser.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -23,6 +24,7 @@ int main() {
 		stream.open("psychoServer.conf");
 	} catch(const std::exception& e) {
 		cout << "Failed open psychoServer.conf: " << e.what() << endl;
+		cin.ignore();
 		std::exit(0);
 	}
 	try {
@@ -31,19 +33,23 @@ int main() {
 		port = config.at("port").get<uint16_t>();
 	} catch(const std::exception& e) {
 		cout << "Failed open parse psychoServer.conf: " << e.what() << endl;
+		cin.ignore();
+		std::exit(0);
+	}
+	ChannelsConfigParser channelParser;
+	try {
+		channelParser.load("channels.conf");
+	} catch(const std::exception& e) {
+		cout << "Failed parse channels.conf: " << e.what() << endl;
+		cin.ignore();
 		std::exit(0);
 	}
 
-	auto deviceManager = make_shared<DeviceManager>(0xEE00);
+	auto deviceManager = make_shared<DeviceManager>(0xEE00, channelParser.getConfig());
 	Server server(deviceManager, address, port);
-	std::string command;
+	server.start();
 	while(true) {
-		std::getline(cin,  command);
-		if(command == "start") {
-			server.start();
-		} else if(command == "stop") {
-			server.stop();
-		}
+		cin.ignore();
 	}
 	return 0;
 }

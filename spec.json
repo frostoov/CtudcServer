@@ -91,3 +91,13 @@
 	"procedure" : "setEventBLT",
 	"input" : [0]
 }
+{
+	"procedure" : "startRead",
+	"input" : [
+		"type",  /*simple | nevod*/
+		"dirPath"
+	], 
+}
+{
+	"procedure" : "stopRead",
+}

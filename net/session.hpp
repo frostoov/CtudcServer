@@ -8,7 +8,7 @@
 
 #include <boost/asio.hpp>
 
-#include "devicemanager.hpp"
+#include "managers/devicemanager.hpp"
 
 class Session : public std::enable_shared_from_this<Session> {
 	using DestroyCallback = std::function<void(std::shared_ptr<Session>)>;
