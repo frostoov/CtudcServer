@@ -4,6 +4,7 @@
 #include <thread>
 #include <list>
 #include <memory>
+#include <cppchannel/channel>
 
 #include <tdcdata/tdcrecord.hpp>
 
@@ -23,7 +24,6 @@ class ProcessManager : public Subject {
 
 	void setModule(ModulePtr module) { mTdcModule = module; }
 	bool isActive() { return mIsActive; }
-	bool isDone() { return mIsProcDone; }
 
 	static uint32_t GLBHeaderEventCount(uint32_t data) { return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5; }
 	static uint32_t GLBHeaderGeo	(uint32_t data) { return ( data & GLB_HDR_GEO_MSK); }
@@ -53,8 +53,6 @@ class ProcessManager : public Subject {
 	ProcessManager(ModulePtr module, const ChannelConfig& config);
 	virtual void workerLoop() = 0;
 	bool checkTimeout(const TimePoint& startPoint);
-	void setLoopStatus(bool flag) { mIsInLoop = flag; }
-	void setProcDone(bool flag) { mIsProcDone = flag; }
 	void setBkpSettings(const tdcdata::Settings& settings);
 	void returnSettings();
 
@@ -62,14 +60,15 @@ class ProcessManager : public Subject {
 	uint32_t    convertWord(uint32_t word);
 	WordVector& convertEvent(WordVector& eventWords);
 
+	void setActive(bool flag);
 	bool checkChannel(uint32_t channel) const;
 	const ChannelCongruence& getChannelCongruence(size_t ch);
 	ModulePtr mTdcModule;
+	cpp::channel<bool> mStopChannel;
   private:
 	ChannelConfig mConfig;
 	volatile bool mIsActive;
-	volatile bool mIsInLoop;
-	volatile bool mIsProcDone;
+
 	tdcdata::Settings mBkpSettings;
 
 	static const uint32_t DATA_TYPE_MSK = 0xf8000000; /* Data type bit masks */

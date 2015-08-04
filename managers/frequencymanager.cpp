@@ -1,5 +1,7 @@
 #include "frequencymanager.hpp"
 
+using cpp::Select;
+
 namespace caen {
 
 FrequencyManager::FrequencyManager(ModulePtr module, const ChannelConfig& config,
@@ -22,21 +24,19 @@ bool FrequencyManager::start() {
 }
 
 void FrequencyManager::workerLoop() {
-	setLoopStatus(true);
 	mDataValid = false;
 	WordVector buff;
 
 	mTotalMsrTime = Microseconds::zero();
-	if(mTdcModule->getSettings().getTriggerMode() == false) {
-		while (isActive()) {
-			measureFrequency(buff, mMsrTime);
-		}
+	while (isActive()) {
+		measureFrequency(buff, mMsrTime);
+		Select().recv(mStopChannel, [this](bool) {
+			calculateFrequency(getTotalTime());
+			mDataValid = true;
+			returnSettings();
+			setActive(false);
+		});
 	}
-	calculateFrequency(getTotalTime());
-	mDataValid = true;
-	returnSettings();
-	setProcDone(true);
-	setLoopStatus(false);
 }
 
 void FrequencyManager::handleData(WordVector& data) {

@@ -1,5 +1,4 @@
 #include <json.hpp>
-#include <iostream>
 #include "session.hpp"
 
 using std::string;

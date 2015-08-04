@@ -353,15 +353,15 @@ DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& q
 
 bool DeviceManager::isReadManager(const ProcessManagerPtr& processManager) {
 	if(!processManager) return false;
-	auto& processType = typeid(*processManager.get());
-	std::cout << "processType : " << processType.name() << std::endl;
+	const auto& ref = *processManager.get();
+	auto& processType = typeid(ref);
 	return 	processType == typeid(ReadManager) || processType == typeid(CtudcReadManager);
 }
 
 bool DeviceManager::isFreqManager(const ProcessManagerPtr& processManager) {
 	if(!processManager) return false;
-	auto& processType = typeid(*processManager.get());
-	std::cout << "processType : " << processType.name() << std::endl;
+	const auto& ref = *processManager.get();
+	auto& processType = typeid(ref);
 	return 	processType == typeid(FrequencyManager);
 }
 

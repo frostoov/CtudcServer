@@ -1,14 +1,10 @@
 #include <fstream>
 #include <thread>
-#include <iostream>
 #include <tdcdata/serialization.hpp>
 
 
 #include "net/nettools.hpp"
 #include "ctudcreadmanager.hpp"
-
-using std::cout;
-using std::endl;
 
 using std::string;
 using std::ofstream;
@@ -22,6 +18,8 @@ using tdcdata::DataSetType;
 using tdcdata::CtudcRecord;
 using tdcdata::DecorPackage;
 using tdcdata::NevodPackage;
+
+using cpp::Select;
 
 namespace caen {
 
@@ -45,13 +43,7 @@ CtudcReadManager::~CtudcReadManager() {
 }
 
 void CtudcReadManager::workerLoop() {
-	cout << "CtudcReadManager::workerLoop" << endl;
-	setLoopStatus(true);
-
 	WordVector buffer;
-
-	mTdcModule->setTriggerMode(true);
-	mTdcModule->setLog(false);
 
 	mTdcModule->softwareClear();
 	mDecorPackages.clear();
@@ -60,32 +52,24 @@ void CtudcReadManager::workerLoop() {
 	mDecorReciever.start();
 	mNevodReciever.start();
 
-	cout << "CtudcReadManager::while" << endl;
 	while(isActive()) {
 		//Блокируем поток и ожидаем DecorPackage
-		cout << "waiting" << endl;
 		waitForDecorPackage();
-		cout << "waiting end" << endl;
 		if(isActive()) {
 			auto startTime = SystemClock::now();
 			buffer.clear();
-			cout << "readBlock" << endl;
 			mTdcModule->readBlock(buffer);
-			cout << "readBlock end" << endl;
 			//Получили DecorPackage, блокируем поток и ожидаем NevodPackage
 			waitForNevodPackage(startTime);
 
-			cout << "handle" << endl;
 			handleDataPackages(buffer);
-			cout << "handle end" << endl;
 		}
+		Select().recv(mStopChannel, [this](bool) {
+			closeStream(mStream);
+			returnSettings();
+			setActive(false);
+		}).tryOnce();
 	}
-
-	closeStream(mStream);
-	mTdcModule->setLog(true);
-	returnSettings();
-	setProcDone(true);
-	setLoopStatus(false);
 }
 
 void CtudcReadManager::stop() {

@@ -6,6 +6,8 @@
 #include "readmanager.hpp"
 #include "types.hpp"
 
+using cpp::Select;
+
 using std::to_string;
 using std::ofstream;
 using std::ostream;
@@ -57,11 +59,8 @@ bool ReadManager::start() {
 }
 
 void ReadManager::workerLoop() {
-	setLoopStatus(true);
-
 	WordVector buffer;
 
-	mTdcModule->setLog(false);
 	mTdcModule->softwareClear();
 
 	while( isActive() ) {
@@ -72,12 +71,12 @@ void ReadManager::workerLoop() {
 			for(const auto& event : events)
 				writeTdcRecord(event);
 		}
+		Select().recv(mStopChannel, [this](bool) {
+			returnSettings();
+			closeStream(mStream);
+			setActive(false);
+		});
 	}
-
-	mTdcModule->setLog(true);
-	returnSettings();
-	setProcDone(true);
-	setLoopStatus(false);
 }
 
 void ReadManager::writeTdcRecord(const tdcdata::TDCRecord& event) {

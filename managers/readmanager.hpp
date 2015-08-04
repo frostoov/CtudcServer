@@ -13,11 +13,11 @@ class ReadManager : public ProcessManager {
 	ReadManager(ModulePtr module, const std::string& dirName, size_t eventsPerFile,
 				const ChannelConfig& channelConfig);
 
+	bool start() override;
 	const char* getTitle() const override {return "ReadManager";}
 
   protected:
 	void workerLoop() override;
-	bool start() override;
 	void writeTdcRecord(const tdcdata::TDCRecord& event);
 	bool needNewStream();
 	bool openStream(std::ofstream& stream);
@@ -39,8 +39,6 @@ class ReadManager : public ProcessManager {
 	uintmax_t mEventCount;
 	uintmax_t mFileCount;
 	const uintmax_t mEventsPerFile;
-
-
 
 	tdcdata::DataSetType mFileType;
 };
