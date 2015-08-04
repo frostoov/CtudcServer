@@ -1,10 +1,14 @@
 #include <fstream>
 #include <thread>
+#include <iostream>
 #include <tdcdata/serialization.hpp>
 
 
 #include "net/nettools.hpp"
 #include "ctudcreadmanager.hpp"
+
+using std::cout;
+using std::endl;
 
 using std::string;
 using std::ofstream;
@@ -41,6 +45,7 @@ CtudcReadManager::~CtudcReadManager() {
 }
 
 void CtudcReadManager::workerLoop() {
+	cout << "CtudcReadManager::workerLoop" << endl;
 	setLoopStatus(true);
 
 	WordVector buffer;
@@ -55,17 +60,24 @@ void CtudcReadManager::workerLoop() {
 	mDecorReciever.start();
 	mNevodReciever.start();
 
+	cout << "CtudcReadManager::while" << endl;
 	while(isActive()) {
 		//Блокируем поток и ожидаем DecorPackage
+		cout << "waiting" << endl;
 		waitForDecorPackage();
+		cout << "waiting end" << endl;
 		if(isActive()) {
 			auto startTime = SystemClock::now();
 			buffer.clear();
+			cout << "readBlock" << endl;
 			mTdcModule->readBlock(buffer);
+			cout << "readBlock end" << endl;
 			//Получили DecorPackage, блокируем поток и ожидаем NevodPackage
 			waitForNevodPackage(startTime);
 
+			cout << "handle" << endl;
 			handleDataPackages(buffer);
+			cout << "handle end" << endl;
 		}
 	}
 
@@ -77,6 +89,8 @@ void CtudcReadManager::workerLoop() {
 }
 
 void CtudcReadManager::stop() {
+	mDecorReciever.stop();
+	mNevodReciever.stop();
 	mDecorBlocker.unblock();
 	ReadManager::stop();
 }

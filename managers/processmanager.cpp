@@ -1,5 +1,7 @@
 #include "processmanager.hpp"
+#include <iostream>
 
+using std::to_string;
 
 namespace caen {
 
@@ -60,22 +62,27 @@ uint32_t ProcessManager::convertWord(uint32_t word) {
 		word |= config.getChamber() << 19;
 		word |= config.getWire()   << 24;
 		return word;
-	} else
-		throw std::runtime_error("ModuleHandler::convertWord: no config for channel");
+	} else {
+		std::cout << "ProcessManager::convertWord: no config for channel: " << to_string(channel) << std::endl;
+		throw std::runtime_error("ProcessManager::convertWord: no config for channel: " +
+								 to_string(channel));
+	}
 }
 
 WordVector& ProcessManager::convertEvent(WordVector& eventWords) {
 	for(auto& word : eventWords) {
 		if(isMeasurement(word))
 			word = convertWord(word);
-		else
-			throw std::runtime_error("ModuleHandler::convertEvent: non measurement word");
+		else {
+			std::cout << "ProcessManager::convertEvent: non measurement word" << std::endl;
+			throw std::runtime_error("ProcessManager::convertEvent: non measurement word");
+		}
 	}
 	return eventWords;
 }
 
-bool caen::ProcessManager::checkChannel(size_t ch) const {
-	return static_cast<bool>(mConfig.count(ch));
+bool caen::ProcessManager::checkChannel(uint32_t channel) const {
+	return mConfig.count(channel) != 0;
 }
 
 const ChannelCongruence& ProcessManager::getChannelCongruence(size_t ch) {

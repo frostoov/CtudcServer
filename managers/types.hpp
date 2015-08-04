@@ -8,17 +8,17 @@ namespace caen {
 
 class ChannelCongruence {
   public:
-	ChannelCongruence(uintmax_t chamber, uintmax_t wire)
+	ChannelCongruence(uint32_t chamber, uint32_t wire)
 		: mChamber(chamber), mWire(wire) { }
 
-	uintmax_t getChamber() const {return mChamber;}
-	uintmax_t getWire() const {return mWire;}
+	uint32_t getChamber() const {return mChamber;}
+	uint32_t getWire() const {return mWire;}
   private:
-	uintmax_t mChamber;
-	uintmax_t mWire;
+	uint32_t mChamber;
+	uint32_t mWire;
 };
 
-using ChannelConfig = std::unordered_map<uintmax_t, ChannelCongruence>;
+using ChannelConfig = std::unordered_map<uint32_t, ChannelCongruence>;
 
 }
 

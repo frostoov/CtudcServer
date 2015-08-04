@@ -1,5 +1,7 @@
 #include "packagereciever.hpp"
 
+using boost::system::error_code;
+
 PackageReciever::PackageReciever(const std::string& multicastAddress, uint16_t port)
 	: mSocket(mIoService),
 	  mEndpoint(UDP::v4(), port),
@@ -7,6 +9,8 @@ PackageReciever::PackageReciever(const std::string& multicastAddress, uint16_t p
 	  mHasFunction(false) {
 	mSocket.open(UDP::v4());
 	mSocket.bind(mEndpoint);
+
+	mSocket.set_option(UDP::socket::receive_buffer_size(sizeof(mData)));
 	mIsActive = false;
 }
 
@@ -23,7 +27,7 @@ void PackageReciever::start() {
 	if(mIsActive == false) {
 		mIsActive = true;
 		joinMulticastGroup(mMulticastAddress);
-		asyncReceive();
+		doReceive();
 
 		std::thread([this]() {mIoService.run(); } ).detach();
 	}
@@ -31,8 +35,8 @@ void PackageReciever::start() {
 
 void PackageReciever::stop() {
 	if(mIsActive == true) {
-		leaveMulticastGroup(mMulticastAddress);
 		mIoService.stop();
+		leaveMulticastGroup(mMulticastAddress);
 		mIoService.reset();
 		mIsActive = false;
 	}
@@ -51,19 +55,15 @@ bool PackageReciever::isActive() const {
 	return mIsActive;
 }
 
-void PackageReciever::handleRecive(const boost::system::error_code& error, size_t bytes_transferred) {
-	if(!error) {
-		asyncReceive();
-		if(mHasFunction)
-			mFunction(mData, bytes_transferred);
-	}
-}
-
-void PackageReciever::asyncReceive() {
+void PackageReciever::doReceive() {
 	mSocket.async_receive_from(boost::asio::buffer(mData, sizeof(mData)), mEndpoint,
-							   boost::bind(&PackageReciever::handleRecive, this,
-										   boost::asio::placeholders::error,
-										   boost::asio::placeholders::bytes_transferred));
+							   [&, this](const error_code& error, size_t size) {
+		if(!error) {
+			if(mHasFunction)
+				mFunction(mData, size);
+		}
+		doReceive();
+	});
 }
 
 void PackageReciever::joinMulticastGroup(const IpAddress& multicastAddress) {

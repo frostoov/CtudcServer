@@ -25,8 +25,7 @@ class PackageReciever {
 	void clearCallback();
 	bool isActive() const;
   protected:
-	void handleRecive(const boost::system::error_code& error, size_t bytes_transferred);
-	void asyncReceive();
+	void doReceive();
 	void joinMulticastGroup(const IpAddress& multicastAddress);
 	void leaveMulticastGroup(const IpAddress& multicastAddress);
   private:
@@ -34,7 +33,7 @@ class PackageReciever {
 	UdpSocket mSocket;
 	Endpoint  mEndpoint;
 
-	static const size_t mDataMaxSize = sizeof(tdcdata::DecorPackage);
+	static const size_t mDataMaxSize = 65527;
 	char mData[mDataMaxSize];
 
 	IpAddress mMulticastAddress;

@@ -26,11 +26,11 @@ void ChannelsConfigParser::load(const std::string& fileName) {
 
 	const auto& channelsConfig = jsonConfig.at(channelsIdent);
 	for(const auto& channelConfig : channelsConfig) {
-		const auto channelNumber = static_cast<uintmax_t>(channelConfig.at(numberIdent)) - 1;
+		const auto channelNumber = static_cast<uint32_t>(channelConfig.at(numberIdent)) - 1;
 		if(mConfig.count(channelNumber))
 			throw std::runtime_error("ChannelsConfigParser::load: channel config already exists");
-		const auto wireNumber    = static_cast<uintmax_t>(channelConfig.at(wireIdent)) - 1;
-		const auto chamberNumber = static_cast<uintmax_t>(channelConfig.at(chamberIdent)) - 1;
+		const auto wireNumber    = static_cast<uint32_t>(channelConfig.at(wireIdent)) - 1;
+		const auto chamberNumber = static_cast<uint32_t>(channelConfig.at(chamberIdent)) - 1;
 
 		mConfig.insert({channelNumber, {chamberNumber, wireNumber} });
 	}

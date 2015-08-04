@@ -26,7 +26,7 @@ private:
 	DeviceMangerPtr mDeviceManager;
 	Socket mSocket;
 	DestroyCallback mCallback;
-	std::array<char, 65536> mBuffer;
+	std::array<char, 65527> mBuffer;
 };
 
 #endif // SESSION_HPP

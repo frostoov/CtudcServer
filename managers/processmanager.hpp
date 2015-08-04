@@ -62,7 +62,7 @@ class ProcessManager : public Subject {
 	uint32_t    convertWord(uint32_t word);
 	WordVector& convertEvent(WordVector& eventWords);
 
-	bool checkChannel(size_t ch) const;
+	bool checkChannel(uint32_t channel) const;
 	const ChannelCongruence& getChannelCongruence(size_t ch);
 	ModulePtr mTdcModule;
   private:

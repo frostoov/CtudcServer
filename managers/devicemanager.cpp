@@ -4,6 +4,8 @@
 #include "ctudcreadmanager.hpp"
 #include "frequencymanager.hpp"
 
+#include <typeinfo>
+
 using nlohmann::json;
 using tdcdata::EdgeDetection;
 using tdcdata::Lsb;
@@ -86,11 +88,15 @@ DeviceManager::Response DeviceManager::init(const Query& query) {
 }
 
 DeviceManager::Response DeviceManager::close(const Query& query) {
-	return {
+	Response response {
 		"close",
 		json::array(),
-		mDevice->close(),
+		false,
 	};
+	if(!mProcessManager) {
+		response.status = mDevice->close();
+	}
+	return response;
 }
 
 DeviceManager::Response DeviceManager::isInit(const Query& query) {
@@ -320,6 +326,7 @@ DeviceManager::Response DeviceManager::stopFrequency(const Query& query) {
 		mProcessManager->stop();
 		auto freqManager = dynamic_cast<FrequencyManager*>(mProcessManager.get());
 		trekFreq = freqManager->getFrequency();
+		mProcessManager.reset();
 		responseStatus = true;
 	}
 	return {
@@ -345,13 +352,17 @@ DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& q
 }
 
 bool DeviceManager::isReadManager(const ProcessManagerPtr& processManager) {
-	auto& processType = typeid(processManager.get());
-	return 	processType == typeid(ReadManager*) || processType == typeid(CtudcReadManager*);
+	if(!processManager) return false;
+	auto& processType = typeid(*processManager.get());
+	std::cout << "processType : " << processType.name() << std::endl;
+	return 	processType == typeid(ReadManager) || processType == typeid(CtudcReadManager);
 }
 
 bool DeviceManager::isFreqManager(const ProcessManagerPtr& processManager) {
-	auto& processType = typeid(processManager.get());
-	return 	processType == typeid(FrequencyManager*);
+	if(!processManager) return false;
+	auto& processType = typeid(*processManager.get());
+	std::cout << "processType : " << processType.name() << std::endl;
+	return 	processType == typeid(FrequencyManager);
 }
 
 json::array_t DeviceManager::convertFreq(const caen::TrekFrequency& freq) {
