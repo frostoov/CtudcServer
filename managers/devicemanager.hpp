@@ -5,7 +5,8 @@
 
 
 #include "caen/tdcmodule.hpp"
-#include "modulehandler.hpp"
+#include "processmanager.hpp"
+#include "frequencymanager.hpp"
 
 class DeviceManager {
 	using DevicePtr = std::shared_ptr<caen::Module>;
@@ -50,14 +51,21 @@ protected:
 	Response setControl(const Query& query);
 	Response setDeadTime(const Query& query);
 	Response setEventBLT(const Query& query);
+	Response getProcess(const Query& query);
 	Response startRead(const Query& query);
 	Response stopRead(const Query& query);
+	Response startFrequency(const Query& query);
+	Response stopFrequency(const Query& query);
 
-	ProcessManagerPtr createProcessManager(const Query& query);
+	ProcessManagerPtr createReadManager(const Query& query);
+	bool isReadManager(const ProcessManagerPtr& mProcessManager);
+	bool isFreqManager(const ProcessManagerPtr& mProcessManager);
+	nlohmann::json::array_t convertFreq(const caen::TrekFrequency& freq);
+	nlohmann::json::array_t getProcessType(const ProcessManagerPtr& mProcessManager);
 
 private:
 	DevicePtr mDevice;
-	ProcessManagerPtr processManager;
+	ProcessManagerPtr mProcessManager;
 	caen::ChannelConfig mChannelConfig;
 	size_t eventsPerFile;
 

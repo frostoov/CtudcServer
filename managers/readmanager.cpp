@@ -26,7 +26,7 @@ namespace caen {
 
 ReadManager::ReadManager(ModulePtr module, const string& dirName,
 						 size_t eventsPerFile, const ChannelConfig& channelConfig)
-	: ProcessManager(module, channelConfig, Seconds::zero()),
+	: ProcessManager(module, channelConfig),
 	  mEventCount(0),
 	  mFileCount(0),
 	  mEventsPerFile(eventsPerFile),
@@ -50,8 +50,10 @@ bool ReadManager::start() {
 	mTdcModule->setTriggerMode(true);
 	if(mTdcModule->getSettings().getTriggerMode())
 		return ProcessManager::start();
-	else
+	else {
+		returnSettings();
 		return false;
+	}
 }
 
 void ReadManager::workerLoop() {

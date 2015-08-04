@@ -15,9 +15,6 @@ namespace caen {
 class ProcessManager : public Subject {
   protected:
 	using ModulePtr     = std::shared_ptr<Module>;
-	using Seconds	    = std::chrono::seconds;
-	using SystemClock   = std::chrono::high_resolution_clock;
-	using TimePoint     = SystemClock::time_point;
 	using TDCRecordList  = std::list<tdcdata::TDCRecord>;
   public:
 	virtual ~ProcessManager() { stop(); }
@@ -53,10 +50,9 @@ class ProcessManager : public Subject {
 	static bool isGlobalTrailer	(uint32_t data) { return (data & DATA_TYPE_MSK) == TRAILER; }
 	static bool isMeasurement	(uint32_t data) { return (data & DATA_TYPE_MSK) == TDC_MEASURE; }
   protected:
-	ProcessManager(ModulePtr module, const ChannelConfig& config,
-				  const Seconds& timeout = Seconds::zero());
+	ProcessManager(ModulePtr module, const ChannelConfig& config);
 	virtual void workerLoop() = 0;
-	bool checkTimeout(const SystemClock::time_point& startPoint);
+	bool checkTimeout(const TimePoint& startPoint);
 	void setLoopStatus(bool flag) { mIsInLoop = flag; }
 	void setProcDone(bool flag) { mIsProcDone = flag; }
 	void setBkpSettings(const tdcdata::Settings& settings);
@@ -74,7 +70,6 @@ class ProcessManager : public Subject {
 	volatile bool mIsActive;
 	volatile bool mIsInLoop;
 	volatile bool mIsProcDone;
-	Seconds       mProcTimeout;
 	tdcdata::Settings mBkpSettings;
 
 	static const uint32_t DATA_TYPE_MSK = 0xf8000000; /* Data type bit masks */

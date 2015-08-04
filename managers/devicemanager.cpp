@@ -2,6 +2,7 @@
 #include "tdcdata/tdcsettings.hpp"
 #include "readmanager.hpp"
 #include "ctudcreadmanager.hpp"
+#include "frequencymanager.hpp"
 
 using nlohmann::json;
 using tdcdata::EdgeDetection;
@@ -9,6 +10,11 @@ using tdcdata::Lsb;
 
 using std::string;
 using std::make_shared;
+using std::chrono::microseconds;
+
+using caen::ReadManager;
+using caen::CtudcReadManager;
+using caen::FrequencyManager;
 
 DeviceManager::DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig)
 	: mDevice(make_shared<caen::Module>(vmeAddress)),
@@ -36,8 +42,11 @@ DeviceManager::Procedures DeviceManager::createProcedures() {
 		{"setControl",             [&](const Query & query) { return this->setControl(query);}},
 		{"setDeadTime",            [&](const Query & query) { return this->setDeadTime(query);}},
 		{"setEventBLT",            [&](const Query & query) { return this->setEventBLT(query);}},
+		{"getProcess",             [&](const Query & query) { return this->getProcess(query);} },
 		{"startRead",              [&](const Query & query) { return this->startRead(query);} },
 		{"stopRead",               [&](const Query & query) { return this->stopRead(query);} },
+		{"startFrequency",         [&](const Query & query) { return this->startFrequency(query);} },
+		{"stopFrequency",          [&](const Query & query) { return this->stopFrequency(query);} },
 	};
 }
 
@@ -256,43 +265,116 @@ DeviceManager::Response DeviceManager::setEventBLT(const Query& query) {
 	};
 }
 
+DeviceManager::Response DeviceManager::getProcess(const Query& query) {
+	return {
+		"getProcess",
+		getProcessType(mProcessManager),
+		true
+	};
+}
+
 DeviceManager::Response DeviceManager::startRead(const DeviceManager::Query& query) {
 	Response response = {
 		"startRead",
 		json::array(),
 		false
 	};
-	if(!processManager) {
-		processManager = createProcessManager(query);
-		response.status = processManager->start();
+	if(!mProcessManager) {
+		mProcessManager = createReadManager(query);
+		response.status = mProcessManager->start();
 	}
 	return response;
 }
 
 DeviceManager::Response DeviceManager::stopRead(const DeviceManager::Query& query) {
-	if(processManager) {
-		processManager->stop();
-		processManager.reset();
-	}
-	return {
+	Response response = {
 		"stopRead",
 		json::array(),
-		true
+		false
+	};
+	if( isReadManager(mProcessManager) ) {
+		mProcessManager->stop();
+		mProcessManager.reset();
+		response.status = true;
+	}
+	return response;
+}
+
+DeviceManager::Response DeviceManager::startFrequency(const Query& query) {
+	Response response = {
+		"startFrequency",
+		json::array(),
+		false
+	};
+	if(!mProcessManager) {
+		mProcessManager = make_shared<FrequencyManager>(mDevice, mChannelConfig, microseconds(100));
+		response.status = mProcessManager->start();
+	}
+	return response;
+}
+
+DeviceManager::Response DeviceManager::stopFrequency(const Query& query) {
+	auto responseStatus = false;
+	caen::TrekFrequency trekFreq;
+	if(isFreqManager(mProcessManager)) {
+		mProcessManager->stop();
+		auto freqManager = dynamic_cast<FrequencyManager*>(mProcessManager.get());
+		trekFreq = freqManager->getFrequency();
+		responseStatus = true;
+	}
+	return {
+		"stopFrequency",
+		convertFreq(trekFreq),
+		responseStatus
 	};
 }
 
-DeviceManager::ProcessManagerPtr DeviceManager::createProcessManager(const Query& query) {
+DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& query) {
 	const string type = query.input.at(0);
 	const string dirName = query.input.at(1);
 	if(type == "simple")
-		return make_shared<caen::ReadManager>(mDevice, dirName, 10000, mChannelConfig);
+		return make_shared<ReadManager>(mDevice, dirName, 10000, mChannelConfig);
 	else if (type == "ctudc") {
 		caen::CtudcReadManager::NetInfo netInfo{
 			"234.5.9.60", 25960,
 			"234.5.9.63", 25963,
 		};
-		return make_shared<caen::CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
+		return make_shared<CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
 	} else
 		throw std::runtime_error("Invalid query");
+}
+
+bool DeviceManager::isReadManager(const ProcessManagerPtr& processManager) {
+	auto& processType = typeid(processManager.get());
+	return 	processType == typeid(ReadManager*) || processType == typeid(CtudcReadManager*);
+}
+
+bool DeviceManager::isFreqManager(const ProcessManagerPtr& processManager) {
+	auto& processType = typeid(processManager.get());
+	return 	processType == typeid(FrequencyManager*);
+}
+
+json::array_t DeviceManager::convertFreq(const caen::TrekFrequency& freq) {
+	json::array_t jsonFreq;
+	for(const auto& freqPair : freq) {
+		const auto chamber = freqPair.first;
+		const auto frequency = freqPair.second;
+
+		jsonFreq.push_back({
+			{"chamber", chamber},
+			{"frequency", frequency},
+		});
+	}
+	return jsonFreq;
+}
+
+json::array_t DeviceManager::getProcessType(const ProcessManagerPtr& processManager) {
+	if(isReadManager(processManager)) {
+		return json::array({"read"});
+	} else if(isFreqManager(processManager)) {
+		return json::array({"frequency"});
+	} else {
+		return json::array({"null"});
+	}
 }
 

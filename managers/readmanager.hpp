@@ -4,7 +4,7 @@
 #include <fstream>
 #include <tdcdata/datasetheader.hpp>
 
-#include "modulehandler.hpp"
+#include "processmanager.hpp"
 
 namespace caen {
 

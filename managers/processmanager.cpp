@@ -1,24 +1,14 @@
-#include "modulehandler.hpp"
+#include "processmanager.hpp"
 
-using std::ostream;
-using std::vector;
-using std::list;
 
 namespace caen {
 
-ProcessManager::ProcessManager(ModulePtr module, const ChannelConfig& config,
-							 const Seconds& timeout)
+ProcessManager::ProcessManager(ModulePtr module, const ChannelConfig& config)
 	: mTdcModule(module),
 	  mConfig(config),
 	  mIsActive(false),
 	  mIsInLoop(false),
-	  mIsProcDone(true),
-	  mProcTimeout(timeout) {}
-
-bool ProcessManager::checkTimeout(const SystemClock::time_point& startPoint) {
-	return ( mProcTimeout != Seconds::zero() ) &&
-		   (SystemClock::now() - startPoint >= mProcTimeout);
-}
+	  mIsProcDone(true) {}
 
 void ProcessManager::setBkpSettings(const tdcdata::Settings& settings) {
 	mBkpSettings = settings;
