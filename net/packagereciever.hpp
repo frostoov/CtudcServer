@@ -9,7 +9,7 @@
 
 #include "channel.hpp"
 
-class PackageReciever {
+class PackageReceiver {
 	using ByteVector  = std::vector<char>;
 	using ThreadPtr   = std::unique_ptr<std::thread>;
 	using StopChannel = Channel<bool>;
@@ -21,9 +21,9 @@ class PackageReciever {
 	using IpAddress = boost::asio::ip::address;
 	using Callback  = std::function<void(char* data, size_t size)>;
   public:
-	PackageReciever(const std::string& multicastAddress, uint16_t port);
-	PackageReciever(const std::string& multicastAddress, uint16_t port, const Callback& function);
-	~PackageReciever();
+	PackageReceiver(const std::string& multicastAddress, uint16_t port);
+	PackageReceiver(const std::string& multicastAddress, uint16_t port, const Callback& function);
+	~PackageReceiver();
 	bool start();
 	void stop();
 	void clearCallback();
@@ -46,7 +46,7 @@ class PackageReciever {
 
 	DataChannel mDataChannel;
 
-	volatile bool mIsActive;
+	std::atomic_bool mIsActive;
 };
 
 #endif // PACKAGERECIEVER_HPP

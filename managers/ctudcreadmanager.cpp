@@ -2,9 +2,10 @@
 #include <thread>
 #include <tdcdata/serialization.hpp>
 
-
 #include "net/nettools.hpp"
 #include "ctudcreadmanager.hpp"
+
+
 
 using std::string;
 using std::ofstream;
@@ -12,9 +13,10 @@ using std::ostream;
 using std::istream;
 using std::exception;
 using std::chrono::milliseconds;
-using std::chrono::microseconds;
+using std::chrono::seconds;
 using std::make_unique;
 using std::vector;
+using std::chrono::duration_cast;
 
 using tdcdata::DataSetType;
 using tdcdata::CtudcRecord;
@@ -24,8 +26,9 @@ using tdcdata::NevodPackage;
 
 namespace caen {
 
+
 CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t eventNum,
-                                   const ChannelConfig& config,  const NetInfo& netInfo)
+								   const ChannelConfig& config,  const NetInfo& netInfo)
 	: ReadManager(module, path, eventNum, config),
 	  mDecorReciever(netInfo.decorIP, netInfo.decorPort),
 	  mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
@@ -34,12 +37,31 @@ CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t 
 	setFileType(DataSetType::CTUDC);
 }
 
+uintmax_t CtudcReadManager::getTriggerCount() const {
+	return mTriggerCount;
+}
+
+uintmax_t CtudcReadManager::getPackageCount() const {
+	return mPackageCount;
+}
+
+double CtudcReadManager::getTriggerFrequency() const {
+	return double(mTriggerCount)/duration_cast<seconds>(SystemClock::now() - mStartPoint).count();
+}
+
+double CtudcReadManager::getPackageFrequency() const {
+	return double(mPackageCount)/duration_cast<seconds>(SystemClock::now() - mStartPoint).count();
+}
+
 bool CtudcReadManager::init() {
 	if(!ReadManager::init())
 		return false;
 	else {
+		mTriggerCount = 0;
+		mPackageCount = 0;
 		mDecorReciever.start();
 		mNevodReciever.start();
+		mStartPoint = std::chrono::high_resolution_clock::now();
 		return true;
 	}
 }
@@ -51,12 +73,10 @@ void CtudcReadManager::shutDown() {
 }
 
 void CtudcReadManager::workerFunc() {
-	//Блокируем поток и ожидаем DecorPackage
 	waitForDecorPackage();
 	auto startTime = SystemClock::now();
 	mBuffer.clear();
 	mTdcModule->readBlock(mBuffer);
-	//Получили DecorPackage, блокируем поток и ожидаем NevodPackage
 	waitForNevodPackage(startTime);
 
 	handleDataPackages(mBuffer);
@@ -64,6 +84,7 @@ void CtudcReadManager::workerFunc() {
 
 void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
 	auto events = handleBuffer(tdcData);
+	mTriggerCount += events.size();
 	auto timePoint = SystemClock::now();
 	while(events.size() > 1) {
 		CtudcRecord record(getEventCount(), timePoint);
@@ -102,14 +123,16 @@ void CtudcReadManager::handleNevodPackage(ByteVector&& buffer) {
 		membuf tempBuffer(buffer.data(), buffer.size());
 		istream stream(&tempBuffer);
 		deserialize(stream, *mNevodPackage);
+		++mPackageCount;
 	}
 }
 
 void CtudcReadManager::waitForDecorPackage() {
 	if(mDecorChannel.isOpen()) {
-		ByteVector data;
-		if(mDecorChannel.recv(data))
-			handleDecorPackage(std::move(data));
+		ByteVector buffer;
+		if(mDecorChannel.recv(buffer)) {
+			handleDecorPackage(std::move(buffer));
+		}
 	}
 }
 
@@ -117,10 +140,10 @@ void CtudcReadManager::waitForNevodPackage(SystemClock::time_point startTime) {
 	if(!mNevodChannel.isOpen())
 		return;
 	milliseconds awaitTime(5);
-	ByteVector tempBuffer;
+	ByteVector buffer;
 	while(SystemClock::now() - startTime < awaitTime) {
-		if(mNevodChannel.tryRecv(tempBuffer)) {
-			handleNevodPackage(std::move(tempBuffer));
+		if(mNevodChannel.tryRecv(buffer)) {
+			handleNevodPackage(std::move(buffer));
 			break;
 		}
 	};

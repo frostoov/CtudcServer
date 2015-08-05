@@ -6,6 +6,9 @@
 
 #include <typeinfo>
 
+using std::cout;
+using std::endl;
+
 using nlohmann::json;
 using tdcdata::EdgeDetection;
 using tdcdata::Lsb;
@@ -49,6 +52,8 @@ DeviceManager::Procedures DeviceManager::createProcedures() {
 		{"stopRead",               [&](const Query & query) { return this->stopRead(query);} },
 		{"startFrequency",         [&](const Query & query) { return this->startFrequency(query);} },
 		{"stopFrequency",          [&](const Query & query) { return this->stopFrequency(query);} },
+		{"getTriggerFrequency",    [&](const Query & query) { return this->getTriggerFrequency(query);} },
+		{"getPackageFrequency",    [&](const Query & query) { return this->getPackageFrequency(query);} },
 	};
 }
 
@@ -276,9 +281,11 @@ DeviceManager::Response DeviceManager::startRead(const Query& query) {
 
 DeviceManager::Response DeviceManager::stopRead(const Query& query) {
 	auto status = false;
-	if( isReadManager(mProcess) ) {
+	if( isReadManager(mProcess) || isCtudcReadManager(mProcess) ) {
 		mProcess->stop();
+		cout << "DeviceManager::stoped" << endl;
 		mProcess.reset();
+		cout << "DeviceManager::reset" << endl;
 		status = true;
 	}
 	return {
@@ -319,7 +326,37 @@ DeviceManager::Response DeviceManager::stopFrequency(const Query& query) {
 	};
 }
 
-DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& query) {
+DeviceManager::Response DeviceManager::getTriggerFrequency(const Query &query) const {
+	double freq;
+	auto resposeStatus = false;
+	if(isCtudcReadManager(mProcess)) {
+		auto ctudcManager = dynamic_cast<CtudcReadManager*>(mProcess.get());
+		freq = ctudcManager->getTriggerFrequency();
+		resposeStatus = true;
+	}
+	return {
+		"getTriggerFrequency",
+		json::array({freq}),
+		resposeStatus
+	};
+}
+
+DeviceManager::Response DeviceManager::getPackageFrequency(const DeviceManager::Query &query) const {
+	double freq;
+	auto resposeStatus = false;
+	if(isCtudcReadManager(mProcess)) {
+		auto ctudcManager = dynamic_cast<CtudcReadManager*>(mProcess.get());
+		freq = ctudcManager->getPackageFrequency();
+		resposeStatus = true;
+	}
+	return {
+		"getPackageFrequency",
+		json::array({freq}),
+		resposeStatus
+	};
+}
+
+DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& query) const {
 	const string type = query.input.at(0);
 	const string dirName = query.input.at(1);
 	if(type == "simple")
@@ -334,18 +371,25 @@ DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& q
 		throw std::runtime_error("Invalid query");
 }
 
-bool DeviceManager::isReadManager(const ProcessManagerPtr& processManager) {
+bool DeviceManager::isReadManager(const ProcessManagerPtr& processManager) const {
 	if(!processManager) return false;
 	const auto& ref = *processManager.get();
 	auto& processType = typeid(ref);
-	return 	processType == typeid(ReadManager) || processType == typeid(CtudcReadManager);
+	return 	processType == typeid(ReadManager);
 }
 
-bool DeviceManager::isFreqManager(const ProcessManagerPtr& processManager) {
+bool DeviceManager::isFreqManager(const ProcessManagerPtr& processManager) const {
 	if(!processManager) return false;
 	const auto& ref = *processManager.get();
 	auto& processType = typeid(ref);
 	return 	processType == typeid(FrequencyManager);
+}
+
+bool DeviceManager::isCtudcReadManager(const ProcessManagerPtr& processManager) const {
+	if(!processManager) return false;
+	const auto& ref = *processManager.get();
+	auto& processType = typeid(ref);
+	return processType == typeid(CtudcReadManager);
 }
 
 json::array_t DeviceManager::convertFreq(const caen::TrekFrequency& freq) {
@@ -365,7 +409,9 @@ json::array_t DeviceManager::convertFreq(const caen::TrekFrequency& freq) {
 json::array_t DeviceManager::getProcessType(const ProcessManagerPtr& processManager) {
 	if(isReadManager(processManager)) {
 		return json::array({"read"});
-	} else if(isFreqManager(processManager)) {
+	} else if(isCtudcReadManager(processManager)){
+		return json::array({"ctudc"});
+	}else if(isFreqManager(processManager)) {
 		return json::array({"frequency"});
 	} else {
 		return json::array({"null"});

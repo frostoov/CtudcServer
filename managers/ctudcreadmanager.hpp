@@ -3,8 +3,6 @@
 
 #include <list>
 #include <tdcdata/ctudcrecord.hpp>
-#include <cppchannel/channel>
-
 
 #include "net/packagereciever.hpp"
 #include "readmanager.hpp"
@@ -20,6 +18,7 @@ class CtudcReadManager : public ReadManager {
 	using DecorPkgPtr     = std::unique_ptr<tdcdata::DecorPackage>;
 	using DataChannel     = Channel<std::vector<char>>;
 	using SystemClock     = std::chrono::high_resolution_clock;
+	using TimePoint       = SystemClock::time_point;
   public:
 	struct NetInfo {
 		std::string decorIP;
@@ -29,7 +28,11 @@ class CtudcReadManager : public ReadManager {
 	};
   public:
 	CtudcReadManager(ModulePtr module, const std::string& path, size_t eventNum,
-	                 const ChannelConfig& config, const NetInfo& netInfo);
+					 const ChannelConfig& config, const NetInfo& netInfo);
+	uintmax_t getTriggerCount() const;
+	uintmax_t getPackageCount() const;
+	double getTriggerFrequency() const;
+	double getPackageFrequency() const;
   protected:
 	bool init() override;
 	void shutDown() override;
@@ -47,14 +50,19 @@ class CtudcReadManager : public ReadManager {
 
   private:
 	void outputEvents();
-	PackageReciever mDecorReciever;
-	PackageReciever mNevodReciever;
+	PackageReceiver mDecorReciever;
+	PackageReceiver mNevodReciever;
 
 	DecorPkgPtr mDecorPackage;
 	NevodPkgPtr mNevodPackage;
 
 	DataChannel& mDecorChannel;
 	DataChannel& mNevodChannel;
+
+	uintmax_t mPackageCount;
+	uintmax_t mTriggerCount;
+
+	TimePoint mStartPoint;
 };
 
 } //caen

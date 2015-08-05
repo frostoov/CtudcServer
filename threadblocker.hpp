@@ -19,12 +19,12 @@ class ThreadBlocker {
 		if (mIsBlocked) return;
 		mIsBlocked = true;
 		Lock blockLock(mBlockMutex);
-		while (mIsBlocked) mBlockVar.wait(blockLock);
+		mBlockVar.wait(blockLock, [this](){return bool(mIsBlocked);});
 	}
 	void unblock() {
 		if (mIsBlocked) {
 			mIsBlocked = false;
-			mBlockVar.notify_one();
+			mBlockVar.notify_all();
 		}
 	}
 	bool isBlocked() const { return mIsBlocked; }

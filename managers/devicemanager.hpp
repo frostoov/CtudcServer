@@ -57,9 +57,13 @@ class DeviceManager {
 	Response startFrequency(const Query& query);
 	Response stopFrequency(const Query& query);
 
-	ProcessManagerPtr createReadManager(const Query& query);
-	bool isReadManager(const ProcessManagerPtr& mProcess);
-	bool isFreqManager(const ProcessManagerPtr& mProcess);
+	Response getTriggerFrequency(const Query& query) const;
+	Response getPackageFrequency(const Query& query) const;
+
+	ProcessManagerPtr createReadManager(const Query& query) const;
+	bool isReadManager(const ProcessManagerPtr& processManager) const;
+	bool isFreqManager(const ProcessManagerPtr& processManager) const;
+	bool isCtudcReadManager(const ProcessManagerPtr& processManager) const;
 	nlohmann::json::array_t convertFreq(const caen::TrekFrequency& freq);
 	nlohmann::json::array_t getProcessType(const ProcessManagerPtr& mProcess);
 	tdcdata::Settings createSettings(const Query& query);

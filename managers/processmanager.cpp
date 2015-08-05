@@ -9,10 +9,10 @@ ProcessManager::ProcessManager(ModulePtr module, const ChannelConfig& config)
 	  mConfig(config) { }
 
 bool ProcessManager::init() {
-	if( !mTdcModule || !mTdcModule->isInit() )
-		return false;
-	else
+	if( mTdcModule && mTdcModule->isInit() )
 		return true;
+	else
+		return false;
 }
 
 void ProcessManager::setBkpSettings(const tdcdata::Settings& settings) {
@@ -52,7 +52,7 @@ uint32_t ProcessManager::convertWord(uint32_t word) {
 		return word;
 	} else
 		throw std::runtime_error("ProcessManager::convertWord: no config for channel: " +
-		                         to_string(channel));
+								 to_string(channel));
 }
 
 WordVector& ProcessManager::convertEvent(WordVector& eventWords) {

@@ -16,6 +16,7 @@ using std::make_shared;
 using nlohmann::json;
 
 int main() {
+	std::ios_base::sync_with_stdio(false);
 	string address;
 	uint16_t port;
 	ifstream stream;

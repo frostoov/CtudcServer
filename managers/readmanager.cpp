@@ -25,7 +25,7 @@ using tdcdata::DataSetHeader;
 namespace caen {
 
 ReadManager::ReadManager(ModulePtr module, const string& dirName,
-                         size_t eventsPerFile, const ChannelConfig& channelConfig)
+						 size_t eventsPerFile, const ChannelConfig& channelConfig)
 	: ProcessManager(module, channelConfig),
 	  mEventCount(0),
 	  mFileCount(0),
@@ -52,7 +52,7 @@ bool ReadManager::init() {
 		mTdcModule->setTriggerMode(true);
 		if(mTdcModule->getSettings().getTriggerMode()) {
 			mTdcModule->softwareClear();
-			return ProcessManager::start();
+			return true;
 		} else {
 			returnSettings();
 			return false;

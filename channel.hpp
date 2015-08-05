@@ -34,59 +34,71 @@ class Channel {
 	bool isOpen() const {return mState == _State::open;}
 
 	bool sending() const {return mSendFlag == _Flag::waiting && isOpen();}
-	bool receiving() const {return mRecvFlag == _Flag::Waiting && isOpen();}
+	bool receiving() const {return mRecvFlag == _Flag::waiting && isOpen();}
 
 	void close() {
 		if(mState == _State::open) {
+			mMutex.lock();
 			mState = _State::close;
 			mBlocker.unblock();
+			mMutex.unlock();
 		}
 	}
 
+	bool isBlocked() const { return mBlocker.isBlocked(); }
 
 	bool trySend(const Object& object) {
-		if(!isOpen() || mRecvFlag != _Flag::waiting)
+		if(isOpen() && mRecvFlag == _Flag::waiting && mBlocker.isBlocked()) {
+			send(object);
+			return true;
+		} else
 			return false;
-		send(std::move(object));
-		return true;
 	}
 
 	bool tryRecv(Object& object) {
-		if(!isOpen() || mSendFlag != _Flag::waiting)
+		if(isOpen() && mSendFlag == _Flag::waiting && mBlocker.isBlocked())
+			return recv(object);
+		else
 			return false;
-		return recv(object);
+
 	}
 
 	void send(const Object& object) {
+		if(!isOpen()) return;
 		Lock lock(mSendMutex);
-		checkOpen();
+		mMutex.lock();
 		mObject = std::move(object);
 		mHasObject = true;
 		mSendFlag = _Flag::waiting;
-		if(mRecvFlag == _Flag::empty)
+
+		if(mRecvFlag == _Flag::empty && isOpen()) {
+			mMutex.unlock();
 			mBlocker.block();
-		else if(mRecvFlag == _Flag::waiting)
+		}
+		else if(mRecvFlag == _Flag::waiting) {
 			mBlocker.unblock();
+			mMutex.unlock();
+		}
 		mSendFlag = _Flag::empty;
 	}
 	bool recv(Object& object) {
+		if(!isOpen()) return false;
 		Lock lock(mRecvMutex);
-		checkOpen();
+		mMutex.lock();
 		mRecvFlag = _Flag::waiting;
-		if(mSendFlag == _Flag::empty)
+
+		if(mSendFlag == _Flag::empty && isOpen()) {
+			mMutex.unlock();
 			mBlocker.block();
-		else if(mSendFlag == _Flag::waiting)
+		} else if(mSendFlag == _Flag::waiting) {
 			mBlocker.unblock();
+			mMutex.unlock();
+		}
 		mRecvFlag = _Flag::empty;
 		bool success = mHasObject;
 		object = std::move(mObject);
+		mHasObject = false;
 		return success;
-	}
-
-  protected:
-	void checkOpen() {
-		if(mState == _State::close)
-			throw std::runtime_error("Channel: channel is closed");
 	}
 
   private:
@@ -94,8 +106,9 @@ class Channel {
 	State  mState;
 	Flag   mSendFlag;
 	Flag   mRecvFlag;
-	Mutex  mSendMutex;
+	Mutex  mMutex;
 	Mutex  mRecvMutex;
+	Mutex  mSendMutex;
 
 	ThreadBlocker mBlocker;
 	std::atomic_bool mHasObject;

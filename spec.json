@@ -123,6 +123,18 @@
 {
 	"procedure" : "getProcess",
 	"output" : [
-		"process name" /*string: [null], [read],[frequency]*/
+		"process name" /*string: [null], [read], [ctudc], [frequency]*/
+	]
+}
+{
+	"procedure" : "getTriggerFrequency",
+	"output" : [
+		1.1 /*double: Trigger frequency**/
+	]
+}
+{
+	"procedure" : "getPackageFrequency",
+	"output" : [
+		1.1 /*double: Package frequency**/
 	]
 }
