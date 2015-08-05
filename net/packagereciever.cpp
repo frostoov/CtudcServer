@@ -37,7 +37,7 @@ bool PackageReciever::start() {
 void PackageReciever::stop() {
 	if(mIsActive == true) {
 		mIsActive = false;
-		mStopChannel.send(true);
+		cpp::select().recv(mDataChannel,[this](const ByteVector&){}).try_once();
 		mIoService.stop();
 		leaveMulticastGroup(mMulticastAddress);
 		mIoService.reset();
@@ -60,11 +60,9 @@ void PackageReciever::doReceive() {
 		if(!error && mIsActive) {
 			cpp::select select;
 			mBuffer.resize(size);
-			select.send_only(mDataChannel, mBuffer);
-			select.recv(mStopChannel, [this](bool) {});
-			select.wait();
+			mDataChannel.send(mBuffer);
 		}
-		if(!mIsActive) {
+		if(mIsActive) {
 			mBuffer.resize(mBufferSize);
 			doReceive();
 		}

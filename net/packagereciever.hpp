@@ -45,8 +45,6 @@ class PackageReciever {
 	static const size_t mBufferSize = 65527;
 
 	DataChannel mDataChannel;
-	StopChannel mStopChannel;
-
 
 	volatile bool mIsActive;
 };

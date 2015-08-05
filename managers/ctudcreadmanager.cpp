@@ -25,7 +25,7 @@ using tdcdata::NevodPackage;
 namespace caen {
 
 CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t eventNum,
-                                   const ChannelConfig& config,  const NetInfo& netInfo)
+								   const ChannelConfig& config,  const NetInfo& netInfo)
 	: ReadManager(module, path, eventNum, config),
 	  mDecorReciever(netInfo.decorIP, netInfo.decorPort),
 	  mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
@@ -111,7 +111,7 @@ void CtudcReadManager::waitForDecorPackage() {
 		select.recv(mDecorChannel, [this](ByteVector data) {
 			handleDecorPackage(data);
 		});
-		if(select.try_once() || isActive())
+		if(select.try_once() || !isActive())
 			break;
 	}
 }
