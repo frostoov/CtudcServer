@@ -18,7 +18,7 @@ class CtudcReadManager : public ReadManager {
 	using ByteVector      = std::vector<char>;
 	using NevodPkgPtr     = std::unique_ptr<tdcdata::NevodPackage>;
 	using DecorPkgPtr     = std::unique_ptr<tdcdata::DecorPackage>;
-	using DataChannel     = cpp::ichannel<std::vector<char>>;
+	using DataChannel     = Channel<std::vector<char>>;
 	using SystemClock     = std::chrono::high_resolution_clock;
   public:
 	struct NetInfo {
@@ -37,8 +37,8 @@ class CtudcReadManager : public ReadManager {
 
 	void handleDataPackages(WordVector& tdcData);
 
-	void handleDecorPackage(ByteVector& buffer);
-	void handleNevodPackage(ByteVector& buffer);
+	void handleDecorPackage(ByteVector&& buffer);
+	void handleNevodPackage(ByteVector&& buffer);
 
 	void waitForDecorPackage();
 	void waitForNevodPackage(SystemClock::time_point startTime);
@@ -53,8 +53,8 @@ class CtudcReadManager : public ReadManager {
 	DecorPkgPtr mDecorPackage;
 	NevodPkgPtr mNevodPackage;
 
-	DataChannel mDecorChannel;
-	DataChannel mNevodChannel;
+	DataChannel& mDecorChannel;
+	DataChannel& mNevodChannel;
 };
 
 } //caen

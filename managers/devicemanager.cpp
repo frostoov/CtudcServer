@@ -11,7 +11,7 @@ using tdcdata::EdgeDetection;
 using tdcdata::Lsb;
 
 using std::string;
-using std::make_shared;
+using std::make_unique;
 using std::chrono::microseconds;
 
 using caen::ReadManager;
@@ -19,7 +19,7 @@ using caen::CtudcReadManager;
 using caen::FrequencyManager;
 
 DeviceManager::DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig)
-	: mDevice(make_shared<caen::Module>(vmeAddress)),
+	: mDevice(make_unique<caen::Module>(vmeAddress)),
 	  mChannelConfig(channelConfig),
 	  mProcedures(createProcedures()) { }
 
@@ -83,19 +83,16 @@ DeviceManager::Response DeviceManager::init(const Query& query) {
 	return {
 		"init",
 		json::array(),
-		mDevice->initialize(),
+		mProcess ? false : mDevice->initialize(),
 	};
 }
 
 DeviceManager::Response DeviceManager::close(const Query& query) {
-	Response response {
+	return {
 		"close",
 		json::array(),
-		false,
+		mProcess ? false : mDevice->close(),
 	};
-	if(!mProcessManager)
-		response.status = mDevice->close();
-	return response;
 }
 
 DeviceManager::Response DeviceManager::isInit(const Query& query) {
@@ -131,7 +128,6 @@ DeviceManager::Response DeviceManager::getSettings(const Query& query) {
 	return {
 		"getSettings",
 		{
-
 			settings.getTriggerMode(),
 			settings.getTriggerSubtraction(),
 			settings.getTdcMeta(),
@@ -153,30 +149,16 @@ DeviceManager::Response DeviceManager::updateSettings(const Query& query) {
 	return {
 		"updateSettings",
 		json::array(),
-		mDevice->updateSettings(),
+		mProcess ? false : mDevice->updateSettings(),
 	};
 }
 
 DeviceManager::Response DeviceManager::setSettings(const Query& query) {
-	tdcdata::Settings settings;
-	const auto& input = query.input;
-	settings.setTriggerMode( input.at(0) );
-	settings.setTriggerSubtraction( input.at(1) );
-	settings.setTdcMeta( input.at(2) );
-	settings.setWindowWidth( input.at(3) );
-	settings.setWindowOffset( input.at(4) );
-	uint16_t lsb = input.at(5);
-	settings.setEdgeDetection( static_cast<EdgeDetection>(lsb) );
-	uint16_t edgeDetection = input.at(5);
-	settings.setLsb( static_cast<Lsb>(edgeDetection) );
-	settings.setAlmostFull( input.at(7) );
-	settings.setControlRegister( input.at(8) );
-	settings.setDeadTime(input.at(9));
-	settings.setEventBLT(input.at(10));
+	auto settings  = createSettings(query);
 	return {
 		"setSettings",
 		json::array(),
-		mDevice->setSettings(settings),
+		mProcess ? false : mDevice->setSettings(settings),
 	};
 }
 
@@ -184,7 +166,7 @@ DeviceManager::Response DeviceManager::setTriggerMode(const Query& query) {
 	return {
 		"setTriggerMode",
 		json::array(),
-		mDevice->setTriggerMode(query.input.front()),
+		mProcess ? false : mDevice->setTriggerMode(query.input.front()),
 	};
 }
 
@@ -192,7 +174,7 @@ DeviceManager::Response DeviceManager::setTriggerSubtraction(const Query& query)
 	return {
 		"setTriggerSubtraction",
 		json::array(),
-		mDevice->setTriggerSubtraction(query.input.front()),
+		mProcess ? false : mDevice->setTriggerSubtraction(query.input.front()),
 	};
 }
 
@@ -200,7 +182,7 @@ DeviceManager::Response DeviceManager::setTdcMeta(const Query& query) {
 	return {
 		"setTdcMeta",
 		json::array(),
-		mDevice->setTdcMeta(query.input.front()),
+		mProcess ? false : mDevice->setTdcMeta(query.input.front()),
 	};
 }
 
@@ -208,7 +190,7 @@ DeviceManager::Response DeviceManager::setWindowWidth(const Query& query) {
 	return {
 		"setWindowWidth",
 		json::array(),
-		mDevice->setWindowWidth(query.input.front()),
+		mProcess ? false : mDevice->setWindowWidth(query.input.front()),
 	};
 }
 
@@ -216,7 +198,7 @@ DeviceManager::Response DeviceManager::setWindowOffset(const Query& query) {
 	return {
 		"setWindowOffset",
 		json::array(),
-		mDevice->setWindowOffset(query.input.front()),
+		mProcess ? false : mDevice->setWindowOffset(query.input.front()),
 	};
 }
 
@@ -225,7 +207,7 @@ DeviceManager::Response DeviceManager::setEdgeDetection(const Query& query) {
 	return {
 		"setEdgeDetection",
 		json::array(),
-		mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
+		mProcess ? false : mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
 	};
 }
 
@@ -234,7 +216,7 @@ DeviceManager::Response DeviceManager::setLsb(const Query& query) {
 	return {
 		"setLsb",
 		json::array(),
-		mDevice->setLsb(static_cast<Lsb>(lsb)),
+		mProcess ? false : mDevice->setLsb(static_cast<Lsb>(lsb)),
 	};
 }
 
@@ -242,7 +224,7 @@ DeviceManager::Response DeviceManager::setAlmostFull(const Query& query) {
 	return {
 		"setAlmostFull",
 		json::array(),
-		mDevice->setAlmostFull(query.input.front()),
+		mProcess ? false : mDevice->setAlmostFull(query.input.front()),
 	};
 }
 
@@ -250,7 +232,7 @@ DeviceManager::Response DeviceManager::setControl(const Query& query) {
 	return {
 		"setControl",
 		json::array(),
-		mDevice->setControl(query.input.front()),
+		mProcess ? false : mDevice->setControl(query.input.front()),
 	};
 }
 
@@ -258,7 +240,7 @@ DeviceManager::Response DeviceManager::setDeadTime(const Query& query) {
 	return {
 		"setDeadTime",
 		json::array(),
-		mDevice->setDeadTime(query.input.front()),
+		mProcess ? false : mDevice->setDeadTime(query.input.front()),
 	};
 }
 
@@ -266,66 +248,68 @@ DeviceManager::Response DeviceManager::setEventBLT(const Query& query) {
 	return {
 		"setEventBLT",
 		json::array(),
-		mDevice->setEventBLT(query.input.front()),
+		mProcess ? false : mDevice->setEventBLT(query.input.front()),
 	};
 }
 
 DeviceManager::Response DeviceManager::getProcess(const Query& query) {
 	return {
 		"getProcess",
-		getProcessType(mProcessManager),
-		true
+		getProcessType(mProcess),
+		mProcess ? false : true
 	};
 }
 
-DeviceManager::Response DeviceManager::startRead(const DeviceManager::Query& query) {
-	Response response = {
+DeviceManager::Response DeviceManager::startRead(const Query& query) {
+	auto status = false;
+	if(!mProcess) {
+		mProcess = createReadManager(query);
+		status = mProcess->start();
+		if(!status) mProcess.reset();
+	}
+	return {
 		"startRead",
 		json::array(),
-		false
+		status,
 	};
-	if(!mProcessManager) {
-		mProcessManager = createReadManager(query);
-		response.status = mProcessManager->start();
-	}
-	return response;
 }
 
-DeviceManager::Response DeviceManager::stopRead(const DeviceManager::Query& query) {
-	Response response = {
+DeviceManager::Response DeviceManager::stopRead(const Query& query) {
+	auto status = false;
+	if( isReadManager(mProcess) ) {
+		mProcess->stop();
+		mProcess.reset();
+		status = true;
+	}
+	return {
 		"stopRead",
 		json::array(),
-		false
+		status
 	};
-	if( isReadManager(mProcessManager) ) {
-		mProcessManager->stop();
-		mProcessManager.reset();
-		response.status = true;
-	}
-	return response;
 }
 
 DeviceManager::Response DeviceManager::startFrequency(const Query& query) {
-	Response response = {
+	auto status = false;
+	if(!mProcess) {
+		mProcess = make_unique<FrequencyManager>(mDevice, mChannelConfig, microseconds(100));
+		status = mProcess->start();
+		if(!status) mProcess.reset();
+	}
+	return {
 		"startFrequency",
 		json::array(),
-		false
+		status
 	};
-	if(!mProcessManager) {
-		mProcessManager = make_shared<FrequencyManager>(mDevice, mChannelConfig, microseconds(100));
-		response.status = mProcessManager->start();
-	}
-	return response;
 }
 
 DeviceManager::Response DeviceManager::stopFrequency(const Query& query) {
 	auto responseStatus = false;
 	caen::TrekFrequency trekFreq;
-	if(isFreqManager(mProcessManager)) {
-		mProcessManager->stop();
-		auto freqManager = dynamic_cast<FrequencyManager*>(mProcessManager.get());
+	if(isFreqManager(mProcess)) {
+		mProcess->stop();
+		auto freqManager = dynamic_cast<FrequencyManager*>(mProcess.get());
 		trekFreq = freqManager->getFrequency();
-		mProcessManager.reset();
+		mProcess.reset();
 		responseStatus = true;
 	}
 	return {
@@ -339,13 +323,13 @@ DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& q
 	const string type = query.input.at(0);
 	const string dirName = query.input.at(1);
 	if(type == "simple")
-		return make_shared<ReadManager>(mDevice, dirName, 10000, mChannelConfig);
+		return make_unique<ReadManager>(mDevice, dirName, 10000, mChannelConfig);
 	else if (type == "ctudc") {
 		caen::CtudcReadManager::NetInfo netInfo{
 			"234.5.9.60", 25960,
 			"234.5.9.63", 25963,
 		};
-		return make_shared<CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
+		return make_unique<CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
 	} else
 		throw std::runtime_error("Invalid query");
 }
@@ -386,5 +370,24 @@ json::array_t DeviceManager::getProcessType(const ProcessManagerPtr& processMana
 	} else {
 		return json::array({"null"});
 	}
+}
+
+tdcdata::Settings DeviceManager::createSettings(const Query& query) {
+	tdcdata::Settings settings;
+	const auto& input = query.input;
+	settings.setTriggerMode( input.at(0) );
+	settings.setTriggerSubtraction( input.at(1) );
+	settings.setTdcMeta( input.at(2) );
+	settings.setWindowWidth( input.at(3) );
+	settings.setWindowOffset( input.at(4) );
+	uint16_t lsb = input.at(5);
+	settings.setEdgeDetection( static_cast<EdgeDetection>(lsb) );
+	uint16_t edgeDetection = input.at(5);
+	settings.setLsb( static_cast<Lsb>(edgeDetection) );
+	settings.setAlmostFull( input.at(7) );
+	settings.setControlRegister( input.at(8) );
+	settings.setDeadTime(input.at(9));
+	settings.setEventBLT(input.at(10));
+	return settings;
 }
 

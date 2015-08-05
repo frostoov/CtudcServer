@@ -7,13 +7,13 @@
 
 #include <tdcdata/structs.hpp>
 
-#include "cppchannel/channel"
+#include "channel.hpp"
 
 class PackageReciever {
 	using ByteVector  = std::vector<char>;
 	using ThreadPtr   = std::unique_ptr<std::thread>;
-	using StopChannel = cpp::channel<bool>;
-	using DataChannel = cpp::channel<std::vector<char>>;
+	using StopChannel = Channel<bool>;
+	using DataChannel = Channel<std::vector<char>>;
 	using UDP       = boost::asio::ip::udp;
 	using Endpoint  = UDP::endpoint;
 	using UdpSocket = boost::asio::ip::udp::socket;
@@ -28,7 +28,7 @@ class PackageReciever {
 	void stop();
 	void clearCallback();
 	bool isActive() const;
-	DataChannel getDataChannel() const;
+	DataChannel& getDataChannel();
   protected:
 	void doReceive();
 	void joinMulticastGroup(const IpAddress& multicastAddress);

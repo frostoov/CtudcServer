@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <memory>
+#include <atomic>
 
 #include "threadblocker.hpp"
 
@@ -28,8 +29,7 @@ class ThreadManager {
   private:
 	void workerLoop();
 	ThreadPtr mThread;
-
-	volatile bool mIsActive;
+	std::atomic<bool> mIsActive;
 };
 
 #endif // THREADMANAGER_HPP

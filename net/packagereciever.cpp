@@ -37,7 +37,7 @@ bool PackageReciever::start() {
 void PackageReciever::stop() {
 	if(mIsActive == true) {
 		mIsActive = false;
-		cpp::select().recv(mDataChannel,[this](const ByteVector&){}).try_once();
+		mDataChannel.close();
 		mIoService.stop();
 		leaveMulticastGroup(mMulticastAddress);
 		mIoService.reset();
@@ -50,7 +50,7 @@ bool PackageReciever::isActive() const {
 	return mIsActive;
 }
 
-PackageReciever::DataChannel PackageReciever::getDataChannel() const {
+PackageReciever::DataChannel& PackageReciever::getDataChannel() {
 	return mDataChannel;
 }
 
@@ -58,9 +58,9 @@ void PackageReciever::doReceive() {
 	mSocket.async_receive_from(boost::asio::buffer(mBuffer), mEndpoint,
 	[&, this](const error_code & error, size_t size) {
 		if(!error && mIsActive) {
-			cpp::select select;
 			mBuffer.resize(size);
-			mDataChannel.send(mBuffer);
+			if(mDataChannel.isOpen())
+				mDataChannel.send(mBuffer);
 		}
 		if(mIsActive) {
 			mBuffer.resize(mBufferSize);

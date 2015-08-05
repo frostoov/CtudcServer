@@ -10,7 +10,7 @@
 
 class DeviceManager {
 	using DevicePtr = std::shared_ptr<caen::Module>;
-	using ProcessManagerPtr = std::shared_ptr<caen::ProcessManager>;
+	using ProcessManagerPtr = std::unique_ptr<caen::ProcessManager>;
 	struct Query {
 		nlohmann::json::string_t  procedure;
 		nlohmann::json::array_t   input;
@@ -58,14 +58,15 @@ class DeviceManager {
 	Response stopFrequency(const Query& query);
 
 	ProcessManagerPtr createReadManager(const Query& query);
-	bool isReadManager(const ProcessManagerPtr& mProcessManager);
-	bool isFreqManager(const ProcessManagerPtr& mProcessManager);
+	bool isReadManager(const ProcessManagerPtr& mProcess);
+	bool isFreqManager(const ProcessManagerPtr& mProcess);
 	nlohmann::json::array_t convertFreq(const caen::TrekFrequency& freq);
-	nlohmann::json::array_t getProcessType(const ProcessManagerPtr& mProcessManager);
+	nlohmann::json::array_t getProcessType(const ProcessManagerPtr& mProcess);
+	tdcdata::Settings createSettings(const Query& query);
 
   private:
 	DevicePtr mDevice;
-	ProcessManagerPtr mProcessManager;
+	ProcessManagerPtr mProcess;
 	caen::ChannelConfig mChannelConfig;
 	size_t eventsPerFile;
 

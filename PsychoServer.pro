@@ -42,7 +42,8 @@ HEADERS += \
 	net/session.hpp \
 	observer/observer.hpp \
 	threadblocker.hpp \
-	managers/threadmanager.hpp
+	managers/threadmanager.hpp \
+    channel.hpp
 
 SOURCES += \
 	caen/tdcmodule.cpp \

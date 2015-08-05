@@ -1,100 +1,102 @@
-{"procedure" : "init"}
-{"procedure" : "close"}
+{"procedure" : "init"}  /*init tdc device*/ 
+{"procedure" : "close"} /*close tdc device*/
 {
 	"procedure" : "isInit",
-	"output" : [true]
+	"output" : [true] /*bool*/
 }
 {
 	"procedure" : "getSettings",
 	"output" : [
-		true,	/*TriggerMode*/
-		true,	/*TriggerSubtraction*/
-		true,	/*TdcMeta*/
-		0,		/*WindowWidth*/
-		1,		/*WindowOffset*/
-		2,		/*EdgeDetection*/
-		3,		/*Lsb*/
-		4,		/*AlmostFull*/
-		5,		/*Control*/
-		6,		/*status*/
-		7,		/*DeadTime*/
-		8		/*EventBLT*/
+		true,	/*TriggerMode: bool */
+		true,	/*TriggerSubtraction: bool*/
+		true,	/*TdcMeta: bool*/
+		0,		/*WindowWidth: uint*/
+		1,		/*WindowOffset: int*/
+		2,		/*EdgeDetection: uint*/
+		3,		/*Lsb: uint*/
+		4,		/*AlmostFull: uint*/
+		5,		/*Control: uint*/
+		6,		/*Status: uint*/
+		7,		/*DeadTime: uint*/
+		8		/*EventBLT: uint*/
 	]
 }
 {
 	"procedure" : "setSettings",
 	"input" : [
-		true,	/*TriggerMode*/
-		true,	/*TriggerSubtraction*/
-		true,	/*TdcMeta*/
-		0,		/*WindowWidth*/
-		0,		/*WindowOffset*/
-		0,		/*EdgeDetection*/
-		0,		/*Lsb*/
-		0,		/*AlmostFull*/
-		0,		/*Control*/
-		0,		/*DeadTime*/
-		0		/*EventBLT*/
+		true,	/*TriggerMode: bool*/
+		true,	/*TriggerSubtraction: bool*/
+		true,	/*TdcMeta: bool*/
+		0,		/*WindowWidth: uint*/
+		0,		/*WindowOffset: int*/
+		0,		/*EdgeDetection: uint*/
+		0,		/*Lsb: uint*/
+		0,		/*AlmostFull: uint*/
+		0,		/*Control: uint*/
+		0,		/*DeadTime: uint*/
+		0		/*EventBLT: uint*/
 	]
 
 }
-{ "procedure" : "updateSettings", }
+{ 
+	"procedure" : "updateSettings" /*Read and update TDC settings*/
+} 
 {
-	"procedure" : "getLog",
-	"output" : ["log"],
+	"procedure" : "getLog", /*Get TDC log*/
+	"output" : ["log"] /*string*/
 }
 {
-	"procedure" : "setLog",
-	"input" : [true],
+	"procedure" : "setLog", /*Set TDC log off/on*/
+	"input" : [true] /*bool*/
 }
 {
-	"procedure" : "setTriggerMode",
-	"input" : [0]
+	"procedure" : "setTriggerMode", /*Set trigger/continious mode*/
+	"input" : [true] /*bool: [true:trigger], [false:continious]*/
 }
 {
 	"procedure" : "setTriggerSubtraction",
-	"input" : [0]
+	"input" : [true] /*bool*/
 }
 {
 	"procedure" : "setTdcMeta",
-	"input" : [0]
+	"input" : [true] /*bool*/
 }
 {
 	"procedure" : "setWindowWidth",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setWindowOffset",
-	"input" : [0]
+	"input" : [0] /*int*/
 }
 {
 	"procedure" : "setEdgeDetection",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setLsb",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setAlmostFull",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setControl",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setDeadTime",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "setEventBLT",
-	"input" : [0]
+	"input" : [0] /*uint*/
 }
 {
 	"procedure" : "startRead",
 	"input" : [
-		"type",  /*simple | nevod*/
+		"type",  /*string: [simple], [ctudc]*/
 		"dirPath"
 	], 
 }
@@ -108,8 +110,8 @@
 	"procedure" : "stopFrequency",
 	"output"    : [
 		{
-			"chamber" : 0,
-			"frequency" : [0, 1, 2, 3]
+			"chamber" : 0, /*Number of chamber*/
+			"frequency" : [0, 1, 2, 3] /*Frequencies of each wire in chamber*/
 		},
 		{
 			"chamber" : 1,
@@ -121,6 +123,6 @@
 {
 	"procedure" : "getProcess",
 	"output" : [
-		"process name" /*null | read | frequency*/
+		"process name" /*string: [null], [read],[frequency]*/
 	]
 }

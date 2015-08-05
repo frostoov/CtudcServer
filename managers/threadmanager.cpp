@@ -1,5 +1,6 @@
 #include "threadmanager.hpp"
 
+
 using std::make_unique;
 using std::thread;
 
@@ -24,8 +25,8 @@ bool ThreadManager::start() {
 
 void ThreadManager::stop() {
 	if(mThread) {
-		shutDown();
 		mIsActive = false;
+		shutDown();
 		mThread->join();
 		mThread.reset();
 		flush();

@@ -1,34 +1,38 @@
 #ifndef THREADBLOCKER_H
 #define THREADBLOCKER_H
 
-#include <thread>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <atomic>
+#include <thread>
 
 class ThreadBlocker {
+	using ThreadId = std::thread::id;
+	using Mutex = std::mutex;
+	using Lock = std::unique_lock<Mutex>;
+	using ConditionVar = std::condition_variable;
   public:
 	ThreadBlocker() : mIsBlocked(false) {}
 	~ThreadBlocker() {unblock();}
 	void block() {
-		std::unique_lock<std::mutex> syncLocker(mSyncMutex);
+		Lock syncLock(mSyncMutex);
 		if (mIsBlocked) return;
 		mIsBlocked = true;
-		std::unique_lock<std::mutex> blokcLocker(mBlockMutex);
-		while (mIsBlocked) mBlocker.wait(blokcLocker);
+		Lock blockLock(mBlockMutex);
+		while (mIsBlocked) mBlockVar.wait(blockLock);
 	}
 	void unblock() {
-		std::unique_lock<std::mutex> syncLocker(mSyncMutex);
 		if (mIsBlocked) {
 			mIsBlocked = false;
-			mBlocker.notify_one();
+			mBlockVar.notify_one();
 		}
 	}
 	bool isBlocked() const { return mIsBlocked; }
   private:
-	std::mutex mBlockMutex;
-	std::mutex mSyncMutex;
-	std::condition_variable mBlocker;
-	volatile bool mIsBlocked;
+	Mutex mBlockMutex;
+	Mutex mSyncMutex;
+	ConditionVar mBlockVar;
+	std::atomic<bool> mIsBlocked;
 };
 
 #endif  // THREADBLOCKER_H

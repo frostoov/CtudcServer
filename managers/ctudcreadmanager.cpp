@@ -25,7 +25,7 @@ using tdcdata::NevodPackage;
 namespace caen {
 
 CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t eventNum,
-								   const ChannelConfig& config,  const NetInfo& netInfo)
+                                   const ChannelConfig& config,  const NetInfo& netInfo)
 	: ReadManager(module, path, eventNum, config),
 	  mDecorReciever(netInfo.decorIP, netInfo.decorPort),
 	  mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
@@ -87,7 +87,7 @@ void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
 	writeCtudcRecord(record);
 }
 
-void CtudcReadManager::handleDecorPackage(ByteVector& buffer) {
+void CtudcReadManager::handleDecorPackage(ByteVector&& buffer) {
 	if(verifyDecorPackage(buffer.data(), buffer.size())) {
 		mDecorPackage = make_unique<DecorPackage>();
 		membuf  tempBuffer(buffer.data(), buffer.size());
@@ -96,7 +96,7 @@ void CtudcReadManager::handleDecorPackage(ByteVector& buffer) {
 	}
 }
 
-void CtudcReadManager::handleNevodPackage(ByteVector& buffer) {
+void CtudcReadManager::handleNevodPackage(ByteVector&& buffer) {
 	if(verifyNevodPackage(buffer.data(), buffer.size())) {
 		mNevodPackage = make_unique<NevodPackage>();
 		membuf tempBuffer(buffer.data(), buffer.size());
@@ -106,25 +106,23 @@ void CtudcReadManager::handleNevodPackage(ByteVector& buffer) {
 }
 
 void CtudcReadManager::waitForDecorPackage() {
-	while(true) {
-		cpp::select select;
-		select.recv(mDecorChannel, [this](ByteVector data) {
-			handleDecorPackage(data);
-		});
-		if(select.try_once() || !isActive())
-			break;
+	if(mDecorChannel.isOpen()) {
+		ByteVector data;
+		if(mDecorChannel.recv(data))
+			handleDecorPackage(std::move(data));
 	}
 }
 
 void CtudcReadManager::waitForNevodPackage(SystemClock::time_point startTime) {
+	if(!mNevodChannel.isOpen())
+		return;
 	milliseconds awaitTime(5);
+	ByteVector tempBuffer;
 	while(SystemClock::now() - startTime < awaitTime) {
-		cpp::select select;
-		select.recv(mNevodChannel, [this](ByteVector data) {
-			handleNevodPackage(data);
-		});
-		if(select.try_once())
+		if(mNevodChannel.tryRecv(tempBuffer)) {
+			handleNevodPackage(std::move(tempBuffer));
 			break;
+		}
 	};
 }
 
