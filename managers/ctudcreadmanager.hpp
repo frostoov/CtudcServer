@@ -15,14 +15,11 @@ class CtudcReadManager : public ReadManager {
   protected:
 	using ByteVector      = std::vector<char>;
 	using NevodPkgPtr     = std::unique_ptr<tdcdata::NevodPackage>;
-	using DecorPkgPtr     = std::unique_ptr<tdcdata::DecorPackage>;
 	using DataChannel     = Channel<std::vector<char>>;
 	using SystemClock     = std::chrono::high_resolution_clock;
 	using TimePoint       = SystemClock::time_point;
   public:
 	struct NetInfo {
-		std::string decorIP;
-		uint16_t    decorPort;
 		std::string nevodIP;
 		uint16_t    nevodPort;
 	};
@@ -40,23 +37,15 @@ class CtudcReadManager : public ReadManager {
 
 	void handleDataPackages(WordVector& tdcData);
 
-	void handleDecorPackage(ByteVector&& buffer);
 	void handleNevodPackage(ByteVector&& buffer);
 
-	void waitForDecorPackage();
-	void waitForNevodPackage(SystemClock::time_point startTime);
+	void waitForNevodPackage();
 
 	void writeCtudcRecord(const tdcdata::CtudcRecord& record);
 
   private:
-	void outputEvents();
-	PackageReceiver mDecorReciever;
 	PackageReceiver mNevodReciever;
-
-	DecorPkgPtr mDecorPackage;
 	NevodPkgPtr mNevodPackage;
-
-	DataChannel& mDecorChannel;
 	DataChannel& mNevodChannel;
 
 	uintmax_t mPackageCount;

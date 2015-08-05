@@ -327,7 +327,7 @@ DeviceManager::Response DeviceManager::stopFrequency(const Query& query) {
 }
 
 DeviceManager::Response DeviceManager::getTriggerFrequency(const Query &query) const {
-	double freq;
+	double freq = -1;
 	auto resposeStatus = false;
 	if(isCtudcReadManager(mProcess)) {
 		auto ctudcManager = dynamic_cast<CtudcReadManager*>(mProcess.get());
@@ -342,7 +342,7 @@ DeviceManager::Response DeviceManager::getTriggerFrequency(const Query &query) c
 }
 
 DeviceManager::Response DeviceManager::getPackageFrequency(const DeviceManager::Query &query) const {
-	double freq;
+	double freq = -1;
 	auto resposeStatus = false;
 	if(isCtudcReadManager(mProcess)) {
 		auto ctudcManager = dynamic_cast<CtudcReadManager*>(mProcess.get());
@@ -363,7 +363,6 @@ DeviceManager::ProcessManagerPtr DeviceManager::createReadManager(const Query& q
 		return make_unique<ReadManager>(mDevice, dirName, 10000, mChannelConfig);
 	else if (type == "ctudc") {
 		caen::CtudcReadManager::NetInfo netInfo{
-			"234.5.9.60", 25960,
 			"234.5.9.63", 25963,
 		};
 		return make_unique<CtudcReadManager>(mDevice, dirName, 10000, mChannelConfig, netInfo);
