@@ -48,9 +48,8 @@ int main() {
 	auto deviceManager = make_shared<DeviceManager>(0xEE00, channelParser.getConfig());
 	Server server(deviceManager, address, port);
 	server.start();
-	while(true) {
+	while(true)
 		cin.ignore();
-	}
 	return 0;
 }
 

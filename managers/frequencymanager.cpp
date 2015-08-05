@@ -1,42 +1,47 @@
 #include "frequencymanager.hpp"
 
-using cpp::Select;
 
 namespace caen {
 
 FrequencyManager::FrequencyManager(ModulePtr module, const ChannelConfig& config,
-								   const Microseconds& time)
+                                   const Microseconds& time)
 	: ProcessManager(module, config),
 	  mDataValid(false),
 	  mTotalMsrTime(Microseconds::zero()),
 	  mMsrTime(time) {}
 
-bool FrequencyManager::start() {
-	mFrequency.clear();
-	setBkpSettings(mTdcModule->getSettings());
-	mTdcModule->setTriggerMode(false);
-	if(!mTdcModule->getSettings().getTriggerMode())
-		return ProcessManager::start();
-	else {
-		returnSettings();
+bool FrequencyManager::init() {
+	if(!ProcessManager::init())
 		return false;
+	else {
+		mBuffer.clear();
+		mFrequency.clear();
+		setBkpSettings(mTdcModule->getSettings());
+		mTdcModule->setTriggerMode(false);
+		if(!mTdcModule->getSettings().getTriggerMode()) {
+			mTotalMsrTime = Microseconds::zero();
+			mDataValid = false;
+			return ProcessManager::start();
+		} else {
+			returnSettings();
+			return false;
+		}
 	}
 }
 
-void FrequencyManager::workerLoop() {
-	mDataValid = false;
-	WordVector buff;
+void FrequencyManager::shutDown() { }
 
-	mTotalMsrTime = Microseconds::zero();
-	while (isActive()) {
-		measureFrequency(buff, mMsrTime);
-		Select().recv(mStopChannel, [this](bool) {
-			calculateFrequency(getTotalTime());
-			mDataValid = true;
-			returnSettings();
-			setActive(false);
-		});
-	}
+void FrequencyManager::flush() {
+	calculateFrequency(getTotalTime());
+	mDataValid = true;
+	returnSettings();
+}
+
+void FrequencyManager::workerFunc() {
+	mTdcModule->readBlock(mBuffer, mMsrTime);
+	handleData(mBuffer);
+	mBuffer.clear();
+	mTotalMsrTime += mMsrTime;
 }
 
 void FrequencyManager::handleData(WordVector& data) {
@@ -51,13 +56,6 @@ void FrequencyManager::handleData(WordVector& data) {
 			}
 		}
 	}
-}
-
-void FrequencyManager::measureFrequency(WordVector& buffer, const Microseconds& time) {
-	mTdcModule->readBlock(buffer, time);
-	handleData(buffer);
-	buffer.clear();
-	mTotalMsrTime += time;
 }
 
 void FrequencyManager::calculateFrequency(double time) {

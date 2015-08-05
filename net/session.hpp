@@ -16,13 +16,13 @@ class Session : public std::enable_shared_from_this<Session> {
 	using ModulePtr = std::shared_ptr<caen::Module>;
 	using TCP = boost::asio::ip::tcp;
 	using Socket = TCP::socket;
-public:
-	Session(DeviceMangerPtr deviceManager,Socket&& socket, DestroyCallback callback);
+  public:
+	Session(DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback callback);
 	void start();
-protected:
+  protected:
 	void doRecieve();
 	void doSend(const std::string& response);
-private:
+  private:
 	DeviceMangerPtr mDeviceManager;
 	Socket mSocket;
 	DestroyCallback mCallback;

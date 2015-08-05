@@ -14,16 +14,16 @@ class FrequencyManager : public ProcessManager {
 	using Seconds = std::chrono::seconds;
 
 	FrequencyManager(ModulePtr module, const ChannelConfig& config,
-					 const Microseconds& time);
-	bool start() override;
+	                 const Microseconds& time);
 	bool isDataValid() { return mDataValid; }
 	const TrekFrequency& getFrequency() const { return mFrequency; }
-	const char* getTitle() const override {return "FrequencyManager";}
 
   protected:
-	void workerLoop() override;
+	bool init() override;
+	void shutDown() override;
+	void flush() override;
+	void workerFunc() override;
 	void handleData(WordVector& data);
-	void measureFrequency(WordVector& buffer, const Microseconds& time);
 	void calculateFrequency(double time);
 	void clearFreq();
 	void setFreqValid(bool flag) { mDataValid = flag; }
@@ -38,6 +38,7 @@ class FrequencyManager : public ProcessManager {
 	bool mDataValid;
 	Microseconds mTotalMsrTime;
 	Microseconds mMsrTime;
+	WordVector mBuffer;
 };
 
 }

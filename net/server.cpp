@@ -40,9 +40,8 @@ void Server::doAccept() {
 			});
 			mSessions.push_back(newSession);
 			newSession->start();
-		} else {
+		} else
 			cerr << "error: " << errCode.message() << endl;
-		}
 		doAccept();
 	});
 }

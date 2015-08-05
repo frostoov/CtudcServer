@@ -16,8 +16,7 @@ Session::Session(DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback
 	  mSocket(std::move(socket)),
 	  mCallback(callback) { }
 
-void Session::start()
-{
+void Session::start() {
 	doRecieve();
 }
 
@@ -44,9 +43,8 @@ void Session::doRecieve() {
 
 void Session::doSend(const std::string& response) {
 	auto self(shared_from_this());
-	mSocket.async_send(boost::asio::buffer(response),[this, self](error_code errCode, size_t length) {
-		if(errCode) {
+	mSocket.async_send(boost::asio::buffer(response), [this, self](error_code errCode, size_t length) {
+		if(errCode)
 			mCallback(self);
-		}
 	});
 }

@@ -22,10 +22,10 @@ class DeviceManager {
 	};
 	using Procedure = std::function<Response(const Query&)>;
 	using Procedures = std::unordered_map<std::string, Procedure>;
-public:
+  public:
 	DeviceManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig);
 	std::string handleQuery(const std::string& rawQuery);
-protected:
+  protected:
 	Procedures createProcedures();
 
 	static Query convertQuery(const std::string& rawQuery);
@@ -63,7 +63,7 @@ protected:
 	nlohmann::json::array_t convertFreq(const caen::TrekFrequency& freq);
 	nlohmann::json::array_t getProcessType(const ProcessManagerPtr& mProcessManager);
 
-private:
+  private:
 	DevicePtr mDevice;
 	ProcessManagerPtr mProcessManager;
 	caen::ChannelConfig mChannelConfig;

@@ -6,8 +6,6 @@
 #include "readmanager.hpp"
 #include "types.hpp"
 
-using cpp::Select;
-
 using std::to_string;
 using std::ofstream;
 using std::ostream;
@@ -27,7 +25,7 @@ using tdcdata::DataSetHeader;
 namespace caen {
 
 ReadManager::ReadManager(ModulePtr module, const string& dirName,
-						 size_t eventsPerFile, const ChannelConfig& channelConfig)
+                         size_t eventsPerFile, const ChannelConfig& channelConfig)
 	: ProcessManager(module, channelConfig),
 	  mEventCount(0),
 	  mFileCount(0),
@@ -35,47 +33,47 @@ ReadManager::ReadManager(ModulePtr module, const string& dirName,
 	  mFileType(DataSetType::Simple) {
 	auto dirPath = path(dirName);
 	if(exists(dirPath)) {
-		if(!is_directory(dirPath)) {
+		if(!is_directory(dirPath))
 			throw std::runtime_error("Invalid dir path");
-		}
-	} else {
+	} else
 		create_directory(dirPath);
-	}
 	mPath = dirName;
 	mStream.exceptions(ofstream::badbit | ofstream::failbit);
 }
 
-bool ReadManager::start() {
-	resetEventCount();
-	resetFileCount();
-	setBkpSettings(mTdcModule->getSettings());
-	mTdcModule->setTriggerMode(true);
-	if(mTdcModule->getSettings().getTriggerMode())
-		return ProcessManager::start();
-	else {
-		returnSettings();
+bool ReadManager::init() {
+	if(!ProcessManager::init())
 		return false;
+	else {
+		mBuffer.clear();
+		resetEventCount();
+		resetFileCount();
+		setBkpSettings(mTdcModule->getSettings());
+		mTdcModule->setTriggerMode(true);
+		if(mTdcModule->getSettings().getTriggerMode()) {
+			mTdcModule->softwareClear();
+			return ProcessManager::start();
+		} else {
+			returnSettings();
+			return false;
+		}
 	}
 }
 
-void ReadManager::workerLoop() {
-	WordVector buffer;
+void ReadManager::shutDown() { }
 
-	mTdcModule->softwareClear();
+void ReadManager::flush() {
+	returnSettings();
+	closeStream(mStream);
+}
 
-	while( isActive() ) {
-		buffer.clear();
-		auto readSize = mTdcModule->readBlock(buffer);
-		if(readSize) {
-			auto events = handleBuffer(buffer);
-			for(const auto& event : events)
-				writeTdcRecord(event);
-		}
-		Select().recv(mStopChannel, [this](bool) {
-			returnSettings();
-			closeStream(mStream);
-			setActive(false);
-		});
+void ReadManager::workerFunc() {
+	mBuffer.clear();
+	auto readSize = mTdcModule->readBlock(mBuffer);
+	if(readSize) {
+		auto events = handleBuffer(mBuffer);
+		for(const auto& event : events)
+			writeTdcRecord(event);
 	}
 }
 

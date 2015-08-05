@@ -16,4 +16,3 @@ bool verifyDecorPackage(char* data, size_t size);
 bool verifyNevodPackage(char* data, size_t size);
 
 #endif // NETTOOLS
-

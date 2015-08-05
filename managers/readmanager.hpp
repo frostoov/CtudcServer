@@ -11,13 +11,13 @@ namespace caen {
 class ReadManager : public ProcessManager {
   public:
 	ReadManager(ModulePtr module, const std::string& dirName, size_t eventsPerFile,
-				const ChannelConfig& channelConfig);
-
-	bool start() override;
-	const char* getTitle() const override {return "ReadManager";}
+	            const ChannelConfig& channelConfig);
 
   protected:
-	void workerLoop() override;
+	bool init() override;
+	void shutDown() override;
+	void flush() override;
+	void workerFunc() override;
 	void writeTdcRecord(const tdcdata::TDCRecord& event);
 	bool needNewStream();
 	bool openStream(std::ofstream& stream);
@@ -34,6 +34,7 @@ class ReadManager : public ProcessManager {
 	uintmax_t getEventCount() const {return mEventCount;}
 
 	std::ofstream mStream;
+	WordVector mBuffer;
   private:
 	std::string mPath;
 	uintmax_t mEventCount;

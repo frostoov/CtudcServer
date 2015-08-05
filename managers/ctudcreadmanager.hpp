@@ -3,6 +3,7 @@
 
 #include <list>
 #include <tdcdata/ctudcrecord.hpp>
+#include <cppchannel/channel>
 
 
 #include "net/packagereciever.hpp"
@@ -14,9 +15,11 @@ namespace caen {
 
 class CtudcReadManager : public ReadManager {
   protected:
+	using ByteVector      = std::vector<char>;
+	using NevodPkgPtr     = std::unique_ptr<tdcdata::NevodPackage>;
+	using DecorPkgPtr     = std::unique_ptr<tdcdata::DecorPackage>;
+	using DataChannel     = cpp::ichannel<std::vector<char>>;
 	using SystemClock     = std::chrono::high_resolution_clock;
-	using DecorPackages   = std::list<tdcdata::DecorPackage>;
-	using NevodPackages   = std::list<tdcdata::NevodPackage>;
   public:
 	struct NetInfo {
 		std::string decorIP;
@@ -26,38 +29,32 @@ class CtudcReadManager : public ReadManager {
 	};
   public:
 	CtudcReadManager(ModulePtr module, const std::string& path, size_t eventNum,
-					 const ChannelConfig& config, const NetInfo& netInfo);
-
-	~CtudcReadManager();
-	const char* getTitle() const override {return "UraganReadManager";}
+	                 const ChannelConfig& config, const NetInfo& netInfo);
   protected:
-	void workerLoop() override;
-	void stop() override;
+	bool init() override;
+	void shutDown() override;
+	void workerFunc() override;
 
 	void handleDataPackages(WordVector& tdcData);
 
-	void handleDecorPackage(char* data, size_t size);
-	void handleNevodPackage(char* data, size_t size);
+	void handleDecorPackage(ByteVector& buffer);
+	void handleNevodPackage(ByteVector& buffer);
 
 	void waitForDecorPackage();
 	void waitForNevodPackage(SystemClock::time_point startTime);
 
 	void writeCtudcRecord(const tdcdata::CtudcRecord& record);
 
-	bool isHandling() const {return mIsHandling;}
-
   private:
 	void outputEvents();
 	PackageReciever mDecorReciever;
 	PackageReciever mNevodReciever;
 
-	DecorPackages mDecorPackages;
-	NevodPackages mNevodPackages;
+	DecorPkgPtr mDecorPackage;
+	NevodPkgPtr mNevodPackage;
 
-	ThreadBlocker mDecorBlocker;
-	ThreadBlocker mNevodBlocker;
-
-	volatile bool mIsHandling;
+	DataChannel mDecorChannel;
+	DataChannel mNevodChannel;
 };
 
 } //caen

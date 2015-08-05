@@ -19,13 +19,13 @@ class Server {
 	using Socket = TCP::socket;
 	using Acceptor = TCP::acceptor;
 	using Endpoint = TCP::endpoint;
-public:
+  public:
 	Server(DeviceManagerPtr deviceManager, const std::string& ipAdrress, uint16_t port);
 	void start();
 	void stop();
-protected:
+  protected:
 	void doAccept();
-private:
+  private:
 	DeviceManagerPtr mDeviceManager;
 	IoService mIoService;
 	Acceptor mAcceptor;

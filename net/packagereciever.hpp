@@ -7,8 +7,13 @@
 
 #include <tdcdata/structs.hpp>
 
+#include "cppchannel/channel"
 
 class PackageReciever {
+	using ByteVector  = std::vector<char>;
+	using ThreadPtr   = std::unique_ptr<std::thread>;
+	using StopChannel = cpp::channel<bool>;
+	using DataChannel = cpp::channel<std::vector<char>>;
 	using UDP       = boost::asio::ip::udp;
 	using Endpoint  = UDP::endpoint;
 	using UdpSocket = boost::asio::ip::udp::socket;
@@ -19,11 +24,11 @@ class PackageReciever {
 	PackageReciever(const std::string& multicastAddress, uint16_t port);
 	PackageReciever(const std::string& multicastAddress, uint16_t port, const Callback& function);
 	~PackageReciever();
-	void start();
+	bool start();
 	void stop();
-	void setCallback(const Callback& function);
 	void clearCallback();
 	bool isActive() const;
+	DataChannel getDataChannel() const;
   protected:
 	void doReceive();
 	void joinMulticastGroup(const IpAddress& multicastAddress);
@@ -32,14 +37,16 @@ class PackageReciever {
 	IoService mIoService;
 	UdpSocket mSocket;
 	Endpoint  mEndpoint;
-
-	static const size_t mDataMaxSize = 65527;
-	char mData[mDataMaxSize];
-
 	IpAddress mMulticastAddress;
 
-	Callback mFunction;
-	volatile bool mHasFunction;
+	ByteVector mBuffer;
+	ThreadPtr mThread;
+
+	static const size_t mBufferSize = 65527;
+
+	DataChannel mDataChannel;
+	StopChannel mStopChannel;
+
 
 	volatile bool mIsActive;
 };

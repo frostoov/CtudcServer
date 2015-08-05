@@ -1,68 +1,73 @@
 #include "packagereciever.hpp"
 
+using std::vector;
+using std::thread;
+using std::make_unique;
+
 using boost::system::error_code;
 
 PackageReciever::PackageReciever(const std::string& multicastAddress, uint16_t port)
 	: mSocket(mIoService),
 	  mEndpoint(UDP::v4(), port),
 	  mMulticastAddress(IpAddress::from_string(multicastAddress)),
-	  mHasFunction(false) {
+	  mBuffer(mBufferSize) {
 	mSocket.open(UDP::v4());
 	mSocket.bind(mEndpoint);
 
-	mSocket.set_option(UDP::socket::receive_buffer_size(sizeof(mData)));
+	mSocket.set_option(UDP::socket::receive_buffer_size(mBuffer.size()));
 	mIsActive = false;
-}
-
-PackageReciever::PackageReciever(const std::string& multicastAddress, uint16_t port, const Callback& function)
-	: PackageReciever(multicastAddress, port) {
-	setCallback(function);
 }
 
 PackageReciever::~PackageReciever() {
 	stop();
 }
 
-void PackageReciever::start() {
+bool PackageReciever::start() {
 	if(mIsActive == false) {
 		mIsActive = true;
 		joinMulticastGroup(mMulticastAddress);
 		doReceive();
 
-		std::thread([this]() {mIoService.run(); } ).detach();
+		mThread = make_unique<thread>([this]() {mIoService.run(); });
+		return true;
 	}
+	return false;
 }
 
 void PackageReciever::stop() {
 	if(mIsActive == true) {
+		mIsActive = false;
+		mStopChannel.send(true);
 		mIoService.stop();
 		leaveMulticastGroup(mMulticastAddress);
 		mIoService.reset();
-		mIsActive = false;
+		mThread->join();
+		mThread.reset();
 	}
-}
-
-void PackageReciever::setCallback(const Callback& function) {
-	mFunction = function;
-	mHasFunction = true;
-}
-
-void PackageReciever::clearCallback() {
-	mHasFunction = false;
 }
 
 bool PackageReciever::isActive() const {
 	return mIsActive;
 }
 
+PackageReciever::DataChannel PackageReciever::getDataChannel() const {
+	return mDataChannel;
+}
+
 void PackageReciever::doReceive() {
-	mSocket.async_receive_from(boost::asio::buffer(mData, sizeof(mData)), mEndpoint,
-							   [&, this](const error_code& error, size_t size) {
-		if(!error) {
-			if(mHasFunction)
-				mFunction(mData, size);
+	mSocket.async_receive_from(boost::asio::buffer(mBuffer), mEndpoint,
+	[&, this](const error_code & error, size_t size) {
+		if(!error && mIsActive) {
+			cpp::select select;
+			mBuffer.resize(size);
+			select.send_only(mDataChannel, mBuffer);
+			select.recv(mStopChannel, [this](bool) {});
+			select.wait();
 		}
-		doReceive();
+		if(!mIsActive) {
+			mBuffer.resize(mBufferSize);
+			doReceive();
+		}
 	});
 }
 

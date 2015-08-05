@@ -6,8 +6,14 @@ namespace caen {
 
 ProcessManager::ProcessManager(ModulePtr module, const ChannelConfig& config)
 	: mTdcModule(module),
-	  mConfig(config),
-	  mIsActive(false) {}
+	  mConfig(config) { }
+
+bool ProcessManager::init() {
+	if( !mTdcModule || !mTdcModule->isInit() )
+		return false;
+	else
+		return true;
+}
 
 void ProcessManager::setBkpSettings(const tdcdata::Settings& settings) {
 	mBkpSettings = settings;
@@ -16,19 +22,6 @@ void ProcessManager::setBkpSettings(const tdcdata::Settings& settings) {
 void ProcessManager::returnSettings() {
 	if(mBkpSettings != mTdcModule->getSettings())
 		mTdcModule->setSettings(mBkpSettings);
-}
-
-bool ProcessManager::start() {
-	if(!mTdcModule || !mTdcModule->isInit() || mIsActive)
-		return false;
-	setActive(true);
-	std::thread(&ProcessManager::workerLoop, this).detach();
-	return true;
-}
-
-void ProcessManager::stop() {
-	mStopChannel.send(true);
-	while(isActive());
 }
 
 ProcessManager::TDCRecordList ProcessManager::handleBuffer(const WordVector& buffer) {
@@ -59,7 +52,7 @@ uint32_t ProcessManager::convertWord(uint32_t word) {
 		return word;
 	} else
 		throw std::runtime_error("ProcessManager::convertWord: no config for channel: " +
-								 to_string(channel));
+		                         to_string(channel));
 }
 
 WordVector& ProcessManager::convertEvent(WordVector& eventWords) {
@@ -70,10 +63,6 @@ WordVector& ProcessManager::convertEvent(WordVector& eventWords) {
 			throw std::runtime_error("ProcessManager::convertEvent: non measurement word");
 	}
 	return eventWords;
-}
-
-void ProcessManager::setActive(bool flag) {
-	mIsActive = flag;
 }
 
 bool caen::ProcessManager::checkChannel(uint32_t channel) const {

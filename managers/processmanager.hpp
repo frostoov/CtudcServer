@@ -4,26 +4,22 @@
 #include <thread>
 #include <list>
 #include <memory>
-#include <cppchannel/channel>
 
 #include <tdcdata/tdcrecord.hpp>
 
+#include "threadmanager.hpp"
 #include "caen/tdcmodule.hpp"
 #include "types.hpp"
 
 namespace caen {
 
-class ProcessManager : public Subject {
+class ProcessManager : public ThreadManager {
   protected:
 	using ModulePtr     = std::shared_ptr<Module>;
 	using TDCRecordList  = std::list<tdcdata::TDCRecord>;
   public:
-	virtual ~ProcessManager() { stop(); }
-	virtual bool start();
-	virtual void stop();
 
 	void setModule(ModulePtr module) { mTdcModule = module; }
-	bool isActive() { return mIsActive; }
 
 	static uint32_t GLBHeaderEventCount(uint32_t data) { return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5; }
 	static uint32_t GLBHeaderGeo	(uint32_t data) { return ( data & GLB_HDR_GEO_MSK); }
@@ -51,8 +47,7 @@ class ProcessManager : public Subject {
 	static bool isMeasurement	(uint32_t data) { return (data & DATA_TYPE_MSK) == TDC_MEASURE; }
   protected:
 	ProcessManager(ModulePtr module, const ChannelConfig& config);
-	virtual void workerLoop() = 0;
-	bool checkTimeout(const TimePoint& startPoint);
+	bool init() override;
 	void setBkpSettings(const tdcdata::Settings& settings);
 	void returnSettings();
 
@@ -60,14 +55,11 @@ class ProcessManager : public Subject {
 	uint32_t    convertWord(uint32_t word);
 	WordVector& convertEvent(WordVector& eventWords);
 
-	void setActive(bool flag);
 	bool checkChannel(uint32_t channel) const;
 	const ChannelCongruence& getChannelCongruence(size_t ch);
 	ModulePtr mTdcModule;
-	cpp::channel<bool> mStopChannel;
   private:
 	ChannelConfig mConfig;
-	volatile bool mIsActive;
 
 	tdcdata::Settings mBkpSettings;
 

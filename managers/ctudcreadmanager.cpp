@@ -13,74 +13,56 @@ using std::istream;
 using std::exception;
 using std::chrono::milliseconds;
 using std::chrono::microseconds;
+using std::make_unique;
+using std::vector;
 
 using tdcdata::DataSetType;
 using tdcdata::CtudcRecord;
 using tdcdata::DecorPackage;
 using tdcdata::NevodPackage;
 
-using cpp::Select;
 
 namespace caen {
 
 CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t eventNum,
-								   const ChannelConfig& config,  const NetInfo& netInfo)
+                                   const ChannelConfig& config,  const NetInfo& netInfo)
 	: ReadManager(module, path, eventNum, config),
 	  mDecorReciever(netInfo.decorIP, netInfo.decorPort),
 	  mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
-	  mIsHandling(false) {
+	  mDecorChannel(mDecorReciever.getDataChannel()),
+	  mNevodChannel(mNevodReciever.getDataChannel()) {
 	setFileType(DataSetType::CTUDC);
-	mDecorReciever.setCallback([this](char* data, size_t size) {
-		this->handleDecorPackage(data, size);
-	});
-	mNevodReciever.setCallback([this](char* data, size_t size) {
-		this->handleNevodPackage(data, size);
-	});
 }
 
-CtudcReadManager::~CtudcReadManager() {
-	closeStream(mStream);
-}
-
-void CtudcReadManager::workerLoop() {
-	WordVector buffer;
-
-	mTdcModule->softwareClear();
-	mDecorPackages.clear();
-	mNevodPackages.clear();
-
-	mDecorReciever.start();
-	mNevodReciever.start();
-
-	while(isActive()) {
-		//Блокируем поток и ожидаем DecorPackage
-		waitForDecorPackage();
-		if(isActive()) {
-			auto startTime = SystemClock::now();
-			buffer.clear();
-			mTdcModule->readBlock(buffer);
-			//Получили DecorPackage, блокируем поток и ожидаем NevodPackage
-			waitForNevodPackage(startTime);
-
-			handleDataPackages(buffer);
-		}
-		Select().recv(mStopChannel, [this](bool) {
-			closeStream(mStream);
-			returnSettings();
-			setActive(false);
-		}).tryOnce();
+bool CtudcReadManager::init() {
+	if(!ReadManager::init())
+		return false;
+	else {
+		mDecorReciever.start();
+		mNevodReciever.start();
+		return true;
 	}
 }
 
-void CtudcReadManager::stop() {
+void CtudcReadManager::shutDown() {
+	ReadManager::shutDown();
 	mDecorReciever.stop();
 	mNevodReciever.stop();
-	mDecorBlocker.unblock();
-	ReadManager::stop();
+}
+
+void CtudcReadManager::workerFunc() {
+	//Блокируем поток и ожидаем DecorPackage
+	waitForDecorPackage();
+	auto startTime = SystemClock::now();
+	mBuffer.clear();
+	mTdcModule->readBlock(mBuffer);
+	//Получили DecorPackage, блокируем поток и ожидаем NevodPackage
+	waitForNevodPackage(startTime);
+
+	handleDataPackages(mBuffer);
 }
 
 void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
-	mIsHandling = true;
 	auto events = handleBuffer(tdcData);
 	auto timePoint = SystemClock::now();
 	while(events.size() > 1) {
@@ -94,67 +76,63 @@ void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
 		record.setTdcData(events.front().getData());
 		events.pop_front();
 	}
-	if(!mDecorPackages.empty()) {
-		record.setDecorPacakge(mDecorPackages.front());
-		mDecorPackages.pop_front();
+	if(mDecorPackage) {
+		record.setDecorPacakge(*mDecorPackage);
+		mDecorPackage.reset();
 	}
-	if(!mNevodPackages.empty()) {
-		record.setNevodPackage(mNevodPackages.front());
-		mNevodPackages.pop_front();
+	if(mNevodPackage) {
+		record.setNevodPackage(*mNevodPackage);
+		mNevodPackage.reset();
 	}
 	writeCtudcRecord(record);
-	mIsHandling = false;
 }
 
-void CtudcReadManager::handleDecorPackage(char* data, size_t size) {
-	if(!isHandling() && mDecorPackages.empty()) {
-		if(verifyDecorPackage(data, size)) {
-			DecorPackage package;
-			membuf  tempBuffer(data, size);
-			istream stream(&tempBuffer);
-			package.deserialize(stream);
-
-			mDecorPackages.push_back(package);
-
-			mDecorBlocker.unblock();
-		}
+void CtudcReadManager::handleDecorPackage(ByteVector& buffer) {
+	if(verifyDecorPackage(buffer.data(), buffer.size())) {
+		mDecorPackage = make_unique<DecorPackage>();
+		membuf  tempBuffer(buffer.data(), buffer.size());
+		istream stream(&tempBuffer);
+		deserialize(stream, *mDecorPackage);
 	}
 }
 
-void CtudcReadManager::handleNevodPackage(char* data, size_t size) {
-	if(!isHandling() && mNevodPackages.empty()) {
-		if(verifyNevodPackage(data, size)) {
-			NevodPackage package;
-			membuf tempBuffer(data, size);
-			istream stream(&tempBuffer);
-			package.deserialize(stream);
-
-			mNevodPackages.push_back(package);
-		}
+void CtudcReadManager::handleNevodPackage(ByteVector& buffer) {
+	if(verifyNevodPackage(buffer.data(), buffer.size())) {
+		mNevodPackage = make_unique<NevodPackage>();
+		membuf tempBuffer(buffer.data(), buffer.size());
+		istream stream(&tempBuffer);
+		deserialize(stream, *mNevodPackage);
 	}
 }
 
 void CtudcReadManager::waitForDecorPackage() {
-	if(mDecorPackages.empty())
-		mDecorBlocker.block();
-	/* Блокировку сниммет Callback(CtudcReadManager::handleDecorPackage)
-	 * при получении корретного DecorPackage
-	 */
+	while(true) {
+		cpp::select select;
+		select.recv(mDecorChannel, [this](ByteVector data) {
+			handleDecorPackage(data);
+		});
+		if(select.try_once() || isActive())
+			break;
+	}
 }
 
 void CtudcReadManager::waitForNevodPackage(SystemClock::time_point startTime) {
 	milliseconds awaitTime(5);
 	while(SystemClock::now() - startTime < awaitTime) {
-		if(mNevodPackages.empty() == false)
-			return;
-	}
+		cpp::select select;
+		select.recv(mNevodChannel, [this](ByteVector data) {
+			handleNevodPackage(data);
+		});
+		if(select.try_once())
+			break;
+	};
 }
 
 void CtudcReadManager::writeCtudcRecord(const CtudcRecord& record) {
 	if(!mStream.is_open() || needNewStream())
 		openStream(mStream);
 
-	::serialize(mStream, record);
+	serialize(mStream, record);
 	increaseEventCount();
 }
 

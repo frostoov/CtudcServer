@@ -10,12 +10,14 @@ class ThreadBlocker {
 	ThreadBlocker() : mIsBlocked(false) {}
 	~ThreadBlocker() {unblock();}
 	void block() {
+		std::unique_lock<std::mutex> syncLocker(mSyncMutex);
 		if (mIsBlocked) return;
 		mIsBlocked = true;
-		std::unique_lock<std::mutex> locker(mSyncMutex);
-		while (mIsBlocked) mBlocker.wait(locker);
+		std::unique_lock<std::mutex> blokcLocker(mBlockMutex);
+		while (mIsBlocked) mBlocker.wait(blokcLocker);
 	}
 	void unblock() {
+		std::unique_lock<std::mutex> syncLocker(mSyncMutex);
 		if (mIsBlocked) {
 			mIsBlocked = false;
 			mBlocker.notify_one();
@@ -23,6 +25,7 @@ class ThreadBlocker {
 	}
 	bool isBlocked() const { return mIsBlocked; }
   private:
+	std::mutex mBlockMutex;
 	std::mutex mSyncMutex;
 	std::condition_variable mBlocker;
 	volatile bool mIsBlocked;

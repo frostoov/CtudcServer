@@ -93,9 +93,8 @@ DeviceManager::Response DeviceManager::close(const Query& query) {
 		json::array(),
 		false,
 	};
-	if(!mProcessManager) {
+	if(!mProcessManager)
 		response.status = mDevice->close();
-	}
 	return response;
 }
 

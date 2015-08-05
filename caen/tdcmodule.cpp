@@ -59,7 +59,7 @@ bool Module::initialize() {
 }
 
 bool Module::close() {
-	return doAction("Close: ",[&]() {
+	return doAction("Close: ", [&]() {
 		if(mIsInit) {
 			auto status = CAENVME_End(mVmeHandle);
 			if (status != cvSuccess)
@@ -114,14 +114,14 @@ bool Module::doAction(const string& message, std::function<void()> func) {
 bool Module::setLsb(tdcdata::Lsb lsb) {
 	if (lsb != mSettings.getLsb())
 		return doAction("Set LSB: ", [&]() {
-			auto value = static_cast<uint16_t>(lsb);
-			if (value > 2)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeMicro(&value, OpCode::setLSB);
-				mSettings.setLsb(lsb);
-			}
-		});
+		auto value = static_cast<uint16_t>(lsb);
+		if (value > 2)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeMicro(&value, OpCode::setLSB);
+			mSettings.setLsb(lsb);
+		}
+	});
 	else return true;
 }
 
@@ -129,14 +129,14 @@ bool Module::setWindowWidth(uint16_t windowWidth) {
 	windowWidth = (windowWidth / 25) * 25;
 	if (windowWidth != mSettings.getWindowWidth())
 		return doAction("Set window width: ", [&]() {
-			uint16_t value = windowWidth / 25;
-			if (value < 1 || value > 4095)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeMicro(&value, OpCode::setWinWidth);
-				mSettings.setWindowWidth(windowWidth);
-			}
-		});
+		uint16_t value = windowWidth / 25;
+		if (value < 1 || value > 4095)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeMicro(&value, OpCode::setWinWidth);
+			mSettings.setWindowWidth(windowWidth);
+		}
+	});
 	else return true;
 }
 
@@ -144,72 +144,72 @@ bool Module::setWindowOffset(int16_t windowOffset) {
 	windowOffset = (windowOffset / 25) * 25;
 	if (windowOffset != mSettings.getWindowOffset())
 		return doAction("Set window offset: ", [&]() {
-			uint16_t value = static_cast<uint16_t>(windowOffset / 25);
-			if (static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeMicro(&value, OpCode::setWinOffset);
-				mSettings.setWindowOffset(windowOffset);
-			}
-		});
+		uint16_t value = static_cast<uint16_t>(windowOffset / 25);
+		if (static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeMicro(&value, OpCode::setWinOffset);
+			mSettings.setWindowOffset(windowOffset);
+		}
+	});
 	else return true;
 }
 
 bool Module::setAlmostFull(uint16_t value) {
 	if (value != mSettings.getAlmostFull())
 		return doAction("Set almost Full: ", [&]() {
-			if (value < 1 || value > 32735)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeReg16(value, Reg::almostFull);
-				mSettings.setAlmostFull(value);
-			}
-		});
+		if (value < 1 || value > 32735)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeReg16(value, Reg::almostFull);
+			mSettings.setAlmostFull(value);
+		}
+	});
 	else return true;
 }
 
 bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
 	if (edgeDetection != mSettings.getEdgeDetection())
 		return doAction("Set edge detection: ", [&]() {
-			auto value = static_cast<uint16_t>(edgeDetection);
-			if (value > 4)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeMicro(&value, OpCode::setDetection);
-				mSettings.setEdgeDetection(edgeDetection);
-			}
-		});
+		auto value = static_cast<uint16_t>(edgeDetection);
+		if (value > 4)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeMicro(&value, OpCode::setDetection);
+			mSettings.setEdgeDetection(edgeDetection);
+		}
+	});
 	else return true;
 }
 
 bool Module::setControl(uint16_t control) {
 	if (control != mSettings.getControl())
 		return doAction("Set control register: ", [&]() {
-			writeReg16(control, Reg::controlReg);
-			mSettings.setControlRegister(control);
-		});
+		writeReg16(control, Reg::controlReg);
+		mSettings.setControlRegister(control);
+	});
 	else return true;
 }
 
 bool Module::setDeadTime(uint16_t deadTime) {
 	if (deadTime != mSettings.getDeadTime())
 		return doAction("Set dead time: ", [&]() {
-			writeMicro(&deadTime, OpCode::setDeadTime);
-			mSettings.setDeadTime(deadTime);
-		});
+		writeMicro(&deadTime, OpCode::setDeadTime);
+		mSettings.setDeadTime(deadTime);
+	});
 	else return true;
 }
 
 bool Module::setEventBLT(uint16_t eventBLT) {
 	if(eventBLT == mSettings.getEventBLT())
 		return doAction("Set event alignment: ", [&]() {
-			if(eventBLT > 255)
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			else {
-				writeReg16(eventBLT, Reg::eventBLT);
-				mSettings.setEventBLT(eventBLT);
-			}
-		});
+		if(eventBLT > 255)
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		else {
+			writeReg16(eventBLT, Reg::eventBLT);
+			mSettings.setEventBLT(eventBLT);
+		}
+	});
 	else return true;
 }
 
@@ -232,26 +232,26 @@ bool Module::setTriggerMode(bool flag) {
 bool Module::setTriggerSubtraction(bool flag) {
 	if (flag != mSettings.getTriggerSubtraction())
 		return doAction("Set trigger subtraction: ", [&]() {
-			if (flag && !mSettings.getTriggerMode())
-				throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
-			if (flag)
-				writeMicro(nullptr, OpCode::enableSubTrig);
-			else
-				writeMicro(nullptr, OpCode::disableSubTrig);
-			mSettings.setTriggerSubtraction(flag);
-		});
+		if (flag && !mSettings.getTriggerMode())
+			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		if (flag)
+			writeMicro(nullptr, OpCode::enableSubTrig);
+		else
+			writeMicro(nullptr, OpCode::disableSubTrig);
+		mSettings.setTriggerSubtraction(flag);
+	});
 	else return true;
 }
 
 bool Module::setTdcMeta(bool flag) {
 	if (flag != mSettings.getTdcMeta())
 		return doAction("Set TDC metdata: ", [&]() {
-			if (flag)
-				writeMicro(nullptr, OpCode::enableTDCMeta);
-			else
-				writeMicro(nullptr, OpCode::disableTDCMeta);
-			mSettings.setTdcMeta(flag);
-		});
+		if (flag)
+			writeMicro(nullptr, OpCode::enableTDCMeta);
+		else
+			writeMicro(nullptr, OpCode::disableTDCMeta);
+		mSettings.setTdcMeta(flag);
+	});
 	else return true;
 }
 
@@ -360,9 +360,9 @@ size_t Module::readBlock(WordVector& buff, const Microseconds& delay) {
 		sleep_for(delay);
 	}
 	auto errCode = CAENVME_BLTReadCycle(mVmeHandle, buffAddr,
-										reinterpret_cast<void*>(buff.data() + prevSize),
-										blockSize * sizeof(uint32_t),
-										cvA32_U_BLT, cvD32, &readBytes);
+	                                    reinterpret_cast<void*>(buff.data() + prevSize),
+	                                    blockSize * sizeof(uint32_t),
+	                                    cvA32_U_BLT, cvD32, &readBytes);
 	if((errCode == cvBusError && (mSettings.getControl() & 1)) || errCode == cvSuccess) {
 		readSize += readBytes / sizeof(uint32_t);
 		buff.resize(prevSize + readBytes / sizeof(uint32_t));
@@ -397,8 +397,8 @@ uint32_t Module::readReg32(Reg addr) const {
 	if (mIsInit) {
 		uint32_t data = 0;
 		auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-									  static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-									  cvA32_S_DATA, cvD32);
+		                              static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+		                              cvA32_S_DATA, cvD32);
 		if(code == cvSuccess)
 			return data;
 		else
@@ -411,8 +411,8 @@ uint16_t Module::readReg16(Reg addr) const {
 	if (mIsInit) {
 		uint16_t data = 0;
 		auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-									  static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-									  cvA32_S_DATA, cvD16);
+		                              static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+		                              cvA32_S_DATA, cvD16);
 		if(code == cvSuccess)
 			return data;
 		else
@@ -424,8 +424,8 @@ uint16_t Module::readReg16(Reg addr) const {
 void Module::writeReg32(uint32_t data, Reg addr) {
 	if (mIsInit) {
 		auto code = CAENVME_WriteCycle( mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-										static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-										cvA32_S_DATA, cvD32);
+		                                static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+		                                cvA32_S_DATA, cvD32);
 		if(code != cvSuccess)
 			throw runtime_error(CAENVME_DecodeError(code));
 	} else
@@ -436,7 +436,7 @@ void Module::writeReg16(uint16_t data, Reg addr) {
 	if (mIsInit) {
 		auto address = ((static_cast<uint32_t>(mBaseAddress)) << 16) | static_cast<uint32_t>(addr);
 		auto code = CAENVME_WriteCycle(mVmeHandle, address, reinterpret_cast<void*>(&data),
-									   cvA32_S_DATA, cvD16);
+		                               cvA32_S_DATA, cvD16);
 		if(code != cvSuccess) throw runtime_error(CAENVME_DecodeError(code));
 	} else
 		throw runtime_error(CAENVME_DecodeError(cvCommError));
