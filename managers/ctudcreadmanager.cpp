@@ -109,7 +109,7 @@ void CtudcReadManager::handleNevodPackage(ByteVector&& buffer) {
 }
 
 void CtudcReadManager::waitForNevodPackage() {
-	if(mNevodChannel.isOpen()){
+	if(mNevodChannel.isOpen()) {
 		ByteVector buffer;
 		if(mNevodChannel.recv(buffer)) {
 			handleNevodPackage(std::move(buffer));

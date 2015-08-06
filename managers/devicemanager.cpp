@@ -261,7 +261,7 @@ DeviceManager::Response DeviceManager::getProcess(const Query& query) {
 	return {
 		"getProcess",
 		getProcessType(mProcess),
-		mProcess ? false : true
+		true
 	};
 }
 
