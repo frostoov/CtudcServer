@@ -1,11 +1,8 @@
 #include <fstream>
-#include <thread>
 #include <tdcdata/serialization.hpp>
 
 #include "net/nettools.hpp"
 #include "ctudcreadmanager.hpp"
-
-
 
 using std::string;
 using std::ofstream;
@@ -30,16 +27,31 @@ CtudcReadManager::CtudcReadManager(ModulePtr module, const string& path, size_t 
 								   const ChannelConfig& config,  const NetInfo& netInfo)
 	: ReadManager(module, path, eventNum, config),
 	  mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
-	  mNevodChannel(mNevodReciever.getDataChannel()) {
+	  mNetIsActive(true) {
 	setFileType(DataSetType::CTUDC);
 }
 
-uintmax_t CtudcReadManager::getTriggerCount() const {
-	return mTriggerCount;
+bool CtudcReadManager::start() {
+	if(!init()) {
+		return false;
+	} else {
+		mNevodReciever.setCallback([this](PackageReceiver::ByteVector& buffer) {
+			handleNevodPackage(buffer);
+			mBuffer.clear();
+			mTdcModule->readBlock(mBuffer);
+			handleDataPackages(mBuffer);
+		});
+		return startThread([this]() {
+			mNevodReciever.start();
+		});
+	}
 }
 
-uintmax_t CtudcReadManager::getPackageCount() const {
-	return mPackageCount;
+void CtudcReadManager::stop() {
+	mNevodReciever.stop();
+	mNevodReciever.resetCallback();
+	resetThread();
+	shutDown();
 }
 
 double CtudcReadManager::getTriggerFrequency() const {
@@ -56,24 +68,13 @@ bool CtudcReadManager::init() {
 	else {
 		mTriggerCount = 0;
 		mPackageCount = 0;
-		if(!mNevodReciever.start())
-			return false;
 		mStartPoint = std::chrono::high_resolution_clock::now();
 		return true;
 	}
 }
 
-void CtudcReadManager::shutDown() {
-	ReadManager::shutDown();
-	mNevodReciever.stop();
-}
-
 void CtudcReadManager::workerFunc() {
-	waitForNevodPackage();
-	mBuffer.clear();
-	mTdcModule->readBlock(mBuffer);
-
-	handleDataPackages(mBuffer);
+	throw std::logic_error("CtudcReadManager::workerFunc: call not allowed");
 }
 
 void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
@@ -98,22 +99,13 @@ void CtudcReadManager::handleDataPackages(WordVector& tdcData) {
 	writeCtudcRecord(record);
 }
 
-void CtudcReadManager::handleNevodPackage(ByteVector&& buffer) {
+void CtudcReadManager::handleNevodPackage(PackageReceiver::ByteVector& buffer) {
 	if(verifyNevodPackage(buffer.data(), buffer.size())) {
 		mNevodPackage = make_unique<NevodPackage>();
 		membuf tempBuffer(buffer.data(), buffer.size());
 		istream stream(&tempBuffer);
 		deserialize(stream, *mNevodPackage);
 		++mPackageCount;
-	}
-}
-
-void CtudcReadManager::waitForNevodPackage() {
-	if(mNevodChannel.isOpen()) {
-		ByteVector buffer;
-		if(mNevodChannel.recv(buffer)) {
-			handleNevodPackage(std::move(buffer));
-		}
 	}
 }
 

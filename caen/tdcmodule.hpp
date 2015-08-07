@@ -57,7 +57,6 @@ class Module : public Subject {
 	bool updateSettings();
 	const tdcdata::Settings& getSettings() const { return mSettings; }
   protected:
-	void init();
 	uint32_t readReg32(Reg addr) const;
 	uint16_t readReg16(Reg addr) const;
 	void writeReg32(uint32_t data, Reg addr);
@@ -66,7 +65,7 @@ class Module : public Subject {
 	void readMicro	(uint16_t* data, OpCode code, short num = 1);
 	void writeMicro	(uint16_t* data, OpCode code, short num = 1);
 
-	bool doAction(const std::string& message, std::function<void()> func);
+	bool doAction(std::string&& message, std::function<void()>&& func);
 
 	void checkMicroRead();
 	void checkMicroWrite();

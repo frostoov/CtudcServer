@@ -9,7 +9,7 @@ class AbstractConfigParser {
 	virtual void load(const std::string& fileName) = 0;
 	virtual void save(const std::string& fileName) = 0;
   protected:
-	AbstractConfigParser() {}
+	AbstractConfigParser() = default;
 
   private:
 };

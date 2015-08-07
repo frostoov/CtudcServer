@@ -1,5 +1,5 @@
 TEMPLATE = app
-TARGET = PsychoServer
+TARGET = CtudcServer
 CONFIG = console thread
 
 QMAKE_CXXFLAGS_RELEASE -= -O1
@@ -41,9 +41,7 @@ HEADERS += \
 	net/server.hpp \
 	net/session.hpp \
 	observer/observer.hpp \
-	threadblocker.hpp \
-	managers/threadmanager.hpp \
-    channel.hpp
+	managers/threadmanager.hpp
 
 SOURCES += \
 	caen/tdcmodule.cpp \

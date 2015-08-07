@@ -4,7 +4,7 @@
 namespace caen {
 
 FrequencyManager::FrequencyManager(ModulePtr module, const ChannelConfig& config,
-                                   const Microseconds& time)
+								   const Microseconds& time)
 	: ProcessManager(module, config),
 	  mDataValid(false),
 	  mTotalMsrTime(Microseconds::zero()),
@@ -29,9 +29,7 @@ bool FrequencyManager::init() {
 	}
 }
 
-void FrequencyManager::shutDown() { }
-
-void FrequencyManager::flush() {
+void FrequencyManager::shutDown() {
 	calculateFrequency(getTotalTime());
 	mDataValid = true;
 	returnSettings();

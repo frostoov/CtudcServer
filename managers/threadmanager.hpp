@@ -4,8 +4,8 @@
 #include <thread>
 #include <memory>
 #include <atomic>
-
-#include "threadblocker.hpp"
+#include <mutex>
+#include <functional>
 
 class ThreadManager {
 	using ThreadPtr = std::unique_ptr<std::thread>;
@@ -14,21 +14,22 @@ class ThreadManager {
 	ThreadManager(const ThreadManager& other) = delete;
 	void operator=(const ThreadManager& other) = delete;
 
-	bool start();
-	void stop();
+	virtual bool start();
+	virtual void stop();
 
 	bool hasProcess() const;
   protected:
 	ThreadManager();
-	bool isActive() const;
 	virtual void workerFunc() = 0;
 	virtual bool init() = 0;
-	virtual void flush() = 0;
 	virtual void shutDown() = 0;
-	bool isActive();
+	void joinThread();
+	void resetThread();
+	bool startThread(std::function<void()>&&func);
   private:
 	void workerLoop();
 	ThreadPtr mThread;
+	std::mutex mThreadMutex;
 	std::atomic<bool> mIsActive;
 };
 

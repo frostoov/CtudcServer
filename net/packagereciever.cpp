@@ -2,8 +2,9 @@
 
 
 using std::vector;
-using std::thread;
 using std::make_unique;
+using std::mutex;
+using std::unique_lock;
 
 using boost::system::error_code;
 
@@ -11,13 +12,13 @@ PackageReceiver::PackageReceiver(const std::string& multicastAddress, uint16_t p
 	: mSocket(mIoService),
 	  mEndpoint(UDP::v4(), port),
 	  mMulticastAddress(IpAddress::from_string(multicastAddress)),
-	  mBuffer(mBufferSize) {
+	  mBuffer(mBufferSize),
+	  mCallback(nullptr) {
 	mSocket.open(UDP::v4());
 	mSocket.bind(mEndpoint);
 
 	joinMulticastGroup(mMulticastAddress);
 	mSocket.set_option(UDP::socket::receive_buffer_size(mBuffer.size()));
-	mIsActive = false;
 }
 
 PackageReceiver::~PackageReceiver() {
@@ -25,48 +26,45 @@ PackageReceiver::~PackageReceiver() {
 }
 
 bool PackageReceiver::start() {
-	if(mIsActive == false) {
+	if(mIoService.stopped()) {
 		mIoService.reset();
-		mIsActive = true;
 		doReceive();
-
-		mThread = make_unique<thread>([this]() {mIoService.run(); });
+		mIoService.run();
 		return true;
+	} else {
+		return false;
 	}
-	return false;
 }
 
 void PackageReceiver::stop() {
-	if(mIsActive == true) {
-		mIsActive = false;
-		mDataChannel.close();
-		mIoService.stop();
-		mThread->join();
-		mThread.reset();
-	}
+	mIoService.stop();
 }
 
-bool PackageReceiver::isActive() const {
-	return mIsActive;
+void PackageReceiver::setCallback(Callback&& callback) {
+	unique_lock<mutex> lock(callbackMutex);
+	mCallback = std::move(callback);
 }
 
-PackageReceiver::DataChannel& PackageReceiver::getDataChannel() {
-	return mDataChannel;
+void PackageReceiver::resetCallback() {
+	unique_lock<mutex> lock(callbackMutex);
+	mCallback = nullptr;
+}
+
+void PackageReceiver::callback(ByteVector& buffer) {
+	unique_lock<mutex> lock(callbackMutex);
+	if(mCallback)
+		mCallback(buffer);
 }
 
 void PackageReceiver::doReceive() {
+	mBuffer.resize(mBufferSize);
 	mSocket.async_receive_from(boost::asio::buffer(mBuffer), mEndpoint,
-	[&, this](const error_code & error, size_t size) {
-		if(!error && mIsActive) {
+							   [&, this](const error_code & error, size_t size) {
+		if(!error) {
 			mBuffer.resize(size);
-			if(mDataChannel.isOpen()) {
-				mDataChannel.send(mBuffer);
-			}
+			 callback(mBuffer);
 		}
-		if(mIsActive && mDataChannel.isOpen()) {
-			mBuffer.resize(mBufferSize);
-			doReceive();
-		}
+		doReceive();
 	});
 }
 

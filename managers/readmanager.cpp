@@ -60,9 +60,7 @@ bool ReadManager::init() {
 	}
 }
 
-void ReadManager::shutDown() { }
-
-void ReadManager::flush() {
+void ReadManager::shutDown() {
 	returnSettings();
 	closeStream(mStream);
 }

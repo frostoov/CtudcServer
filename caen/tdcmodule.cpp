@@ -51,15 +51,27 @@ Settings Module::getDefaultSettings() {
 }
 
 bool Module::initialize() {
-	return doAction("Init: ", [&]() {
-		init();
+	return doAction("Init", [&]() {
+		CVErrorCodes status;
+		if (mIsInit) {
+			throw std::logic_error("CAENVME already init");
+		}
+		//Инициализируем для работы
+		status = CAENVME_Init(cvV2718, 0, 0, &mVmeHandle);
+		if(status == cvSuccess) {
+			mIsInit = true;
+			mSettings = getDefaultSettings();
+		} else {
+			mIsInit = false;
+			throw runtime_error(CAENVME_DecodeError(status));
+		}
 		updateSettings();
 	});
 
 }
 
 bool Module::close() {
-	return doAction("Close: ", [&]() {
+	return doAction("Close", [&]() {
 		if(mIsInit) {
 			auto status = CAENVME_End(mVmeHandle);
 			if (status != cvSuccess)
@@ -100,20 +112,20 @@ bool Module::updateSettings() {
 	return status;
 }
 
-bool Module::doAction(const string& message, std::function<void()> func) {
+bool Module::doAction(string&& message, std::function<void()>&& func) {
 	try {
 		func();
-		pushMessage(message + "success");
+		pushMessage(message + ": success");
 		return true;
 	} catch(const exception& e) {
-		pushMessage(message + e.what());
+		pushMessage(message + ": " + e.what());
 		return false;
 	}
 }
 
 bool Module::setLsb(tdcdata::Lsb lsb) {
 	if (lsb != mSettings.getLsb())
-		return doAction("Set LSB: ", [&]() {
+		return doAction("Set LSB", [&]() {
 		auto value = static_cast<uint16_t>(lsb);
 		if (value > 2)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -128,7 +140,7 @@ bool Module::setLsb(tdcdata::Lsb lsb) {
 bool Module::setWindowWidth(uint16_t windowWidth) {
 	windowWidth = (windowWidth / 25) * 25;
 	if (windowWidth != mSettings.getWindowWidth())
-		return doAction("Set window width: ", [&]() {
+		return doAction("Set window width", [&]() {
 		uint16_t value = windowWidth / 25;
 		if (value < 1 || value > 4095)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -143,7 +155,7 @@ bool Module::setWindowWidth(uint16_t windowWidth) {
 bool Module::setWindowOffset(int16_t windowOffset) {
 	windowOffset = (windowOffset / 25) * 25;
 	if (windowOffset != mSettings.getWindowOffset())
-		return doAction("Set window offset: ", [&]() {
+		return doAction("Set window offset", [&]() {
 		uint16_t value = static_cast<uint16_t>(windowOffset / 25);
 		if (static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -157,7 +169,7 @@ bool Module::setWindowOffset(int16_t windowOffset) {
 
 bool Module::setAlmostFull(uint16_t value) {
 	if (value != mSettings.getAlmostFull())
-		return doAction("Set almost Full: ", [&]() {
+		return doAction("Set almost Full", [&]() {
 		if (value < 1 || value > 32735)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
 		else {
@@ -170,7 +182,7 @@ bool Module::setAlmostFull(uint16_t value) {
 
 bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
 	if (edgeDetection != mSettings.getEdgeDetection())
-		return doAction("Set edge detection: ", [&]() {
+		return doAction("Set edge detection", [&]() {
 		auto value = static_cast<uint16_t>(edgeDetection);
 		if (value > 4)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -184,7 +196,7 @@ bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
 
 bool Module::setControl(uint16_t control) {
 	if (control != mSettings.getControl())
-		return doAction("Set control register: ", [&]() {
+		return doAction("Set control register", [&]() {
 		writeReg16(control, Reg::controlReg);
 		mSettings.setControlRegister(control);
 	});
@@ -193,7 +205,7 @@ bool Module::setControl(uint16_t control) {
 
 bool Module::setDeadTime(uint16_t deadTime) {
 	if (deadTime != mSettings.getDeadTime())
-		return doAction("Set dead time: ", [&]() {
+		return doAction("Set dead time", [&]() {
 		writeMicro(&deadTime, OpCode::setDeadTime);
 		mSettings.setDeadTime(deadTime);
 	});
@@ -202,7 +214,7 @@ bool Module::setDeadTime(uint16_t deadTime) {
 
 bool Module::setEventBLT(uint16_t eventBLT) {
 	if(eventBLT == mSettings.getEventBLT())
-		return doAction("Set event alignment: ", [&]() {
+		return doAction("Set event alignment", [&]() {
 		if(eventBLT > 255)
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
 		else {
@@ -215,7 +227,7 @@ bool Module::setEventBLT(uint16_t eventBLT) {
 
 bool Module::setTriggerMode(bool flag) {
 	if(flag != mSettings.getTriggerMode()) {
-		auto status = doAction("Set Trigger Mode: ", [&]() {
+		auto status = doAction("Set Trigger Mode", [&]() {
 			if (flag) {
 				writeMicro(nullptr, OpCode::setTriggerMatching);
 				mSettings.setTriggerMode(true);
@@ -231,7 +243,7 @@ bool Module::setTriggerMode(bool flag) {
 
 bool Module::setTriggerSubtraction(bool flag) {
 	if (flag != mSettings.getTriggerSubtraction())
-		return doAction("Set trigger subtraction: ", [&]() {
+		return doAction("Set trigger subtraction", [&]() {
 		if (flag && !mSettings.getTriggerMode())
 			throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
 		if (flag)
@@ -245,7 +257,7 @@ bool Module::setTriggerSubtraction(bool flag) {
 
 bool Module::setTdcMeta(bool flag) {
 	if (flag != mSettings.getTdcMeta())
-		return doAction("Set TDC metdata: ", [&]() {
+		return doAction("Set TDC metdata", [&]() {
 		if (flag)
 			writeMicro(nullptr, OpCode::enableTDCMeta);
 		else
@@ -256,7 +268,7 @@ bool Module::setTdcMeta(bool flag) {
 }
 
 bool Module::updateMode() {
-	return doAction("Get Trigger Mode: ", [&] {
+	return doAction("Get Trigger Mode", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getMode);
 		mSettings.setTriggerMode(value);
@@ -264,7 +276,7 @@ bool Module::updateMode() {
 }
 
 bool Module::updateTdcMeta() {
-	return doAction("Get Tdc Meta: ", [&] {
+	return doAction("Get Tdc Meta", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::readTdcMeta);
 		mSettings.setTdcMeta(value);
@@ -272,7 +284,7 @@ bool Module::updateTdcMeta() {
 }
 
 bool Module::updateDetection() {
-	return doAction("Get Edge Detection: ", [&] {
+	return doAction("Get Edge Detection", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getDetection);
 		mSettings.setEdgeDetection(static_cast<EdgeDetection>(value));
@@ -280,7 +292,7 @@ bool Module::updateDetection() {
 }
 
 bool Module::updateDeadTime() {
-	return doAction("Get DeadTime: ", [&] {
+	return doAction("Get DeadTime", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getDeadTime);
 		mSettings.setDeadTime(value);
@@ -288,7 +300,7 @@ bool Module::updateDeadTime() {
 }
 
 bool Module::updateLSB() {
-	return doAction("Get Trigger Mode: ", [&] {
+	return doAction("Get Trigger Mode", [&] {
 		uint16_t value;
 		readMicro(&value, OpCode::getLSB);
 		mSettings.setLsb(static_cast<Lsb>(value));
@@ -306,31 +318,31 @@ uint16_t Module::getMicroRev() {
 }
 
 bool Module::updateStatus() {
-	return doAction("Get Status Register: ", [&] {
+	return doAction("Get Status Register", [&] {
 		mSettings.setStatusRegister(readReg16(Reg::statusReg));
 	});
 }
 
 bool Module::updateControl() {
-	return doAction("Get Status Register: ", [&] {
+	return doAction("Get Status Register", [&] {
 		mSettings.setControlRegister(readReg16(Reg::controlReg));
 	});
 }
 
 bool Module::updateAlmostFull() {
-	return doAction("Get AlmostFull: ", [&] {
+	return doAction("Get AlmostFull", [&] {
 		mSettings.setAlmostFull(readReg16(Reg::almostFull));
 	});
 }
 
 bool Module::updateEventBLT() {
-	return doAction("Get Event BLT Number: ", [&] {
+	return doAction("Get Event BLT Number", [&] {
 		mSettings.setEventBLT(readReg16(Reg::eventBLT));
 	});
 }
 
 bool Module::updateTriggerConfig() {
-	return doAction("Get trigger conf: ", [&] {
+	return doAction("Get trigger conf", [&] {
 		uint16_t conf[5];
 		readMicro(conf, OpCode::getTrigConf, 5);
 		mSettings.setWindowWidth(conf[0] * 25);
@@ -340,7 +352,7 @@ bool Module::updateTriggerConfig() {
 }
 
 bool Module::softwareClear() {
-	return doAction("Software Clear: ", [&] {
+	return doAction("Software Clear", [&] {
 		writeReg16(1, Reg::softwareClear);
 	});
 }
@@ -360,9 +372,9 @@ size_t Module::readBlock(WordVector& buff, const Microseconds& delay) {
 		sleep_for(delay);
 	}
 	auto errCode = CAENVME_BLTReadCycle(mVmeHandle, buffAddr,
-	                                    reinterpret_cast<void*>(buff.data() + prevSize),
-	                                    blockSize * sizeof(uint32_t),
-	                                    cvA32_U_BLT, cvD32, &readBytes);
+										reinterpret_cast<void*>(buff.data() + prevSize),
+										blockSize * sizeof(uint32_t),
+										cvA32_U_BLT, cvD32, &readBytes);
 	if((errCode == cvBusError && (mSettings.getControl() & 1)) || errCode == cvSuccess) {
 		readSize += readBytes / sizeof(uint32_t);
 		buff.resize(prevSize + readBytes / sizeof(uint32_t));
@@ -375,30 +387,12 @@ size_t Module::getBlockSize() const {
 	return 1024;
 }
 
-void Module::init() {
-	CVErrorCodes status;
-	if (mIsInit) {
-		status = CAENVME_End(mVmeHandle);
-		if (status != cvSuccess)
-			throw runtime_error(CAENVME_DecodeError(status));
-	}
-	//Инициализируем для работы
-	status = CAENVME_Init(cvV2718, 0, 0, &mVmeHandle);
-	if(status == cvSuccess) {
-		mIsInit = true;
-		mSettings = getDefaultSettings();
-	} else {
-		mIsInit = false;
-		throw runtime_error(CAENVME_DecodeError(status));
-	}
-}
-
 uint32_t Module::readReg32(Reg addr) const {
 	if (mIsInit) {
 		uint32_t data = 0;
 		auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-		                              static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-		                              cvA32_S_DATA, cvD32);
+									  static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+									  cvA32_S_DATA, cvD32);
 		if(code == cvSuccess)
 			return data;
 		else
@@ -411,8 +405,8 @@ uint16_t Module::readReg16(Reg addr) const {
 	if (mIsInit) {
 		uint16_t data = 0;
 		auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-		                              static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-		                              cvA32_S_DATA, cvD16);
+									  static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+									  cvA32_S_DATA, cvD16);
 		if(code == cvSuccess)
 			return data;
 		else
@@ -424,8 +418,8 @@ uint16_t Module::readReg16(Reg addr) const {
 void Module::writeReg32(uint32_t data, Reg addr) {
 	if (mIsInit) {
 		auto code = CAENVME_WriteCycle( mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-		                                static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
-		                                cvA32_S_DATA, cvD32);
+										static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+										cvA32_S_DATA, cvD32);
 		if(code != cvSuccess)
 			throw runtime_error(CAENVME_DecodeError(code));
 	} else
@@ -436,7 +430,7 @@ void Module::writeReg16(uint16_t data, Reg addr) {
 	if (mIsInit) {
 		auto address = ((static_cast<uint32_t>(mBaseAddress)) << 16) | static_cast<uint32_t>(addr);
 		auto code = CAENVME_WriteCycle(mVmeHandle, address, reinterpret_cast<void*>(&data),
-		                               cvA32_S_DATA, cvD16);
+									   cvA32_S_DATA, cvD16);
 		if(code != cvSuccess) throw runtime_error(CAENVME_DecodeError(code));
 	} else
 		throw runtime_error(CAENVME_DecodeError(cvCommError));

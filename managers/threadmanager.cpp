@@ -1,5 +1,7 @@
 #include "threadmanager.hpp"
 
+using std::unique_lock;
+using std::mutex;
 
 using std::make_unique;
 using std::thread;
@@ -7,18 +9,40 @@ using std::thread;
 ThreadManager::ThreadManager()
 	: mIsActive(false) { }
 
-bool ThreadManager::isActive() {
-	return mIsActive;
-}
-
 ThreadManager::~ThreadManager() {
 	stop();
 }
 
+void ThreadManager::joinThread() {
+	unique_lock<mutex> lock(mThreadMutex);
+	mThread->join();
+}
+
+void ThreadManager::resetThread() {
+	unique_lock<mutex> lock(mThreadMutex);
+	if(mThread && mThread->joinable()) {
+		mThread->join();
+	}
+	mThread.reset();
+}
+
+bool ThreadManager::startThread(std::function<void()>&& func) {
+	unique_lock<mutex> lock(mThreadMutex);
+	if(mThread)
+		return false;
+	else {
+		mThread = make_unique<thread>(std::move(func));
+		return true;
+	}
+}
+
+
+
 bool ThreadManager::start() {
 	if(!mThread && init()) {
-		mIsActive = true;
-		mThread = make_unique<thread>(&ThreadManager::workerLoop, this);
+		mIsActive = startThread([this]() {
+			workerLoop();
+		});
 	}
 	return mIsActive;
 }
@@ -26,10 +50,8 @@ bool ThreadManager::start() {
 void ThreadManager::stop() {
 	if(mThread) {
 		mIsActive = false;
+		resetThread();
 		shutDown();
-		mThread->join();
-		mThread.reset();
-		flush();
 	}
 }
 

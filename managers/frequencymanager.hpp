@@ -14,14 +14,13 @@ class FrequencyManager : public ProcessManager {
 	using Seconds = std::chrono::seconds;
 
 	FrequencyManager(ModulePtr module, const ChannelConfig& config,
-	                 const Microseconds& time);
+					 const Microseconds& time);
 	bool isDataValid() { return mDataValid; }
 	const TrekFrequency& getFrequency() const { return mFrequency; }
 
   protected:
 	bool init() override;
 	void shutDown() override;
-	void flush() override;
 	void workerFunc() override;
 	void handleData(WordVector& data);
 	void calculateFrequency(double time);

@@ -9,11 +9,11 @@ Subject::Subject() :
 
 Subject::~Subject() { }
 
-void Subject::attach(Observer* observer) {
+void Subject::attach(ObserverPtr observer) {
 	mObservers.push_back(observer);
 }
 
-void Subject::detach(Observer* observer) {
+void Subject::detach(ObserverPtr observer) {
 	mObservers.remove(observer);
 }
 
@@ -28,19 +28,19 @@ bool Subject::hasMessages() const {
 	return !mMessages.empty();
 }
 
-void Subject::pushMessage(const string& text) const {
+void Subject::pushMessage(string&& text) const {
 	if(mNeedLog) {
 		unique_lock<mutex> locker(mMessagesMutex);
 		if(mMessages.size() >= 1000)
 			mMessages.pop();
 
-		mMessages.push({text, SystemClock::now()});
+		mMessages.push({std::move(text), SystemClock::now()});
 	}
 }
 
-Subject::Message Subject::popMessage() const {
+Subject::Message&& Subject::popMessage() const {
 	unique_lock<mutex> locker(mMessagesMutex);
-	auto message = mMessages.front();
+	auto message = std::move(mMessages.front());
 	mMessages.pop();
-	return message;
+	return std::move(message);
 }

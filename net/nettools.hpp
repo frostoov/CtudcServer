@@ -12,7 +12,6 @@ class membuf : public std::basic_streambuf<char> {
 	}
 };
 
-bool verifyDecorPackage(char* data, size_t size);
 bool verifyNevodPackage(char* data, size_t size);
 
 #endif // NETTOOLS
