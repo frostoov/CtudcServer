@@ -28,7 +28,7 @@ class Subject {
   private:
 	using MessageQueue = std::queue<Message>;
   public:
-	virtual ~Subject();
+	virtual ~Subject() = default;
 	void attach(ObserverPtr observer);
 	void detach(ObserverPtr observer);
 	void notify();

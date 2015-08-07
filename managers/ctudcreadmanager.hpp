@@ -3,7 +3,7 @@
 
 #include <tdcdata/ctudcrecord.hpp>
 
-#include "net/packagereciever.hpp"
+#include "net/packagereceiver.hpp"
 #include "readmanager.hpp"
 
 namespace caen {

@@ -283,9 +283,7 @@ DeviceManager::Response DeviceManager::stopRead(const Query& query) {
 	auto status = false;
 	if( isReadManager(mProcess) || isCtudcReadManager(mProcess) ) {
 		mProcess->stop();
-		cout << "DeviceManager::stoped" << endl;
 		mProcess.reset();
-		cout << "DeviceManager::reset" << endl;
 		status = true;
 	}
 	return {

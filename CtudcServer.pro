@@ -37,11 +37,11 @@ HEADERS += \
 	managers/readmanager.hpp \
 	managers/types.hpp \
 	net/nettools.hpp \
-	net/packagereciever.hpp \
 	net/server.hpp \
 	net/session.hpp \
 	observer/observer.hpp \
-	managers/threadmanager.hpp
+	managers/threadmanager.hpp \
+    net/packagereceiver.hpp
 
 SOURCES += \
 	caen/tdcmodule.cpp \
@@ -52,10 +52,10 @@ SOURCES += \
 	managers/processmanager.cpp \
 	managers/readmanager.cpp \
 	net/nettools.cpp \
-	net/packagereciever.cpp \
 	net/server.cpp \
 	net/session.cpp \
 	observer/observer.cpp \
 	main.cpp \
-	managers/threadmanager.cpp
+	managers/threadmanager.cpp \
+    net/packagereceiver.cpp
 

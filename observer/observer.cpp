@@ -7,8 +7,6 @@ using std::string;
 Subject::Subject() :
 	mNeedLog(false) { }
 
-Subject::~Subject() { }
-
 void Subject::attach(ObserverPtr observer) {
 	mObservers.push_back(observer);
 }
