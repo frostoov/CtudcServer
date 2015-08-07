@@ -22,9 +22,9 @@ int main() {
 	ifstream stream;
 	stream.exceptions(stream.badbit | stream.failbit);
 	try {
-		stream.open("psychoServer.conf");
+		stream.open("CtudcServer.conf");
 	} catch(const std::exception& e) {
-		cout << "Failed open psychoServer.conf: " << e.what() << endl;
+		cout << "Failed open CtudcServer.conf: " << e.what() << endl;
 		cin.ignore();
 		std::exit(0);
 	}
@@ -33,7 +33,7 @@ int main() {
 		address = config.at("address").get<string>();
 		port = config.at("port").get<uint16_t>();
 	} catch(const std::exception& e) {
-		cout << "Failed parse psychoServer.conf: " << e.what() << endl;
+		cout << "Failed parse CtudcServer.conf: " << e.what() << endl;
 		cin.ignore();
 		std::exit(0);
 	}
