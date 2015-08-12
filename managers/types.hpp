@@ -7,13 +7,13 @@
 namespace caen {
 
 class ChannelCongruence {
-  public:
-	ChannelCongruence(uint32_t chamber, uint32_t wire)
-		: mChamber(chamber), mWire(wire) { }
+public:
+	ChannelCongruence (uint32_t chamber, uint32_t wire)
+		: mChamber (chamber), mWire (wire) { }
 
 	uint32_t getChamber() const {return mChamber;}
 	uint32_t getWire() const {return mWire;}
-  private:
+private:
 	uint32_t mChamber;
 	uint32_t mWire;
 };

@@ -5,11 +5,13 @@
 #include "managers/types.hpp"
 
 class ChannelsConfigParser : public AbstractConfigParser {
-  public:
-	void load(const std::string& fileName) override;
-	void save(const std::string& fileName) override;
+public:
+	void load (const std::string& fileName) override;
+	void save (const std::string& fileName) override;
+	void load (std::istream& stream) override;
+	void save (std::ostream& stream) override;
 	const caen::ChannelConfig& getConfig() const;
-  private:
+private:
 	caen::ChannelConfig mConfig;
 
 	static const std::string channelsIdent;

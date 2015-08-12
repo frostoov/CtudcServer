@@ -13,16 +13,15 @@ using boost::asio::ip::address;
 
 using caen::Module;
 
-Server::Server(DeviceManagerPtr deviceManager, const string& ipAdrress, uint16_t port)
-	: mDeviceManager(deviceManager),
-	  mAcceptor(mIoService, Endpoint(IpAddress::from_string(ipAdrress), port)),
-	  mSocket(mIoService)
-{}
+Server::Server (DeviceManagerPtr deviceManager, const string& ipAdrress, uint16_t port)
+	: mDeviceManager (deviceManager),
+	  mAcceptor (mIoService, Endpoint (IpAddress::from_string (ipAdrress), port) ),
+	  mSocket (mIoService) { }
 
 void Server::start() {
 	mIoService.reset();
 	doAccept();
-	thread([this]() {mIoService.run();}).detach();
+	thread ([this]() {mIoService.run();}).detach();
 }
 
 void Server::stop() {
@@ -32,16 +31,16 @@ void Server::stop() {
 }
 
 void Server::doAccept() {
-	mAcceptor.async_accept(mSocket, [this](boost::system::error_code errCode) {
-		if(!errCode) {
+	mAcceptor.async_accept (mSocket, [this] (boost::system::error_code errCode) {
+		if (!errCode) {
 			cout << "Accepted connection: " << mSocket.remote_endpoint().address().to_string() << endl;
-			SessionPtr newSession = make_shared<Session>(mDeviceManager, std::move(mSocket), [this](SessionPtr session) {
-				mSessions.remove(session);
+			SessionPtr newSession = make_shared<Session> (mDeviceManager, std::move (mSocket), [this] (SessionPtr session) {
+				mSessions.remove (session);
 			});
-			mSessions.push_back(newSession);
+			mSessions.push_back (newSession);
 			newSession->start();
 		} else
-			cerr << "error: " << errCode.message() << endl;
+		{ cerr << "error: " << errCode.message() << endl; }
 		doAccept();
 	});
 }

@@ -7,31 +7,31 @@ using std::make_unique;
 using std::thread;
 
 ThreadManager::ThreadManager()
-	: mIsActive(false) { }
+	: mIsActive (false) { }
 
 ThreadManager::~ThreadManager() {
 	stop();
 }
 
 void ThreadManager::joinThread() {
-	unique_lock<mutex> lock(mThreadMutex);
+	unique_lock<mutex> lock (mThreadMutex);
 	mThread->join();
 }
 
 void ThreadManager::resetThread() {
-	unique_lock<mutex> lock(mThreadMutex);
-	if(mThread && mThread->joinable()) {
+	unique_lock<mutex> lock (mThreadMutex);
+	if (mThread && mThread->joinable() ) {
 		mThread->join();
 	}
 	mThread.reset();
 }
 
-bool ThreadManager::startThread(std::function<void()>&& func) {
-	unique_lock<mutex> lock(mThreadMutex);
-	if(mThread)
-		return false;
+bool ThreadManager::startThread (std::function<void() >&& func) {
+	unique_lock<mutex> lock (mThreadMutex);
+	if (mThread)
+	{ return false; }
 	else {
-		mThread = make_unique<thread>(std::move(func));
+		mThread = make_unique<thread> (std::move (func) );
 		return true;
 	}
 }
@@ -39,8 +39,8 @@ bool ThreadManager::startThread(std::function<void()>&& func) {
 
 
 bool ThreadManager::start() {
-	if(!mThread && init()) {
-		mIsActive = startThread([this]() {
+	if (!mThread && init() ) {
+		mIsActive = startThread ([this]() {
 			workerLoop();
 		});
 	}
@@ -48,7 +48,7 @@ bool ThreadManager::start() {
 }
 
 void ThreadManager::stop() {
-	if(mThread) {
+	if (mThread) {
 		mIsActive = false;
 		resetThread();
 		shutDown();
@@ -56,10 +56,10 @@ void ThreadManager::stop() {
 }
 
 bool ThreadManager::hasProcess() const {
-	return bool(mThread);
+	return bool (mThread);
 }
 
 void ThreadManager::workerLoop() {
-	while(mIsActive)
-		workerFunc();
+	while (mIsActive)
+	{ workerFunc(); }
 }

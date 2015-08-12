@@ -23,7 +23,7 @@ linux-clang {
 }
 
 
-LIBS += -ltdcdata
+LIBS += -ltrekdata
 
 HEADERS += \
 	caen/tdcmodule.hpp \
@@ -31,7 +31,6 @@ HEADERS += \
 	configparser/channelsconfigparser.hpp \
 	configparser/configparser.hpp \
 	managers/ctudcreadmanager.hpp \
-	managers/devicemanager.hpp \
 	managers/frequencymanager.hpp \
 	managers/processmanager.hpp \
 	managers/readmanager.hpp \
@@ -41,13 +40,15 @@ HEADERS += \
 	net/server.hpp \
 	net/session.hpp \
 	observer/observer.hpp \
-	managers/threadmanager.hpp
+	managers/threadmanager.hpp \
+	configparser/appconfigparser.hpp \
+	appsettings.hpp \
+	managers/facilitymanager.hpp
 
 SOURCES += \
 	caen/tdcmodule.cpp \
 	configparser/channelsconfigparser.cpp \
 	managers/ctudcreadmanager.cpp \
-	managers/devicemanager.cpp \
 	managers/frequencymanager.cpp \
 	managers/processmanager.cpp \
 	managers/readmanager.cpp \
@@ -57,5 +58,8 @@ SOURCES += \
 	net/session.cpp \
 	observer/observer.cpp \
 	main.cpp \
-	managers/threadmanager.cpp
+	managers/threadmanager.cpp \
+	configparser/appconfigparser.cpp \
+	appsettings.cpp \
+	managers/facilitymanager.cpp
 

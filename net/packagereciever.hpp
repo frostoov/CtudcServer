@@ -4,7 +4,7 @@
 #include <boost/asio.hpp>
 #include <mutex>
 
-#include <tdcdata/structs.hpp>
+#include <trekdata/structs.hpp>
 
 class PackageReceiver {
 	using UDP       = boost::asio::ip::udp;
@@ -12,23 +12,23 @@ class PackageReceiver {
 	using UdpSocket = boost::asio::ip::udp::socket;
 	using IoService = boost::asio::io_service;
 	using IpAddress = boost::asio::ip::address;
-  public:
+public:
 	using ByteVector  = std::vector<char>;
-	using Callback  = std::function<void(ByteVector&)>;
-  public:
-	PackageReceiver(const std::string& multicastAddress, uint16_t port);
-	PackageReceiver(const std::string& multicastAddress, uint16_t port, const Callback& function);
+	using Callback  = std::function<void (ByteVector&) >;
+public:
+	PackageReceiver (const std::string& multicastAddress, uint16_t port);
+	PackageReceiver (const std::string& multicastAddress, uint16_t port, const Callback& function);
 	~PackageReceiver();
 	bool start();
 	void stop();
-	void setCallback(Callback&& callback);
+	void setCallback (Callback&& callback);
 	void resetCallback();
-  protected:
-	void callback(ByteVector& buffer);
+protected:
+	void callback (ByteVector& buffer);
 	void doReceive();
-	void joinMulticastGroup(const IpAddress& multicastAddress);
-	void leaveMulticastGroup(const IpAddress& multicastAddress);
-  private:
+	void joinMulticastGroup (const IpAddress& multicastAddress);
+	void leaveMulticastGroup (const IpAddress& multicastAddress);
+private:
 	IoService mIoService;
 	UdpSocket mSocket;
 	Endpoint  mEndpoint;

@@ -9,24 +9,24 @@
 
 class ThreadManager {
 	using ThreadPtr = std::unique_ptr<std::thread>;
-  public:
+public:
 	virtual ~ThreadManager();
-	ThreadManager(const ThreadManager& other) = delete;
-	void operator=(const ThreadManager& other) = delete;
+	ThreadManager (const ThreadManager& other) = delete;
+	void operator= (const ThreadManager& other) = delete;
 
 	virtual bool start();
 	virtual void stop();
 
 	bool hasProcess() const;
-  protected:
+protected:
 	ThreadManager();
 	virtual void workerFunc() = 0;
 	virtual bool init() = 0;
 	virtual void shutDown() = 0;
 	void joinThread();
 	void resetThread();
-	bool startThread(std::function<void()>&&func);
-  private:
+	bool startThread (std::function<void() >&& func);
+private:
 	void workerLoop();
 	ThreadPtr mThread;
 	std::mutex mThreadMutex;

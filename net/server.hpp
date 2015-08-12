@@ -11,7 +11,7 @@
 
 class Server {
 	using SessionPtr = std::shared_ptr<Session>;
-	using DeviceManagerPtr = std::shared_ptr<DeviceManager>;
+	using DeviceManagerPtr = std::shared_ptr<FacilityManager>;
 	using SessionList = std::list<SessionPtr>;
 	using IoService = boost::asio::io_service;
 	using IpAddress = boost::asio::ip::address;
@@ -19,13 +19,13 @@ class Server {
 	using Socket = TCP::socket;
 	using Acceptor = TCP::acceptor;
 	using Endpoint = TCP::endpoint;
-  public:
-	Server(DeviceManagerPtr deviceManager, const std::string& ipAdrress, uint16_t port);
+public:
+	Server (DeviceManagerPtr deviceManager, const std::string& ipAdrress, uint16_t port);
 	void start();
 	void stop();
-  protected:
+protected:
 	void doAccept();
-  private:
+private:
 	DeviceManagerPtr mDeviceManager;
 	IoService mIoService;
 	Acceptor mAcceptor;

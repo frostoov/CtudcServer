@@ -97,7 +97,6 @@
 	"procedure" : "startRead",
 	"input" : [
 		"type",  /*string: [simple], [ctudc]*/
-		"dirPath"
 	], 
 }
 {
@@ -137,4 +136,8 @@
 	"output" : [
 		1.1 /*double: Package frequency**/
 	]
+}
+{
+	"procedure" : "getCurrentRun",
+	"output" : [0 /*Current run*/]
 }

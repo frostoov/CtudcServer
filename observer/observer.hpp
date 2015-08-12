@@ -11,35 +11,35 @@
 class Subject;
 
 class Observer {
-  public:
+public:
 	virtual ~Observer() {}
-	virtual void observerUpdate(const Subject* subject) = 0;
-  protected:
+	virtual void observerUpdate (const Subject* subject) = 0;
+protected:
 	Observer() = default;
 };
 
 class Subject {
-  public:
+public:
 	using SystemClock  = std::chrono::high_resolution_clock;
 	using TimePoint    = SystemClock::time_point;
 	using Message      = std::pair<std::string, TimePoint>;
 	using ObserverPtr  = std::shared_ptr<Observer>;
 	using ObserverList = std::list<ObserverPtr>;
-  private:
+private:
 	using MessageQueue = std::queue<Message>;
-  public:
+public:
 	virtual ~Subject();
-	void attach(ObserverPtr observer);
-	void detach(ObserverPtr observer);
+	void attach (ObserverPtr observer);
+	void detach (ObserverPtr observer);
 	void notify();
 	bool hasMessages() const;
 	Message&& popMessage() const;
-	void setLog(bool flag) {mNeedLog = flag;}
+	void setLog (bool flag) {mNeedLog = flag;}
 	virtual const char* getTitle() const = 0;
-  protected:
+protected:
 	Subject();
-	void pushMessage(std::string&& text) const;
-  private:
+	void pushMessage (std::string&& text) const;
+private:
 	ObserverList mObservers;
 	MessageQueue mutable mMessages;
 	std::mutex mutable mMessagesMutex;

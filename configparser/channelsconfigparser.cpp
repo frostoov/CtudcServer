@@ -10,35 +10,47 @@ using std::istreambuf_iterator;
 using nlohmann::json;
 using caen::ChannelConfig;
 
-const std::string ChannelsConfigParser::chamberIdent("chamber");
-const std::string ChannelsConfigParser::channelsIdent("channels");
-const std::string ChannelsConfigParser::wireIdent("wire");
-const std::string ChannelsConfigParser::numberIdent("number");
+const std::string ChannelsConfigParser::chamberIdent ("chamber");
+const std::string ChannelsConfigParser::channelsIdent ("channels");
+const std::string ChannelsConfigParser::wireIdent ("wire");
+const std::string ChannelsConfigParser::numberIdent ("number");
 
-void ChannelsConfigParser::load(const std::string& fileName) {
+void ChannelsConfigParser::load (const std::string& fileName) {
 	mConfig.clear();
 	ifstream stream;
-	stream.exceptions(ifstream::badbit | ifstream::failbit);
-	stream.open(fileName);
+	stream.exceptions (stream.badbit | stream.failbit);
+	stream.open (fileName);
 
-	string configString({istreambuf_iterator<char>(stream), istreambuf_iterator<char>()});
-	auto jsonConfig = json::parse(configString);
+	load (stream);
+}
 
-	const auto& channelsConfig = jsonConfig.at(channelsIdent);
-	for(const auto& channelConfig : channelsConfig) {
-		const auto channelNumber = static_cast<uint32_t>(channelConfig.at(numberIdent)) - 1;
-		if(mConfig.count(channelNumber))
-			throw std::runtime_error("ChannelsConfigParser::load: channel config already exists");
-		const auto wireNumber    = static_cast<uint32_t>(channelConfig.at(wireIdent)) - 1;
-		const auto chamberNumber = static_cast<uint32_t>(channelConfig.at(chamberIdent)) - 1;
+void ChannelsConfigParser::save (const std::string& fileName) {
+	ofstream stream;
+	stream.exceptions (ofstream::badbit | ofstream::failbit);
+	stream.open (fileName);
 
-		mConfig.insert({channelNumber, {chamberNumber, wireNumber} });
+	save (stream);
+}
+
+void ChannelsConfigParser::load (std::istream& stream) {
+	string configString ({istreambuf_iterator<char> (stream), istreambuf_iterator<char>() });
+	auto jsonConfig = json::parse (configString);
+
+	const auto& channelsConfig = jsonConfig.at (channelsIdent);
+	for (const auto& channelConfig : channelsConfig) {
+		const auto channelNumber = channelConfig.at (numberIdent).get<uint32_t>() - 1;
+		if (mConfig.count (channelNumber) )
+		{ throw std::runtime_error ("ChannelsConfigParser::load: channel config already exists"); }
+		const auto wireNumber    = channelConfig.at (wireIdent).get<uint32_t>() - 1;
+		const auto chamberNumber = channelConfig.at (chamberIdent).get<uint32_t>() - 1;
+
+		mConfig.insert ({channelNumber, {chamberNumber, wireNumber} });
 	}
 }
 
-void ChannelsConfigParser::save(const std::string& fileName) {
+void ChannelsConfigParser::save (std::ostream& stream) {
 	json config;
-	for(const auto& configPair : mConfig) {
+	for (const auto& configPair : mConfig) {
 		const auto& channelNumber = configPair.first;
 		const auto& channelConfig = configPair.second;
 		json channel{
@@ -46,13 +58,9 @@ void ChannelsConfigParser::save(const std::string& fileName) {
 			{chamberIdent, channelConfig.getChamber() + 1},
 			{wireIdent,    channelConfig.getWire() + 1}
 		};
-		config[channelsIdent].push_back(channel);
+		config[channelsIdent].push_back (channel);
 	}
-
-	ofstream stream;
-	stream.exceptions(ofstream::badbit | ofstream::failbit);
-	stream.open(fileName);
-	stream << config.dump(4);
+	stream << config.dump (4);
 }
 
 const ChannelConfig& ChannelsConfigParser::getConfig() const {

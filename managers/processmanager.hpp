@@ -5,7 +5,7 @@
 #include <list>
 #include <memory>
 
-#include <tdcdata/tdcrecord.hpp>
+#include <trekdata/tdcrecord.hpp>
 
 #include "threadmanager.hpp"
 #include "caen/tdcmodule.hpp"
@@ -14,54 +14,54 @@
 namespace caen {
 
 class ProcessManager : public ThreadManager {
-  protected:
+protected:
 	using ModulePtr     = std::shared_ptr<Module>;
-	using TDCRecordList  = std::list<tdcdata::TDCRecord>;
-  public:
+	using TdcRecordList  = std::list<trekdata::TdcRecord>;
+public:
 
-	void setModule(ModulePtr module) { mTdcModule = module; }
+	void setModule (ModulePtr module) { mTdcModule = module; }
 
-	static uint32_t GLBHeaderEventCount(uint32_t data) { return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5; }
+	static uint32_t GLBHeaderEventCount (uint32_t data) { return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5; }
 	static uint32_t GLBHeaderGeo	(uint32_t data) { return ( data & GLB_HDR_GEO_MSK); }
 	static uint32_t GLBTrigTimeTag	(uint32_t data) { return (data & GLB_TRG_TIME_TAG_MSK); }
 	static uint32_t GLBTrailerStat	(uint32_t data) { return (data & GLB_TRL_STATUS_MSK) >> 24; }
-	static uint32_t GLBTrailerWCount(uint32_t data) { return (data & GLB_TRL_WCOUNT_MSK) >> 5; }
+	static uint32_t GLBTrailerWCount (uint32_t data) { return (data & GLB_TRL_WCOUNT_MSK) >> 5; }
 	static uint32_t GLBTrailerGeo	(uint32_t data) { return (data & GLB_TRL_GEO_MSK); }
 	static uint32_t TDCHeaderTdc	(uint32_t data) { return (data & TDC_HDR_TDC_MSK) >> 24; }
 	static uint32_t TDCHeaderEvtID	(uint32_t data) { return (data & TDC_HDR_EVENT_ID_MSK) >> 12; }
-	static uint32_t TDCHeaderBunchID(uint32_t data) { return (data & TDC_HDR_BUNCH_ID_MSK); }
+	static uint32_t TDCHeaderBunchID (uint32_t data) { return (data & TDC_HDR_BUNCH_ID_MSK); }
 	static uint32_t TDCMsrTrailing	(uint32_t data) { return (data & TDC_MSR_TRAILING_MSK) >> 26; }
 
 	static uint32_t TDCMsrMeasure	(uint32_t data) { return (data & TDC_MSR_MEASURE_MSK); }
 	static uint32_t TDCTrailerTdc	(uint32_t data) { return (data & TDC_TRL_TDC_MSK) >> 24; }
 	static uint32_t TDCTrailerEvtID	(uint32_t data) { return (data & TDC_TRL_EVENT_ID_MSK) >> 12; }
-	static uint32_t TDCTrailerWCount(uint32_t data) { return (data & TDC_TRL_WCOUNT_MSK); }
+	static uint32_t TDCTrailerWCount (uint32_t data) { return (data & TDC_TRL_WCOUNT_MSK); }
 	static uint32_t TDCErrTdc		(uint32_t data) { return (data & TDC_ERR_TDC_MSK) >> 24; }
 	static uint32_t TDCErrFlags		(uint32_t data) { return (data & TDC_ERR_ERR_FLAGS_MSK); }
 
 	static uint32_t getChannel	(uint32_t data) { return (data & TDC_MSR_CHANNEL_MSK) >> 19; }
-	static uint32_t getChamber	(uint32_t data) { return ((data >> 19) & 31); }
-	static uint32_t getWire		(uint32_t data) { return ((data >> 24) & 3); }
+	static uint32_t getChamber	(uint32_t data) { return ( (data >> 19) & 31); }
+	static uint32_t getWire		(uint32_t data) { return ( (data >> 24) & 3); }
 	static bool isGlobalHeader	(uint32_t data) { return (data & DATA_TYPE_MSK) == HEADER; }
 	static bool isGlobalTrailer	(uint32_t data) { return (data & DATA_TYPE_MSK) == TRAILER; }
 	static bool isMeasurement	(uint32_t data) { return (data & DATA_TYPE_MSK) == TDC_MEASURE; }
-  protected:
-	ProcessManager(ModulePtr module, const ChannelConfig& config);
+protected:
+	ProcessManager (ModulePtr module, const ChannelConfig& config);
 	bool init() override;
-	void setBkpSettings(const tdcdata::Settings& settings);
+	void setBkpSettings (const trekdata::Settings& settings);
 	void returnSettings();
 
-	TDCRecordList handleBuffer(const WordVector& buffer);
-	uint32_t    convertWord(uint32_t word);
-	WordVector& convertEvent(WordVector& eventWords);
+	TdcRecordList handleBuffer (const WordVector& buffer);
+	uint32_t    convertWord (uint32_t word);
+	WordVector& convertEvent (WordVector& eventWords);
 
-	bool checkChannel(uint32_t channel) const;
-	const ChannelCongruence& getChannelCongruence(size_t ch);
+	bool checkChannel (uint32_t channel) const;
+	const ChannelCongruence& getChannelCongruence (size_t ch);
 	ModulePtr mTdcModule;
-  private:
+private:
 	ChannelConfig mConfig;
 
-	tdcdata::Settings mBkpSettings;
+	trekdata::Settings mBkpSettings;
 
 	static const uint32_t DATA_TYPE_MSK = 0xf8000000; /* Data type bit masks */
 
