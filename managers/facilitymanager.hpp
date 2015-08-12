@@ -62,6 +62,7 @@ public:
 	                 const FacilitySettings& settings);
 	std::string handleQuery (const std::string& rawQuery);
 	void setStopReadCallback (Callback&& callback);
+	const FacilitySettings& getSettings() const;
 protected:
 	Procedures createProcedures();
 

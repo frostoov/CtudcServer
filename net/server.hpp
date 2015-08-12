@@ -8,6 +8,7 @@
 #include <boost/asio.hpp>
 
 #include "session.hpp"
+#include "packagereceiver.hpp"
 
 class Server {
 	using SessionPtr = std::shared_ptr<Session>;
@@ -16,20 +17,21 @@ class Server {
 	using IoService = boost::asio::io_service;
 	using IpAddress = boost::asio::ip::address;
 	using TCP = boost::asio::ip::tcp;
-	using Socket = TCP::socket;
-	using Acceptor = TCP::acceptor;
-	using Endpoint = TCP::endpoint;
+	using UDP = boost::asio::ip::udp;
 public:
 	Server (DeviceManagerPtr deviceManager, const std::string& ipAdrress, uint16_t port);
+	~Server();
 	void start();
 	void stop();
 protected:
 	void doAccept();
+	void receiveNevodSignal();
 private:
 	DeviceManagerPtr mDeviceManager;
 	IoService mIoService;
-	Acceptor mAcceptor;
-	Socket mSocket;
+	TCP::acceptor mAcceptor;
+	TCP::socket mSocket;
+	PackageReceiver mNevodReceiver;
 
 	SessionList mSessions;
 };

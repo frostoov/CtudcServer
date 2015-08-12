@@ -40,6 +40,10 @@ int main() {
 	auto deviceManager = make_shared<FacilityManager> (0xEE00,
 	                                                   channelParser.getConfig(),
 	                                                   appSettings.getFacilitySettings() );
+	deviceManager->setStopReadCallback ([&appSettings] (const FacilityManager & manager) {
+		appSettings.setFacilitySettings (manager.getSettings() );
+		appSettings.save ("CtudcServer.conf");
+	});
 	Server server (deviceManager, appSettings.getIpAddress(), appSettings.getPort() );
 	server.start();
 
@@ -48,6 +52,7 @@ int main() {
 		std::getline (cin, command);
 		if (command == "exit") {
 			server.stop();
+			cin.ignore();
 			exit (0);
 		}
 	}

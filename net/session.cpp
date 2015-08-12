@@ -21,8 +21,7 @@ void Session::start() {
 }
 
 void Session::doRecieve() {
-	auto self (shared_from_this() );
-	mSocket.async_receive (boost::asio::buffer (mBuffer), [this, self] (error_code errCode, size_t length) {
+	mSocket.async_receive (boost::asio::buffer (mBuffer), [this] (error_code errCode, size_t length) {
 		string response;
 		if (!errCode) {
 			try {
@@ -36,7 +35,7 @@ void Session::doRecieve() {
 			doRecieve();
 		} else {
 			cout << "Disconnected: " << mSocket.remote_endpoint().address().to_string() << endl;
-			mCallback (self);
+			mCallback (shared_from_this() );
 		}
 	});
 }

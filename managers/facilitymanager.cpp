@@ -80,6 +80,10 @@ void FacilityManager::setStopReadCallback (FacilityManager::Callback&& callback)
 	mStopReadCallback = std::move (callback);
 }
 
+const FacilitySettings& FacilityManager::getSettings() const {
+	return mSettings;
+}
+
 FacilityManager::Query FacilityManager::convertQuery (const string& rawQuery) {
 	auto query = json::parse (rawQuery);
 	return {
