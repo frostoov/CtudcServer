@@ -21,7 +21,7 @@ bool FrequencyManager::init() {
 		if (!mTdcModule->getSettings().getTriggerMode() ) {
 			mTotalMsrTime = Microseconds::zero();
 			mDataValid = false;
-			return ProcessManager::start();
+			return true;
 		} else {
 			returnSettings();
 			return false;

@@ -27,10 +27,10 @@ public:
 	using ObserverList = std::list<ObserverPtr>;
 private:
 	using MessageQueue = std::queue<Message>;
-public:
-	virtual ~Subject();
-	void attach (ObserverPtr observer);
-	void detach (ObserverPtr observer);
+  public:
+	virtual ~Subject() = default;
+	void attach(ObserverPtr observer);
+	void detach(ObserverPtr observer);
 	void notify();
 	bool hasMessages() const;
 	Message&& popMessage() const;

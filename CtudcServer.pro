@@ -36,7 +36,7 @@ HEADERS += \
 	managers/readmanager.hpp \
 	managers/types.hpp \
 	net/nettools.hpp \
-	net/packagereciever.hpp \
+	net/packagereceiver.hpp \
 	net/server.hpp \
 	net/session.hpp \
 	observer/observer.hpp \
@@ -53,7 +53,7 @@ SOURCES += \
 	managers/processmanager.cpp \
 	managers/readmanager.cpp \
 	net/nettools.cpp \
-	net/packagereciever.cpp \
+	net/packagereceiver.cpp \
 	net/server.cpp \
 	net/session.cpp \
 	observer/observer.cpp \
@@ -62,4 +62,3 @@ SOURCES += \
 	configparser/appconfigparser.cpp \
 	appsettings.cpp \
 	managers/facilitymanager.cpp
-

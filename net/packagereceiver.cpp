@@ -1,5 +1,4 @@
-#include "packagereciever.hpp"
-
+#include "packagereceiver.hpp"
 
 using std::vector;
 using std::make_unique;
@@ -26,14 +25,10 @@ PackageReceiver::~PackageReceiver() {
 }
 
 bool PackageReceiver::start() {
-	if (mIoService.stopped() ) {
-		mIoService.reset();
-		doReceive();
-		mIoService.run();
-		return true;
-	} else {
-		return false;
-	}
+	mIoService.reset();
+	doReceive();
+	mIoService.run();
+	return true;
 }
 
 void PackageReceiver::stop() {
@@ -57,12 +52,12 @@ void PackageReceiver::callback (ByteVector& buffer) {
 }
 
 void PackageReceiver::doReceive() {
-	mBuffer.resize (mBufferSize);
-	mSocket.async_receive_from (boost::asio::buffer (mBuffer), mEndpoint,
-	[&, this] (const error_code & error, size_t size) {
-		if (!error) {
-			mBuffer.resize (size);
-			callback (mBuffer);
+	mBuffer.resize(mBufferSize);
+	mSocket.async_receive_from(boost::asio::buffer(mBuffer), mEndpoint,
+							   [&, this](const error_code & error, size_t size) {
+		if(!error) {
+			mBuffer.resize(size);
+			callback(mBuffer);
 		}
 		doReceive();
 	});
