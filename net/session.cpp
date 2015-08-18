@@ -11,39 +11,39 @@ using nlohmann::json;
 using boost::system::error_code;
 
 
-Session::Session (DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback callback)
-	: mDeviceManager (deviceManager),
-	  mSocket (std::move (socket) ),
-	  mCallback (callback) { }
+Session::Session(DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback callback)
+    : mDeviceManager(deviceManager),
+      mSocket(std::move(socket)),
+      mCallback(callback) { }
 
 void Session::start() {
-	doRecieve();
+    doRecieve();
 }
 
 void Session::doRecieve() {
-	mSocket.async_receive (boost::asio::buffer (mBuffer), [this] (error_code errCode, size_t length) {
-		string response;
-		if (!errCode) {
-			try {
-				string query (mBuffer.data(), length);
-				cout << "Received query:\n" << query << endl;
-				response = mDeviceManager->handleQuery (query);
-			} catch (const std::exception& e) {
-				response = "Invalid query";
-			}
-			doSend (response);
-			doRecieve();
-		} else {
-			cout << "Disconnected: " << mSocket.remote_endpoint().address().to_string() << endl;
-			mCallback (shared_from_this() );
-		}
-	});
+    mSocket.async_receive(boost::asio::buffer(mBuffer), [this](error_code errCode, size_t length) {
+        string response;
+        if(!errCode) {
+            try {
+                string query(mBuffer.data(), length);
+                cout << "Received query:\n" << query << endl;
+                response = mDeviceManager->handleQuery(query);
+            } catch(const std::exception& e) {
+                response = "Invalid query";
+            }
+            doSend(response);
+            doRecieve();
+        } else {
+            cout << "Disconnected: " << mSocket.remote_endpoint().address().to_string() << endl;
+            mCallback(shared_from_this());
+        }
+    });
 }
 
-void Session::doSend (const std::string& response) {
-	auto self (shared_from_this() );
-	mSocket.async_send (boost::asio::buffer (response), [this, self] (error_code errCode, size_t length) {
-		if (errCode)
-		{ mCallback (self); }
-	});
+void Session::doSend(const std::string& response) {
+    auto self(shared_from_this());
+    mSocket.async_send(boost::asio::buffer(response), [this, self](error_code errCode, size_t length) {
+        if(errCode)
+            mCallback(self);
+    });
 }

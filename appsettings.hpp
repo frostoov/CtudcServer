@@ -6,25 +6,25 @@
 
 class AppSettings {
 public:
-	AppSettings() = default;
-	void load (const std::string& fileName);
-	void save (const std::string& fileName);
+    AppSettings() = default;
+    void load(const std::string& fileName);
+    void save(const std::string& fileName);
 
-	nlohmann::json marshal() const;
-	void unMarshal (const nlohmann::json& doc);
+    nlohmann::json marshal() const;
+    void unMarshal(const nlohmann::json& doc);
 
-	const std::string& getIpAddress() const;
-	uint16_t getPort() const;
-	const FacilitySettings& getFacilitySettings() const;
+    const std::string& getIpAddress() const;
+    uint16_t getPort() const;
+    const FacilitySettings& getFacilitySettings() const;
 
-	void setIpAddress (const std::string& address);
-	void setPort (uint16_t port);
-	void setFacilitySettings (const FacilitySettings& settings);
+    void setIpAddress(const std::string& address);
+    void setPort(uint16_t port);
+    void setFacilitySettings(const FacilitySettings& settings);
 
 private:
-	std::string  mIpAddress;
-	uint16_t     mPort;
-	FacilitySettings mFacilitySettings;
+    std::string  mIpAddress;
+    uint16_t     mPort;
+    FacilitySettings mFacilitySettings;
 };
 
 #endif // APPSETTINGS_HPP
