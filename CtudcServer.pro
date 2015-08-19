@@ -24,6 +24,7 @@ linux-clang {
 
 
 LIBS += -ltrekdata
+LIBS += -lftd2xx
 
 HEADERS += \
     caen/tdcmodule.hpp \
@@ -46,7 +47,9 @@ HEADERS += \
     applog.hpp \
     appsettings.hpp \
     makestring.hpp \
-    timeprint.hpp
+    timeprint.hpp \
+    ftd/defines.hpp \
+    ftd/ftdmodule.hpp
 
 SOURCES += \
     caen/tdcmodule.cpp \
@@ -64,4 +67,5 @@ SOURCES += \
     net/session.cpp \
     observer/observer.cpp \
     appsettings.cpp \
-    main.cpp
+    main.cpp \
+    ftd/ftdmodule.cpp

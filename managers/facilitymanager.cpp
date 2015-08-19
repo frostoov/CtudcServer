@@ -9,13 +9,13 @@
 #include "frequencymanager.hpp"
 
 
-using std::cout;
 using std::endl;
 using std::setw;
 using std::setfill;
 using std::ostringstream;
 
 using std::string;
+using std::make_shared;
 using std::make_unique;
 using std::chrono::microseconds;
 
@@ -31,17 +31,22 @@ using caen::FrequencyManager;
 FacilityManager::FacilityManager(int32_t vmeAddress,
                                  const caen::ChannelConfig& channelConfig,
                                  const FacilitySettings& settings)
-    : mTdcModule(make_unique<caen::Module> (vmeAddress)),
+    : mTdcModule(make_shared<caen::Module> (vmeAddress)),
+      mFtdModule(make_shared<ftdi::Module> (0x28)),
       mChannelConfig(channelConfig),
       mSettings(settings),
       mProcedures(createProcedures()) { }
 
 FacilityManager::Procedures FacilityManager::createProcedures() {
     return {
-        {"init",                  [&](const Query& query) { return this->init(query);}},
-        {"close",                 [&](const Query& query) { return this->close(query);}},
-        {"isInit",                [&](const Query& query) { return this->isInit(query);}},
-        { "getSettings",          [&](const Query& query) { return this->getSettings(query);}},
+        {"initTdc",               [&](const Query& query) { return this->initTdc(query);}},
+        {"closeTdc",              [&](const Query& query) { return this->closeTdc(query);}},
+        {"isInitTdc",             [&](const Query& query) { return this->isInitTdc(query);}},
+        {"initFtd",               [&](const Query& query) { return this->initFtd(query);}},
+        {"closeFtd",              [&](const Query& query) { return this->closeFtd(query);}},
+        {"isInitFtd",             [&](const Query& query) { return this->isInitFtd(query);}},
+        {"setFtdCode",            [&](const Query& query) { return this->setFtdCode(query);}},
+        {"getSettings",           [&](const Query& query) { return this->getSettings(query);}},
         {"setSettings",           [&](const Query& query) { return this->setSettings(query);}},
         {"updateSettings",        [&](const Query& query) { return this->updateSettings(query);}},
         {"getLog",                [&](const Query& query) { return this->getLog(query);}},
@@ -104,27 +109,65 @@ FacilityManager::Procedure FacilityManager::getProcedure(const FacilityManager::
     return mProcedures.at(query.procedure);
 }
 
-FacilityManager::Response FacilityManager::init(const Query& query) {
+FacilityManager::Response FacilityManager::initTdc(const Query& query) {
     return {
-        "init",
+        "initTdc",
         json::array(),
         mProcess ? false : mTdcModule->initialize(),
     };
 }
 
-FacilityManager::Response FacilityManager::close(const Query& query) {
+FacilityManager::Response FacilityManager::closeTdc(const Query& query) {
     return {
-        "close",
+        "closeTdc",
         json::array(),
         mProcess ? false : mTdcModule->close(),
     };
 }
 
-FacilityManager::Response FacilityManager::isInit(const Query& query) {
+FacilityManager::Response FacilityManager::isInitTdc(const Query& query) {
     return {
-        "isInit",
+        "isInitTdc",
         json::array({mTdcModule->isInit() }),
         true,
+    };
+}
+
+FacilityManager::Response FacilityManager::initFtd(const Query& query) {
+    if(mFtdModule->open("C232HM-EDHSL-0"))
+        mFtdModule->initialize({ftdi::I2C_CLOCK_STANDARD_MODE, 1, 0});
+    return {
+        "initFtd",
+        json::array(),
+        mFtdModule->isOpen(),
+    };
+}
+
+FacilityManager::Response FacilityManager::closeFtd(const Query& query) {
+    return {
+        "closeFtd",
+        json::array(),
+        mFtdModule->close()
+    };
+}
+
+FacilityManager::Response FacilityManager::isInitFtd(const Query& query) {
+    return {
+        "isInitFtd",
+        json::array({mFtdModule->isOpen()}),
+        true
+    };
+}
+
+FacilityManager::Response FacilityManager::setFtdCode(const Query& query) {
+    uint8_t data[] = {
+        0x0, query.input.at(0).get<uint8_t>(),
+        0x1, query.input.at(1).get<uint8_t>(),
+    };
+    return {
+        "setFtdCode",
+        json::array(),
+        mFtdModule->write(data, sizeof(data)),
     };
 }
 

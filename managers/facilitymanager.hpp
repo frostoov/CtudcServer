@@ -6,6 +6,7 @@
 
 
 #include "caen/tdcmodule.hpp"
+#include "ftd/ftdmodule.hpp"
 #include "processmanager.hpp"
 #include "frequencymanager.hpp"
 
@@ -43,6 +44,8 @@ class FacilityManager {
     using Mutex = std::mutex;
     using Lock = std::lock_guard<Mutex>;
     using TdcModulePtr = std::shared_ptr<caen::Module>;
+    using FtdModulePtr = std::shared_ptr<ftdi::Module>;
+
     using ProcessManagerPtr = std::unique_ptr<caen::ProcessManager>;
     struct Query {
         nlohmann::json::string_t  procedure;
@@ -71,9 +74,15 @@ protected:
     static std::string convertResponse(const Response& response);
     Procedure getProcedure(const Query& query) const;
 
-    Response init(const Query& query);
-    Response close(const Query& query);
-    Response isInit(const Query& query);
+    Response initTdc(const Query& query);
+    Response closeTdc(const Query& query);
+    Response isInitTdc(const Query& query);
+
+    Response initFtd(const Query& query);
+    Response closeFtd(const Query& query);
+    Response isInitFtd(const Query& query);
+    Response setFtdCode(const Query& query);
+
     Response setLog(const Query& query);
     Response getLog(const Query& query);
     Response getSettings(const Query& query);
@@ -113,6 +122,7 @@ protected:
     void stopReadCallback();
 private:
     TdcModulePtr        mTdcModule;
+    FtdModulePtr        mFtdModule;
     ProcessManagerPtr   mProcess;
     caen::ChannelConfig mChannelConfig;
     FacilitySettings    mSettings;
