@@ -9,7 +9,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #include "readmanager.hpp"
-#include "types.hpp"
+#include "channelconfig.hpp"
 
 using std::to_string;
 using std::ofstream;

@@ -9,7 +9,7 @@
 
 #include "threadmanager.hpp"
 #include "caen/tdcmodule.hpp"
-#include "types.hpp"
+#include "channelconfig.hpp"
 
 namespace caen {
 

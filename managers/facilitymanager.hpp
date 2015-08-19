@@ -53,12 +53,13 @@ class FacilityManager {
         nlohmann::json::array_t   output;
         nlohmann::json::boolean_t status;
     };
-    using Procedure = std::function<Response(const Query&) >;
+    using Procedure  = std::function<Response(const Query&) >;
     using Procedures = std::unordered_map<std::string, Procedure>;
 public:
     using Callback = std::function<void (const FacilityManager&) >;
 public:
-    FacilityManager(int32_t vmeAddress, const caen::ChannelConfig& channelConfig,
+    FacilityManager(int32_t vmeAddress,
+                    const caen::ChannelConfig& channelConfig,
                     const FacilitySettings& settings);
     std::string handleQuery(const std::string& rawQuery);
     void setStopReadCallback(Callback&& callback);

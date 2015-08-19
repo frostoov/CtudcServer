@@ -33,7 +33,7 @@ public:
     void detach(ObserverPtr observer);
     void notify();
     bool hasMessages() const;
-    Message&& popMessage() const;
+    Message popMessage() const;
     void setLog(bool flag) {
         mNeedLog = flag;
     }

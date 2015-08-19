@@ -2,8 +2,6 @@
 #define NETTOOLS
 
 #include <streambuf>
-#include "managers/types.hpp"
-
 class membuf : public std::basic_streambuf<char> {
 public:
     membuf(char* p, size_t n) {

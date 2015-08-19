@@ -36,9 +36,9 @@ void Subject::pushMessage(string&& text) const {
     }
 }
 
-Subject::Message&& Subject::popMessage() const {
+Subject::Message Subject::popMessage() const {
     unique_lock<mutex> locker(mMessagesMutex);
     auto message = std::move(mMessages.front());
     mMessages.pop();
-    return std::move(message);
+    return message;
 }

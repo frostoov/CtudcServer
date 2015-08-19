@@ -2,7 +2,7 @@
 #define CHANNELSCONFIGPARSER_HPP
 
 #include "configparser.hpp"
-#include "managers/types.hpp"
+#include "managers/channelconfig.hpp"
 
 class ChannelsConfigParser : public AbstractConfigParser {
 public:

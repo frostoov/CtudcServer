@@ -10,55 +10,58 @@ QMAKE_CXXFLAGS += -std=c++14
 
 
 win32-g++ {
-	LIBS += -lCAENVMElib
-	LIBS += -lboost_system-mgw49-1_58
-	LIBS += -lboost_filesystem-mgw49-1_58
-	LIBS += -lws2_32
-	LIBS += -lwsock32
+    LIBS += -lCAENVMElib
+    LIBS += -lboost_system-mgw49-1_58
+    LIBS += -lboost_filesystem-mgw49-1_58
+    LIBS += -lws2_32
+    LIBS += -lwsock32
 }
 linux-clang {
-	LIBS += -lCAENVME
-	LIBS += -lboost_system
-	LIBS += -lboost_filesystem
+    LIBS += -lCAENVME
+    LIBS += -lboost_system
+    LIBS += -lboost_filesystem
 }
 
 
 LIBS += -ltrekdata
 
 HEADERS += \
-	caen/tdcmodule.hpp \
-	caen/types.hpp \
-	configparser/channelsconfigparser.hpp \
-	configparser/configparser.hpp \
-	managers/ctudcreadmanager.hpp \
-	managers/frequencymanager.hpp \
-	managers/processmanager.hpp \
-	managers/readmanager.hpp \
-	managers/types.hpp \
-	net/nettools.hpp \
-	net/packagereceiver.hpp \
-	net/server.hpp \
-	net/session.hpp \
-	observer/observer.hpp \
-	managers/threadmanager.hpp \
-	configparser/appconfigparser.hpp \
-	appsettings.hpp \
-	managers/facilitymanager.hpp
+    caen/tdcmodule.hpp \
+    caen/types.hpp \
+    configparser/appconfigparser.hpp \
+    configparser/channelsconfigparser.hpp \
+    configparser/configparser.hpp \
+    managers/channelconfig.hpp \
+    managers/ctudcreadmanager.hpp \
+    managers/facilitymanager.hpp \
+    managers/frequencymanager.hpp \
+    managers/processmanager.hpp \
+    managers/readmanager.hpp \
+    managers/threadmanager.hpp \
+    net/nettools.hpp \
+    net/packagereceiver.hpp \
+    net/server.hpp \
+    net/session.hpp \
+    observer/observer.hpp \
+    applog.hpp \
+    appsettings.hpp \
+    makestring.hpp \
+    timeprint.hpp
 
 SOURCES += \
-	caen/tdcmodule.cpp \
-	configparser/channelsconfigparser.cpp \
-	managers/ctudcreadmanager.cpp \
-	managers/frequencymanager.cpp \
-	managers/processmanager.cpp \
-	managers/readmanager.cpp \
-	net/nettools.cpp \
-	net/packagereceiver.cpp \
-	net/server.cpp \
-	net/session.cpp \
-	observer/observer.cpp \
-	main.cpp \
-	managers/threadmanager.cpp \
-	configparser/appconfigparser.cpp \
-	appsettings.cpp \
-	managers/facilitymanager.cpp
+    caen/tdcmodule.cpp \
+    configparser/appconfigparser.cpp \
+    configparser/channelsconfigparser.cpp \
+    managers/ctudcreadmanager.cpp \
+    managers/facilitymanager.cpp \
+    managers/frequencymanager.cpp \
+    managers/processmanager.cpp \
+    managers/readmanager.cpp \
+    managers/threadmanager.cpp \
+    net/nettools.cpp \
+    net/packagereceiver.cpp \
+    net/server.cpp \
+    net/session.cpp \
+    observer/observer.cpp \
+    appsettings.cpp \
+    main.cpp

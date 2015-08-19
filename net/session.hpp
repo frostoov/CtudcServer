@@ -10,13 +10,13 @@
 #include "managers/facilitymanager.hpp"
 
 class Session : public std::enable_shared_from_this<Session> {
-    using DestroyCallback = std::function<void (std::shared_ptr<Session>) >;
+    using CloseCallback = std::function<void (std::shared_ptr<Session>) >;
     using DeviceMangerPtr = std::shared_ptr<FacilityManager>;
     using ModulePtr = std::shared_ptr<caen::Module>;
     using TCP = boost::asio::ip::tcp;
     using Socket = TCP::socket;
 public:
-    Session(DeviceMangerPtr deviceManager, Socket&& socket, DestroyCallback callback);
+    Session(DeviceMangerPtr deviceManager, Socket&& socket, CloseCallback closeCallback);
     void start();
 protected:
     void doRecieve();
@@ -24,7 +24,7 @@ protected:
 private:
     DeviceMangerPtr mDeviceManager;
     Socket mSocket;
-    DestroyCallback mCallback;
+    CloseCallback mCloseCallback;
     std::array<char, 65527> mBuffer;
 };
 

@@ -1,4 +1,3 @@
-#include <fstream>
 #include <iostream>
 #include <trekdata/serialization.hpp>
 
@@ -9,8 +8,6 @@ using std::cerr;
 using std::endl;
 
 using std::string;
-using std::ofstream;
-using std::ostream;
 using std::istream;
 using std::exception;
 using std::chrono::milliseconds;
