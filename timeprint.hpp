@@ -1,7 +1,6 @@
 #ifndef TIMEPRINT
 #define TIMEPRINT
 
-#include <iostream>
 #include <chrono>
 #include <ctime>
 #include <iomanip>

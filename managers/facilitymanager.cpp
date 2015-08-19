@@ -433,7 +433,7 @@ FacilityManager::ProcessManagerPtr FacilityManager::createReadManager(const Quer
 	if(type == "simple") {
 		return make_unique<ReadManager> (mTdcModule,
 										 mChannelConfig,
-										 mSettings.getWriteDir(),
+										 createWriteDir(),
 										 mSettings.getNumberOfRun(),
 										 mSettings.getEventsPerFile());
 	} else if(type == "ctudc") {
@@ -442,7 +442,7 @@ FacilityManager::ProcessManagerPtr FacilityManager::createReadManager(const Quer
 		};
 		return make_unique<CtudcReadManager> (mTdcModule,
 											  mChannelConfig,
-											  mSettings.getWriteDir(),
+											  createWriteDir(),
 											  mSettings.getNumberOfRun(),
 											  mSettings.getEventsPerFile(),
 											  netInfo);
@@ -509,9 +509,9 @@ trekdata::Settings FacilityManager::createSettings(const Query& query) const {
 	settings.setWindowWidth(input.at(3));
 	settings.setWindowOffset(input.at(4));
 	uint16_t lsb = input.at(5);
-	settings.setEdgeDetection(static_cast<EdgeDetection>(lsb));
+	settings.setEdgeDetection(EdgeDetection(lsb));
 	uint16_t edgeDetection = input.at(5);
-	settings.setLsb(static_cast<Lsb>(edgeDetection));
+	settings.setLsb(Lsb(edgeDetection));
 	settings.setAlmostFull(input.at(7));
 	settings.setControlRegister(input.at(8));
 	settings.setDeadTime(input.at(9));
@@ -520,8 +520,9 @@ trekdata::Settings FacilityManager::createSettings(const Query& query) const {
 }
 
 std::string FacilityManager::createWriteDir() const {
-	ostringstream stream(mSettings.getWriteDir());
-	stream << "/data_set_" << setw(5) << setfill('0')
+	ostringstream stream;
+	stream << mSettings.getWriteDir()
+		   << "/data_set_" << setw(5) << setfill('0')
 		   << mSettings.getNumberOfRun();
 	return stream.str();
 }
@@ -530,8 +531,6 @@ void FacilityManager::stopReadCallback() {
 	if(mStopReadCallback)
 		mStopReadCallback(*this);
 }
-
-
 
 nlohmann::json FacilitySettings::marshal() const {
 	return {
