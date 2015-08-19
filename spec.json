@@ -1,7 +1,11 @@
-{"procedure" : "init"}  /*init tdc device*/ 
-{"procedure" : "close"} /*close tdc device*/
 {
-	"procedure" : "isInit",
+	"procedure" : "initTdc" /*init tdc device*/ 
+}  
+{
+	"procedure" : "closeTdc" /*close tdc device*/
+} 
+{
+	"procedure" : "isInitTdc",
 	"output" : [true] /*bool*/
 }
 {
@@ -140,4 +144,18 @@
 {
 	"procedure" : "getCurrentRun",
 	"output" : [0 /*Current run*/]
+}
+{
+	"procedure" : "initFtd"
+}
+{
+	"procedure" : "closeFtd"
+}
+{
+	"procedure" : "isInitFtd",
+	"output" : [true] /*bool*/
+}
+{
+	"procedure" : "setFtdCode",
+	"input" : [0, 1]
 }
