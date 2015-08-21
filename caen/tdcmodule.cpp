@@ -361,7 +361,7 @@ bool Module::updateStatus() {
 }
 
 bool Module::updateControl() {
-    return doAction("Get Status Register", [&] {
+    return doAction("Get Control Register", [&] {
         mSettings.setControlRegister(readReg16(Reg::controlReg));
     });
 }

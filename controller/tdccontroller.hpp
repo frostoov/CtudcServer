@@ -24,6 +24,7 @@ protected:
 
     Response setLog(const Request& request);
     Response getLog(const Request& request);
+    Response softwareClear(const Request& request);
     Response getSettings(const Request& request);
     Response updateSettings(const Request& request);
     Response setSettings(const Request& request);

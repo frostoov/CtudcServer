@@ -21,6 +21,7 @@ CtudcController::Methods TdcController::createMethods() {
         {"close",              [&](const Request& query) { return this->close(query);}},
         {"isInit",             [&](const Request& query) { return this->isInit(query);}},
 
+        {"softwareClear",         [&](const Request& query) { return this->softwareClear(query);}},
         {"getSettings",           [&](const Request& query) { return this->getSettings(query);}},
         {"setSettings",           [&](const Request& query) { return this->setSettings(query);}},
         {"updateSettings",        [&](const Request& query) { return this->updateSettings(query);}},
@@ -87,6 +88,15 @@ CtudcController::Response TdcController::getLog(const Request& request) {
         "getLog",
         log,
         true,
+    };
+}
+
+CtudcController::Response TdcController::softwareClear(const Request& request) {
+    return {
+        getName(),
+        "softwareClear",
+        json::array(),
+        mDevice->softwareClear(),
     };
 }
 

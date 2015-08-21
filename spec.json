@@ -69,6 +69,10 @@ Resonse :
 	]
 
 }
+{
+	"object" : "tdc",
+	"method" : "softwareClear"
+}
 { 
 	"object" : "tdc",
 	"method" : "updateSettings" /*Read and update TDC settings*/
