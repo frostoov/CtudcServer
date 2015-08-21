@@ -24,15 +24,31 @@ using std::chrono::duration_cast;
 using std::this_thread::sleep_for;
 using std::string;
 
-Module::Module(const int32_t vmeAddress)
+Module::Module(uint16_t vmeAddress)
     : mIsInit(false),
+      mIsBlocked(false),
       mVmeHandle(0),
-      mBaseAddress(vmeAddress) {
-    mSettings = getDefaultSettings();
-}
+      mBaseAddress(vmeAddress),
+      mSettings(getDefaultSettings()) { }
 
 Module::~Module() {
     CAENVME_End(mVmeHandle);
+}
+
+bool Module::isInit() const {
+    return mIsInit;
+}
+
+bool Module::isBlocked() const {
+    return mIsBlocked;
+}
+
+void Module::setBlocked(bool flag) {
+    mIsBlocked = flag;
+}
+
+const char* Module::getTitle() const {
+    return "CAENVME TDC";
 }
 
 Settings Module::getDefaultSettings() {
@@ -57,7 +73,6 @@ bool Module::initialize() {
         CVErrorCodes status;
         if(mIsInit)
             throw std::logic_error("CAENVME already init");
-        //Инициализируем для работы
         status = CAENVME_Init(cvV2718, 0, 0, &mVmeHandle);
         if(status == cvSuccess) {
             mIsInit = true;
@@ -75,9 +90,10 @@ bool Module::close() {
     return doAction("Close", [&]() {
         if(mIsInit) {
             auto status = CAENVME_End(mVmeHandle);
-            if(status != cvSuccess)
+            if(status == cvSuccess)
+                mIsInit = false;
+            else
                 throw runtime_error(CAENVME_DecodeError(status));
-            mIsInit = false;
         }
     });
 }
@@ -113,7 +129,15 @@ bool Module::updateSettings() {
     return status;
 }
 
-bool Module::doAction(string&& message, std::function<void() >&& func) {
+const trekdata::Settings& Module::getSettings() const {
+    return mSettings;
+}
+
+uint32_t Module::formAddress(Reg addr) const {
+    return ((uint32_t(mBaseAddress)) << 16) | uint16_t(addr);
+}
+
+bool Module::doAction(string&& message, std::function<void()>&& func) {
     try {
         func();
         pushMessage(message + ": success");
@@ -372,8 +396,8 @@ bool Module::softwareClear() {
 
 size_t Module::readBlock(WordVector& buff, const Microseconds& delay) {
     const int blockSize = getBlockSize();
-    const uint32_t buffAddr = static_cast<uint32_t>(mBaseAddress) << 16 | static_cast<uint16_t>(Reg::outputBuffer);
-    const uint32_t restAddr = static_cast<uint32_t>(mBaseAddress) << 16 | static_cast<uint16_t>(Reg::softwareClear);
+    const uint32_t buffAddr = formAddress(Reg::outputBuffer);
+    const uint32_t restAddr = formAddress(Reg::softwareClear);
     size_t readSize = 0 , dummy;
     int readBytes;
 
@@ -403,8 +427,9 @@ size_t Module::getBlockSize() const {
 uint32_t Module::readReg32(Reg addr) const {
     if(mIsInit) {
         uint32_t data = 0;
-        auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-                                      static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+        auto code = CAENVME_ReadCycle(mVmeHandle,
+                                      formAddress(addr),
+                                      reinterpret_cast<void*>(&data),
                                       cvA32_S_DATA, cvD32);
         if(code == cvSuccess)
             return data;
@@ -417,8 +442,9 @@ uint32_t Module::readReg32(Reg addr) const {
 uint16_t Module::readReg16(Reg addr) const {
     if(mIsInit) {
         uint16_t data = 0;
-        auto code = CAENVME_ReadCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-                                      static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+        auto code = CAENVME_ReadCycle(mVmeHandle,
+                                      formAddress(addr),
+                                      reinterpret_cast<void*>(&data),
                                       cvA32_S_DATA, cvD16);
         if(code == cvSuccess)
             return data;
@@ -429,9 +455,10 @@ uint16_t Module::readReg16(Reg addr) const {
 }
 
 void Module::writeReg32(uint32_t data, Reg addr) {
-    if(mIsInit) {
-        auto code = CAENVME_WriteCycle(mVmeHandle, (static_cast<uint32_t>(mBaseAddress)) << 16 |
-                                       static_cast<uint32_t>(addr), reinterpret_cast<void*>(&data),
+    if(mIsInit && !mIsBlocked) {
+        auto code = CAENVME_WriteCycle(mVmeHandle,
+                                       formAddress(addr),
+                                       reinterpret_cast<void*>(&data),
                                        cvA32_S_DATA, cvD32);
         if(code != cvSuccess)
             throw runtime_error(CAENVME_DecodeError(code));
@@ -440,9 +467,10 @@ void Module::writeReg32(uint32_t data, Reg addr) {
 }
 
 void Module::writeReg16(uint16_t data, Reg addr) {
-    if(mIsInit) {
-        auto address = ((static_cast<uint32_t>(mBaseAddress)) << 16) | static_cast<uint32_t>(addr);
-        auto code = CAENVME_WriteCycle(mVmeHandle, address, reinterpret_cast<void*>(&data),
+    if(mIsInit && !mIsBlocked) {
+        auto code = CAENVME_WriteCycle(mVmeHandle,
+                                       formAddress(addr),
+                                       reinterpret_cast<void*>(&data),
                                        cvA32_S_DATA, cvD16);
         if(code != cvSuccess)
             throw runtime_error(CAENVME_DecodeError(code));
@@ -454,7 +482,7 @@ void Module::readMicro(uint16_t* data, OpCode code, short num) {
     if(mIsInit) {
         checkMicroWrite();
         //Указываем opCode
-        writeReg16(static_cast<uint16_t>(code), Reg::micro);
+        writeReg16(uint16_t(code), Reg::micro);
         if(num && data) {
             do {
                 try {
@@ -476,7 +504,7 @@ void Module::writeMicro(uint16_t* data, OpCode code, short num) {
     if(mIsInit) {
         checkMicroWrite();
         //Указываем opCode
-        writeReg16(static_cast<uint16_t>(code), Reg::micro);
+        writeReg16(uint16_t(code), Reg::micro);
         if(num && data) {
             do {
                 //Проверяем handshake

@@ -133,7 +133,7 @@ bool Module::write(uint8_t* buff, uint32_t size) {
 }
 
 bool Module::close() {
-    return doAction("Close", [&](){
+    return doAction("Close", [&]() {
         auto status = FT_Close(mHandle);
         handleStatus(status);
         mIsOpen = false;

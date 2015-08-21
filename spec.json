@@ -1,15 +1,41 @@
+Request :
 {
-	"procedure" : "initTdc" /*init tdc device*/ 
+	"object" : "string",
+	"method" : "string",
+	"inputs" : [
+		"something",
+		1,
+		true
+	]
+}
+Resonse : 
+{
+	"object" : "string",
+	"method" : "string",
+	"outpus" : [
+		"something",
+		1,
+		true
+	],
+	"status" : true
+}
+/*************************************/
+{
+	"object" : "tdc",
+	"method" : "initTdc" /*init tdc device*/ 
 }  
 {
-	"procedure" : "closeTdc" /*close tdc device*/
+	"object" : "tdc",
+	"method" : "closeTdc" /*close tdc device*/
 } 
 {
-	"procedure" : "isInitTdc",
+	"object" : "tdc",
+	"method" : "isInitTdc",
 	"output" : [true] /*bool*/
 }
 {
-	"procedure" : "getSettings",
+	"object" : "tdc",
+	"method" : "getSettings",
 	"output" : [
 		true,	/*TriggerMode: bool */
 		true,	/*TriggerSubtraction: bool*/
@@ -26,7 +52,8 @@
 	]
 }
 {
-	"procedure" : "setSettings",
+	"object" : "tdc",
+	"method" : "setSettings",
 	"input" : [
 		true,	/*TriggerMode: bool*/
 		true,	/*TriggerSubtraction: bool*/
@@ -43,74 +70,117 @@
 
 }
 { 
-	"procedure" : "updateSettings" /*Read and update TDC settings*/
+	"object" : "tdc",
+	"method" : "updateSettings" /*Read and update TDC settings*/
 } 
 {
-	"procedure" : "getLog", /*Get TDC log*/
+	"object" : "tdc",
+	"method" : "getLog", /*Get TDC log*/
 	"output" : ["log"] /*string*/
 }
 {
-	"procedure" : "setLog", /*Set TDC log off/on*/
+	"object" : "tdc",
+	"method" : "setLog", /*Set TDC log off/on*/
 	"input" : [true] /*bool*/
 }
 {
-	"procedure" : "setTriggerMode", /*Set trigger/continious mode*/
+	"object" : "tdc",
+	"method" : "setTriggerMode", /*Set trigger/continious mode*/
 	"input" : [true] /*bool: [true:trigger], [false:continious]*/
 }
 {
-	"procedure" : "setTriggerSubtraction",
+	"object" : "tdc",
+	"method" : "setTriggerSubtraction",
 	"input" : [true] /*bool*/
 }
 {
-	"procedure" : "setTdcMeta",
+	"object" : "tdc",
+	"method" : "setTdcMeta",
 	"input" : [true] /*bool*/
 }
 {
-	"procedure" : "setWindowWidth",
+	"object" : "tdc",
+	"method" : "setWindowWidth",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setWindowOffset",
+	"object" : "tdc",
+	"method" : "setWindowOffset",
 	"input" : [0] /*int*/
 }
 {
-	"procedure" : "setEdgeDetection",
+	"object" : "tdc",
+	"method" : "setEdgeDetection",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setLsb",
+	"object" : "tdc",
+	"method" : "setLsb",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setAlmostFull",
+	"object" : "tdc",
+	"method" : "setAlmostFull",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setControl",
+	"object" : "tdc",
+	"method" : "setControl",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setDeadTime",
+	"object" : "tdc",
+	"method" : "setDeadTime",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "setEventBLT",
+	"object" : "tdc",
+	"method" : "setEventBLT",
 	"input" : [0] /*uint*/
 }
 {
-	"procedure" : "startRead",
+	"object" : "ftd",
+	"method" : "init"
+}
+{
+	"object" : "ftd",
+	"method" : "close"
+}
+{
+	"object" : "ftd",
+	"method" : "isInit",
+	"output" : [true] /*bool*/
+}
+{
+	"object" : "ftd",
+	"method" : "setCodes",
+	"input" : [0, 1]
+}
+{
+	"object" : "process",
+	"method" : "getType",
+	"output" : [
+		"type",  /*string: [simple], [ctudc], [frequency], [null]*/
+	]
+}
+{
+	"object" : "process",
+	"method" : "startRead",
 	"input" : [
 		"type",  /*string: [simple], [ctudc]*/
 	], 
 }
 {
-	"procedure" : "stopRead",
+	"object" : "process",
+	"method" : "stopRead",
 }
 {
-	"procedure" : "startFrequency",
+	"object" : "process",
+	"method" : "startFrequency",
 }
 {
-	"procedure" : "stopFrequency",
+	"object" : "process",
+	"method" : "stopFrequency",
 	"output"    : [
 		{
 			"chamber" : 0, /*Number of chamber*/
@@ -124,38 +194,28 @@
 	]
 }
 {
-	"procedure" : "getProcess",
+	"object" : "process",
+	"method" : "getProcess",
 	"output" : [
 		"process name" /*string: [null], [read], [ctudc], [frequency]*/
 	]
 }
 {
-	"procedure" : "getTriggerFrequency",
+	"object" : "process",
+	"method" : "getTriggerFrequency",
 	"output" : [
 		1.1 /*double: Trigger frequency**/
 	]
 }
 {
-	"procedure" : "getPackageFrequency",
+	"object" : "process",
+	"method" : "getPackageFrequency",
 	"output" : [
 		1.1 /*double: Package frequency**/
 	]
 }
 {
-	"procedure" : "getCurrentRun",
+	"object" : "process",
+	"method" : "getCurrentRun",
 	"output" : [0 /*Current run*/]
-}
-{
-	"procedure" : "initFtd"
-}
-{
-	"procedure" : "closeFtd"
-}
-{
-	"procedure" : "isInitFtd",
-	"output" : [true] /*bool*/
-}
-{
-	"procedure" : "setFtdCode",
-	"input" : [0, 1]
 }

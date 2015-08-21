@@ -2,7 +2,11 @@
 #define APPSETTINGS_HPP
 
 #include "configparser/appconfigparser.hpp"
-#include "managers/facilitymanager.hpp"
+#include "controller/processcontroller.hpp"
+
+namespace {
+using ProcSettings = ctudc::ProcessController::Settings;
+}
 
 class AppSettings {
 public:
@@ -15,16 +19,16 @@ public:
 
     const std::string& getIpAddress() const;
     uint16_t getPort() const;
-    const FacilitySettings& getFacilitySettings() const;
+    const ProcSettings& getProcessSettings() const;
 
     void setIpAddress(const std::string& address);
     void setPort(uint16_t port);
-    void setFacilitySettings(const FacilitySettings& settings);
+    void setProcessSettings(const ProcSettings& settings);
 
 private:
     std::string  mIpAddress;
     uint16_t     mPort;
-    FacilitySettings mFacilitySettings;
+    ProcSettings mProcSettings;
 };
 
 #endif // APPSETTINGS_HPP

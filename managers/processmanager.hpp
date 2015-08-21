@@ -23,74 +23,28 @@ public:
         mTdcModule = module;
     }
 
-    static uint32_t GLBHeaderEventCount(uint32_t data) {
-        return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5;
-    }
-    static uint32_t GLBHeaderGeo(uint32_t data) {
-        return (data & GLB_HDR_GEO_MSK);
-    }
-    static uint32_t GLBTrigTimeTag(uint32_t data) {
-        return (data & GLB_TRG_TIME_TAG_MSK);
-    }
-    static uint32_t GLBTrailerStat(uint32_t data) {
-        return (data & GLB_TRL_STATUS_MSK) >> 24;
-    }
-    static uint32_t GLBTrailerWCount(uint32_t data) {
-        return (data & GLB_TRL_WCOUNT_MSK) >> 5;
-    }
-    static uint32_t GLBTrailerGeo(uint32_t data) {
-        return (data & GLB_TRL_GEO_MSK);
-    }
-    static uint32_t TDCHeaderTdc(uint32_t data) {
-        return (data & TDC_HDR_TDC_MSK) >> 24;
-    }
-    static uint32_t TDCHeaderEvtID(uint32_t data) {
-        return (data & TDC_HDR_EVENT_ID_MSK) >> 12;
-    }
-    static uint32_t TDCHeaderBunchID(uint32_t data) {
-        return (data & TDC_HDR_BUNCH_ID_MSK);
-    }
-    static uint32_t TDCMsrTrailing(uint32_t data) {
-        return (data & TDC_MSR_TRAILING_MSK) >> 26;
-    }
-
-    static uint32_t TDCMsrMeasure(uint32_t data) {
-        return (data & TDC_MSR_MEASURE_MSK);
-    }
-    static uint32_t TDCTrailerTdc(uint32_t data) {
-        return (data & TDC_TRL_TDC_MSK) >> 24;
-    }
-    static uint32_t TDCTrailerEvtID(uint32_t data) {
-        return (data & TDC_TRL_EVENT_ID_MSK) >> 12;
-    }
-    static uint32_t TDCTrailerWCount(uint32_t data) {
-        return (data & TDC_TRL_WCOUNT_MSK);
-    }
-    static uint32_t TDCErrTdc(uint32_t data) {
-        return (data & TDC_ERR_TDC_MSK) >> 24;
-    }
-    static uint32_t TDCErrFlags(uint32_t data) {
-        return (data & TDC_ERR_ERR_FLAGS_MSK);
-    }
-
-    static uint32_t getChannel(uint32_t data) {
-        return (data & TDC_MSR_CHANNEL_MSK) >> 19;
-    }
-    static uint32_t getChamber(uint32_t data) {
-        return ((data >> 19) & 31);
-    }
-    static uint32_t getWire(uint32_t data) {
-        return ((data >> 24) & 3);
-    }
-    static bool isGlobalHeader(uint32_t data) {
-        return (data & DATA_TYPE_MSK) == HEADER;
-    }
-    static bool isGlobalTrailer(uint32_t data) {
-        return (data & DATA_TYPE_MSK) == TRAILER;
-    }
-    static bool isMeasurement(uint32_t data) {
-        return (data & DATA_TYPE_MSK) == TDC_MEASURE;
-    }
+    static uint32_t GLBHeaderEventCount(uint32_t data) { return (data & GLB_HDR_EVENT_COUNT_MSK) >> 5; }
+    static uint32_t GLBHeaderGeo(uint32_t data)        { return (data & GLB_HDR_GEO_MSK);}
+    static uint32_t GLBTrigTimeTag(uint32_t data)      { return (data & GLB_TRG_TIME_TAG_MSK); }
+    static uint32_t GLBTrailerStat(uint32_t data)      { return (data & GLB_TRL_STATUS_MSK) >> 24; }
+    static uint32_t GLBTrailerWCount(uint32_t data)    { return (data & GLB_TRL_WCOUNT_MSK) >> 5; }
+    static uint32_t GLBTrailerGeo(uint32_t data)       { return (data & GLB_TRL_GEO_MSK); }
+    static uint32_t TDCHeaderTdc(uint32_t data)        { return (data & TDC_HDR_TDC_MSK) >> 24; }
+    static uint32_t TDCHeaderEvtID(uint32_t data)      { return (data & TDC_HDR_EVENT_ID_MSK) >> 12; }
+    static uint32_t TDCHeaderBunchID(uint32_t data)    { return (data & TDC_HDR_BUNCH_ID_MSK); }
+    static uint32_t TDCMsrTrailing(uint32_t data)      { return (data & TDC_MSR_TRAILING_MSK) >> 26; }
+    static uint32_t TDCMsrMeasure(uint32_t data)       { return (data & TDC_MSR_MEASURE_MSK); }
+    static uint32_t TDCTrailerTdc(uint32_t data)       { return (data & TDC_TRL_TDC_MSK) >> 24; }
+    static uint32_t TDCTrailerEvtID(uint32_t data)     { return (data & TDC_TRL_EVENT_ID_MSK) >> 12; }
+    static uint32_t TDCTrailerWCount(uint32_t data)    { return (data & TDC_TRL_WCOUNT_MSK); }
+    static uint32_t TDCErrTdc(uint32_t data)           { return (data & TDC_ERR_TDC_MSK) >> 24; }
+    static uint32_t TDCErrFlags(uint32_t data)         { return (data & TDC_ERR_ERR_FLAGS_MSK); }
+    static uint32_t getChannel(uint32_t data)          { return (data & TDC_MSR_CHANNEL_MSK) >> 19; }
+    static uint32_t getChamber(uint32_t data)          { return ((data >> 19) & 31); }
+    static uint32_t getWire(uint32_t data)             { return ((data >> 24) & 3); }
+    static bool isGlobalHeader(uint32_t data)          { return (data & DATA_TYPE_MSK) == HEADER; }
+    static bool isGlobalTrailer(uint32_t data)         { return (data & DATA_TYPE_MSK) == TRAILER; }
+    static bool isMeasurement(uint32_t data)           { return (data & DATA_TYPE_MSK) == TDC_MEASURE; }
 protected:
     ProcessManager(ModulePtr module, const ChannelConfig& config);
     bool init() override;

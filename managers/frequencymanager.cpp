@@ -21,6 +21,7 @@ bool FrequencyManager::init() {
         if(!mTdcModule->getSettings().getTriggerMode()) {
             mTotalMsrTime = Microseconds::zero();
             mDataValid = false;
+            mTdcModule->setBlocked(true);
             return true;
         } else {
             returnSettings();
@@ -33,6 +34,7 @@ void FrequencyManager::shutDown() {
     calculateFrequency(getTotalTime());
     mDataValid = true;
     returnSettings();
+    mTdcModule->setBlocked(true);
 }
 
 void FrequencyManager::workerFunc() {

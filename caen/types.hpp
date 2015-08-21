@@ -13,7 +13,7 @@ namespace caen {
 
 using WordVector    = std::vector<uint32_t>;
 
-enum class Reg : uint32_t {
+enum class Reg : uint16_t {
     outputBuffer	= 0x0000,
     controlReg		= 0x1000,
     statusReg		= 0x1002,

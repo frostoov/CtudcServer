@@ -14,17 +14,12 @@ class Module : public Subject {
     using Microseconds = std::chrono::microseconds;
     using Milliseconds = std::chrono::milliseconds;
 public:
-    Module(const int32_t vmeAddress = 0);
+    Module(uint16_t vmeAddress);
     virtual ~Module();
-    void setBaseAdress(int32_t address) {
-        mBaseAddress = address;
-    }
-    bool isInit() const {
-        return mIsInit;
-    }
-    const char* getTitle() const override {
-        return "CAENVME TDC";
-    }
+    bool isInit() const;
+    bool isBlocked() const;
+    void setBlocked(bool flag);
+    const char* getTitle() const override;
 
     bool initialize();
     bool close();
@@ -52,7 +47,6 @@ public:
     bool updateEventBLT();
     bool updateTriggerConfig();
 
-
     uint16_t getFirmwareRev();
     uint16_t getMicroRev();
     bool softwareClear();
@@ -61,10 +55,9 @@ public:
     size_t getBlockSize() const;
 
     bool updateSettings();
-    const trekdata::Settings& getSettings() const {
-        return mSettings;
-    }
+    const trekdata::Settings& getSettings() const;
 protected:
+    uint32_t formAddress(Reg addr) const;
     uint32_t readReg32(Reg addr) const;
     uint16_t readReg16(Reg addr) const;
     void writeReg32(uint32_t data, Reg addr);
@@ -80,9 +73,10 @@ protected:
 
     static trekdata::Settings getDefaultSettings();
 private:
-    bool			mIsInit;
-    int32_t			mVmeHandle;
-    int16_t			mBaseAddress;
+    bool    mIsInit;
+    bool    mIsBlocked;
+    int32_t mVmeHandle;
+    uint16_t mBaseAddress;
 
     trekdata::Settings mSettings;
 };

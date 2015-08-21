@@ -34,7 +34,6 @@ HEADERS += \
     configparser/configparser.hpp \
     managers/channelconfig.hpp \
     managers/ctudcreadmanager.hpp \
-    managers/facilitymanager.hpp \
     managers/frequencymanager.hpp \
     managers/processmanager.hpp \
     managers/readmanager.hpp \
@@ -49,14 +48,18 @@ HEADERS += \
     makestring.hpp \
     timeprint.hpp \
     ftd/defines.hpp \
-    ftd/ftdmodule.hpp
+    ftd/ftdmodule.hpp \
+    controller/controller.hpp \
+    controller/ctudccontroller.hpp \
+    controller/tdccontroller.hpp \
+    controller/ftdcontroller.hpp \
+    controller/processcontroller.hpp
 
 SOURCES += \
     caen/tdcmodule.cpp \
     configparser/appconfigparser.cpp \
     configparser/channelsconfigparser.cpp \
     managers/ctudcreadmanager.cpp \
-    managers/facilitymanager.cpp \
     managers/frequencymanager.cpp \
     managers/processmanager.cpp \
     managers/readmanager.cpp \
@@ -68,4 +71,8 @@ SOURCES += \
     observer/observer.cpp \
     appsettings.cpp \
     main.cpp \
-    ftd/ftdmodule.cpp
+    ftd/ftdmodule.cpp \
+    controller/ctudccontroller.cpp \
+    controller/tdccontroller.cpp \
+    controller/ftdcontroller.cpp \
+    controller/processcontroller.cpp

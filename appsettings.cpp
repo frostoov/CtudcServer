@@ -18,14 +18,14 @@ nlohmann::json AppSettings::marshal() const {
     return {
         {"address", getIpAddress() },
         {"port", getPort() },
-        {"facility", mFacilitySettings.marshal() }
+        {"process", mProcSettings.marshal() }
     };
 }
 
 void AppSettings::unMarshal(const nlohmann::json& doc) {
     setIpAddress(doc.at("address").get<string>());
     setPort(doc.at("port").get<uint16_t>());
-    mFacilitySettings.unMarshal(doc.at("facility"));
+    mProcSettings.unMarshal(doc.at("process"));
 }
 
 const std::string& AppSettings::getIpAddress() const {
@@ -36,8 +36,8 @@ uint16_t AppSettings::getPort() const {
     return mPort;
 }
 
-const FacilitySettings& AppSettings::getFacilitySettings() const {
-    return mFacilitySettings;
+const ProcSettings& AppSettings::getProcessSettings() const {
+    return mProcSettings;
 }
 
 void AppSettings::setIpAddress(const std::string& address) {
@@ -48,6 +48,6 @@ void AppSettings::setPort(uint16_t port) {
     mPort = port;
 }
 
-void AppSettings::setFacilitySettings(const FacilitySettings& settings) {
-    mFacilitySettings = settings;
+void AppSettings::setProcessSettings(const ProcSettings& settings) {
+    mProcSettings = settings;
 }
