@@ -43,8 +43,8 @@ enum class OpCode : uint16_t {
     getLSB			= 0x2600,
     setDeadTime		= 0x2800,
     getDeadTime		= 0x2900,
-    enableTDCMeta	= 0x3000,
-    disableTDCMeta	= 0x3100,
+    enableTdcMeta	= 0x3000,
+    disableTdcMeta	= 0x3100,
     readTdcMeta     = 0x3200,
     microRev		= 0x6100
 };

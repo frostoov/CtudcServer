@@ -48,7 +48,6 @@ private:
     uintmax_t mTriggerCount;
 
     TimePoint mStartPoint;
-    bool mNetIsActive;
 };
 
 } //caen

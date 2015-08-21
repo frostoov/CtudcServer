@@ -81,6 +81,6 @@ private:
     trekdata::Settings mSettings;
 };
 
-}//namespace caenTDC
+}//namespace caenTdc
 
 #endif // CAEN_MODULE_H

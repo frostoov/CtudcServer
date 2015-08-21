@@ -28,8 +28,7 @@ CtudcReadManager::CtudcReadManager(ModulePtr module,
                                    uint64_t numberOfRun,
                                    const NetInfo& netInfo)
     : ReadManager(module, config, path, eventsPerFile, numberOfRun),
-      mNevodReciever(netInfo.nevodIP, netInfo.nevodPort),
-      mNetIsActive(true) {
+      mNevodReciever(netInfo.nevodIP, netInfo.nevodPort) {
     setFileType(DataSetType::CTUDC);
 }
 

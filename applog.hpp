@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+
 #include "timeprint.hpp"
 
 class AppLog {
@@ -37,6 +38,7 @@ public:
 
 private:
     AppLog() {
+        mStream.exceptions(mStream.failbit | mStream.badbit);
         mStream.open("CtudcServer.log", mStream.app | mStream.binary);
     }
     std::ofstream mStream;

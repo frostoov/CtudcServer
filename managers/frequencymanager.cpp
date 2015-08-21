@@ -34,7 +34,7 @@ void FrequencyManager::shutDown() {
     calculateFrequency(getTotalTime());
     mDataValid = true;
     returnSettings();
-    mTdcModule->setBlocked(true);
+    mTdcModule->setBlocked(false);
 }
 
 void FrequencyManager::workerFunc() {

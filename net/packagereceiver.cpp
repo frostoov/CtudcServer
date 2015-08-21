@@ -17,7 +17,6 @@ PackageReceiver::PackageReceiver(const std::string& multicastAddress, uint16_t p
     mSocket.bind(mEndpoint);
 
     joinMulticastGroup(mMulticastAddress);
-    mSocket.set_option(UDP::socket::receive_buffer_size(mBuffer.size()));
 }
 
 PackageReceiver::~PackageReceiver() {

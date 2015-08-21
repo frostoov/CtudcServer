@@ -26,6 +26,7 @@ ProcessController::ProcessController(const ModulePtr& device,
     : CtudcController(createMethods()),
       mDevice(device),
       mChannelConfig(config),
+      mSettings(settings),
       mName("process") { }
 
 const std::string& ProcessController::getName() const {
@@ -117,9 +118,11 @@ CtudcController::Response ProcessController::stopFrequency(const Request& reques
     if(isFreqManager(mProcess)) {
         mProcess->stop();
         auto freqManager = dynamic_cast<FrequencyManager*>(mProcess.get());
-        trekFreq = freqManager->getFrequency();
+        if(freqManager) {
+            trekFreq = freqManager->getFrequency();
+            responseStatus = true;
+        }
         mProcess.reset();
-        responseStatus = true;
     }
     return {
         getName(),

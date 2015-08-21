@@ -41,12 +41,7 @@ ReadManager::ReadManager(ModulePtr module,
       mNumberOfFiles(0),
       mEventsPerFile(eventsPerFile),
       mFileType(DataSetType::Simple) {
-    fs::path dirPath(dirName);
-    if(fs::exists(dirPath)) {
-        if(!fs::is_directory(dirPath))
-            throw std::runtime_error("Invalid dir path");
-    } else
-        fs::create_directory(dirPath);
+    fs::create_directories(fs::path(mPath));
     mStream.exceptions(ofstream::badbit | ofstream::failbit);
 }
 

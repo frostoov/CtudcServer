@@ -57,6 +57,5 @@ void Session::doSend(const std::string& response) {
 
 Controller& Session::getController(const std::string request) {
     auto object = ctudc::CtudcController::getObject(request);
-    std::cout << "getController: " << object << std::endl;
     return *mControllers.at(object);
 }

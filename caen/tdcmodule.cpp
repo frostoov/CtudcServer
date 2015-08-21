@@ -48,7 +48,7 @@ void Module::setBlocked(bool flag) {
 }
 
 const char* Module::getTitle() const {
-    return "CAENVME TDC";
+    return "CAENVME Tdc";
 }
 
 Settings Module::getDefaultSettings() {
@@ -278,7 +278,7 @@ bool Module::setTriggerMode(bool flag) {
 
 bool Module::setTriggerSubtraction(bool flag) {
     if(flag != mSettings.getTriggerSubtraction())
-        return doAction("Set trigger subtraction", [&]() {
+        return doAction("Set Trigger subtraction", [&]() {
         if(flag && !mSettings.getTriggerMode())
             throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
         if(flag)
@@ -293,11 +293,11 @@ bool Module::setTriggerSubtraction(bool flag) {
 
 bool Module::setTdcMeta(bool flag) {
     if(flag != mSettings.getTdcMeta())
-        return doAction("Set TDC metdata", [&]() {
+        return doAction("Set Tdc metdata", [&]() {
         if(flag)
-            writeMicro(nullptr, OpCode::enableTDCMeta);
+            writeMicro(nullptr, OpCode::enableTdcMeta);
         else
-            writeMicro(nullptr, OpCode::disableTDCMeta);
+            writeMicro(nullptr, OpCode::disableTdcMeta);
         mSettings.setTdcMeta(flag);
     });
     else
@@ -337,7 +337,7 @@ bool Module::updateDeadTime() {
 }
 
 bool Module::updateLSB() {
-    return doAction("Get Trigger Mode", [&] {
+    return doAction("Get Lsb", [&] {
         uint16_t value;
         readMicro(&value, OpCode::getLSB);
         mSettings.setLsb(static_cast<Lsb>(value));
@@ -379,7 +379,7 @@ bool Module::updateEventBLT() {
 }
 
 bool Module::updateTriggerConfig() {
-    return doAction("Get trigger conf", [&] {
+    return doAction("Get Trigger conf", [&] {
         uint16_t conf[5];
         readMicro(conf, OpCode::getTrigConf, 5);
         mSettings.setWindowWidth(conf[0] * 25);

@@ -1,5 +1,5 @@
-#ifndef MAKESTRING
-#define MAKESTRING
+#ifndef MAKESTRING_HPP
+#define MAKESTRING_HPP
 
 #include <string>
 #include <sstream>
@@ -18,5 +18,4 @@ protected:
     std::ostringstream mStream;
 };
 
-#endif // MAKESTRING
-
+#endif // MAKESTRING_HPP
