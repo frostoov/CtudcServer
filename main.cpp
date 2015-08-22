@@ -1,15 +1,14 @@
 #include <iostream>
 #include <string>
 
+#include "appsettings.hpp"
+#include "net/server.hpp"
 
 #include "controller/tdccontroller.hpp"
-#include "controller/ftdcontroller.hpp"
 #include "controller/processcontroller.hpp"
+#include "controller/ftdcontroller.hpp"
 
-#include "net/server.hpp"
-#include "appsettings.hpp"
 #include "configparser/channelsconfigparser.hpp"
-
 #include "makestring.hpp"
 
 
