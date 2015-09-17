@@ -4,7 +4,7 @@
 #include <boost/asio.hpp>
 #include <mutex>
 
-#include <trekdata/structs.hpp>
+#include <trek/data/structs.hpp>
 
 class PackageReceiver {
     using UDP       = boost::asio::ip::udp;

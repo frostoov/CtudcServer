@@ -1,4 +1,7 @@
-#include <trekdata/serialization.hpp>
+#include <trek/common/serialization.hpp>
+#include <trek/common/applog.hpp>
+
+#include <chrono>
 
 #include "net/nettools.hpp"
 #include "ctudcreadmanager.hpp"
@@ -12,11 +15,14 @@ using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::make_unique;
 using std::vector;
+using std::chrono::system_clock;
 using std::chrono::duration_cast;
 
-using trekdata::DataSetType;
-using trekdata::CtudcRecord;
-using trekdata::NevodPackage;
+using trek::Log;
+
+using trek::data::DataSetType;
+using trek::data::CtudcRecord;
+using trek::data::NevodPackage;
 
 
 namespace caen {
@@ -29,20 +35,21 @@ CtudcReadManager::CtudcReadManager(ModulePtr module,
                                    const NetInfo& netInfo)
     : ReadManager(module, config, path, eventsPerFile, numberOfRun),
       mNevodReciever(netInfo.nevodIP, netInfo.nevodPort) {
-    setFileType(DataSetType::CTUDC);
+    setFileType(DataSetType::Ctudc);
 }
 
 bool CtudcReadManager::start() {
     if(!init())
         return false;
     else {
-        mNevodReciever.setCallback([this](PackageReceiver::ByteVector & buffer) {
+        mNevodReciever.setCallback([this](PackageReceiver::ByteVector& nevodBuffer) {
             try {
-                handleNevodPackage(buffer);
-                mBuffer.clear();
-                mTdcModule->readBlock(mBuffer);
-                handleDataPackages(mBuffer);
-            } catch(const std::exception& e) { }
+                handleNevodPackage(nevodBuffer);
+                auto tdcBuffer = mTdcModule->read();
+                handleDataPackages(tdcBuffer);
+            } catch(const std::exception& e) {
+                Log::instance() << "CtudcReadManager: Failed handle buffer" << std::endl;
+            }
         });
         return startThread([this]() {
             mNevodReciever.start();
@@ -123,7 +130,7 @@ void CtudcReadManager::handleNevodPackage(PackageReceiver::ByteVector& buffer) {
         mNevodPackage = make_unique<NevodPackage>();
         membuf tempBuffer(buffer.data(), buffer.size());
         istream stream(&tempBuffer);
-        deserialize(stream, *mNevodPackage);
+        trek::deserialize(stream, *mNevodPackage);
         increasePackageCount();
     }
 }
@@ -132,7 +139,7 @@ void CtudcReadManager::writeCtudcRecord(const CtudcRecord& record) {
     if(!mStream.is_open() || needNewStream())
         openStream(mStream);
 
-    serialize(mStream, record);
+    trek::serialize(mStream, record);
     increaseRecordCount();
 }
 

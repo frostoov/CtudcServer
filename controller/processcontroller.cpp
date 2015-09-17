@@ -2,8 +2,6 @@
 
 #include "managers/ctudcreadmanager.hpp"
 
-namespace ctudc {
-
 using std::make_unique;
 using std::chrono::microseconds;
 using std::string;
@@ -20,28 +18,32 @@ using caen::CtudcReadManager;
 using caen::ReadManager;
 using caen::ProcessManager;
 
+using trek::net::Request;
+using trek::net::Response;
+using trek::net::JController;
+
 ProcessController::ProcessController(const ModulePtr& device,
                                      const caen::ChannelConfig& config,
                                      const Settings& settings)
-    : CtudcController(createMethods()),
+    : JController(createMethods()),
       mDevice(device),
       mChannelConfig(config),
-      mSettings(settings),
-      mName("process") { }
+      mSettings(settings) { }
 
-const std::string& ProcessController::getName() const {
-    return mName;
+const string& ProcessController::name() const {
+    static string n("process");
+    return n;
 }
 
 const ProcessController::Settings& ProcessController::getSettings() const {
     return mSettings;
 }
 
-void ProcessController::connectStopRead(StopReadSlot&& slot) {
-    mStopRead.connect(slot);
+const ProcessController::Callback&ProcessController::onStopRead() {
+    return mOnStopRead;
 }
 
-CtudcController::Methods ProcessController::createMethods() {
+JController::Methods ProcessController::createMethods() {
     return {
         {"getType",             [&](const Request& request) { return this->getType(request);} },
         {"startRead",           [&](const Request& request) { return this->startRead(request);} },
@@ -54,16 +56,16 @@ CtudcController::Methods ProcessController::createMethods() {
     };
 }
 
-CtudcController::Response ProcessController::getType(const Request& request) {
+Response ProcessController::getType(const Request& request) {
     return {
-        getName(),
+        name(),
         "getType",
         getProcessType(mProcess),
         true
     };
 }
 
-CtudcController::Response ProcessController::startRead(const Request& request) {
+Response ProcessController::startRead(const Request& request) {
     auto status = false;
     if(!mProcess) {
         mProcess = createReadManager(request);
@@ -72,31 +74,31 @@ CtudcController::Response ProcessController::startRead(const Request& request) {
             mProcess.reset();
     }
     return {
-        getName(),
+        name(),
         "startRead",
         json::array(),
         status,
     };
 }
 
-CtudcController::Response ProcessController::stopRead(const Request& request) {
+Response ProcessController::stopRead(const Request& request) {
     auto status = false;
     if(isReadManager(mProcess) || isCtudcReadManager(mProcess)) {
         mProcess->stop();
         mProcess.reset();
         mSettings.setNumberOfRun(mSettings.getNumberOfRun() + 1);
-        mStopRead(*this);
+        mOnStopRead(*this);
         status = true;
     }
     return {
-        getName(),
+        name(),
         "stopRead",
         json::array(),
         status
     };
 }
 
-CtudcController::Response ProcessController::startFrequency(const Request& request) {
+Response ProcessController::startFrequency(const Request& request) {
     auto status = false;
     if(!mProcess) {
         mProcess = make_unique<FrequencyManager> (mDevice, mChannelConfig, microseconds(100));
@@ -105,43 +107,43 @@ CtudcController::Response ProcessController::startFrequency(const Request& reque
             mProcess.reset();
     }
     return {
-        getName(),
+        name(),
         "startFrequency",
         json::array(),
         status
     };
 }
 
-CtudcController::Response ProcessController::stopFrequency(const Request& request) {
+Response ProcessController::stopFrequency(const Request& request) {
     auto responseStatus = false;
     caen::TrekFrequency trekFreq;
     if(isFreqManager(mProcess)) {
         mProcess->stop();
         auto freqManager = dynamic_cast<FrequencyManager*>(mProcess.get());
         if(freqManager) {
-            trekFreq = freqManager->getFrequency();
+            trekFreq = freqManager->frequency();
             responseStatus = true;
         }
         mProcess.reset();
     }
     return {
-        getName(),
+        name(),
         "stopFrequency",
         convertFreq(trekFreq),
         responseStatus
     };
 }
 
-CtudcController::Response ProcessController::getCurrentRun(const Request& request) {
+Response ProcessController::getCurrentRun(const Request& request) {
     return {
-        getName(),
+        name(),
         "getCurrentRun",
         json::array({mSettings.getNumberOfRun() }),
         true
     };
 }
 
-CtudcController::Response ProcessController::getTriggerFrequency(const Request& request) const {
+Response ProcessController::getTriggerFrequency(const Request& request) const {
     double freq = -1;
     auto resposeStatus = false;
     if(isCtudcReadManager(mProcess)) {
@@ -150,14 +152,14 @@ CtudcController::Response ProcessController::getTriggerFrequency(const Request& 
         resposeStatus = true;
     }
     return {
-        getName(),
+        name(),
         "getTriggerFrequency",
         json::array({freq}),
         resposeStatus
     };
 }
 
-CtudcController::Response ProcessController::getPackageFrequency(const Request& request) const {
+Response ProcessController::getPackageFrequency(const Request& request) const {
     double freq = -1;
     auto resposeStatus = false;
     if(isCtudcReadManager(mProcess)) {
@@ -166,7 +168,7 @@ CtudcController::Response ProcessController::getPackageFrequency(const Request& 
         resposeStatus = true;
     }
     return {
-        getName(),
+        name(),
         "getPackageFrequency",
         json::array({freq}),
         resposeStatus
@@ -174,7 +176,7 @@ CtudcController::Response ProcessController::getPackageFrequency(const Request& 
 }
 
 ProcessController::ProcessPtr ProcessController::createReadManager(const Request& request) const {
-    const auto type = request.getInputs().at(0).get<string>();
+    const auto type = request.inputs().at(0).get<string>();
     if(type == "simple") {
         return make_unique<ReadManager> (mDevice,
                                          mChannelConfig,
@@ -308,7 +310,4 @@ uint64_t ProcessController::Settings::getNumberOfRun() const {
 
 void ProcessController::Settings::setNumberOfRun(const uint64_t& numberOfRun) {
     mNumberOfRun = numberOfRun;
-}
-
-
 }

@@ -1,21 +1,24 @@
 #include "tdccontroller.hpp"
 
-namespace ctudc {
-
 using std::make_shared;
+using std::string;
 
 using caen::Module;
-using trekdata::Lsb;
-using trekdata::EdgeDetection;
+
+using trek::data::Lsb;
+using trek::data::EdgeDetection;
 
 using nlohmann::json;
 
-TdcController::TdcController(int32_t vmeAddress)
-    : CtudcController(createMethods()),
-      mDevice(make_shared<Module>(vmeAddress)),
-      mName("tdc") { }
+using trek::net::Request;
+using trek::net::Response;
+using trek::net::JController;
 
-CtudcController::Methods TdcController::createMethods() {
+TdcController::TdcController(int32_t vmeAddress)
+    : JController(createMethods()),
+      mDevice(make_shared<Module>(vmeAddress)) { }
+
+JController::Methods TdcController::createMethods() {
     return {
         {"init",               [&](const Request& query) { return this->init(query);}},
         {"close",              [&](const Request& query) { return this->close(query);}},
@@ -41,211 +44,211 @@ CtudcController::Methods TdcController::createMethods() {
     };
 }
 
-CtudcController::Response TdcController::init(const Request& request) {
+Response TdcController::init(const Request& request) {
     return {
-        getName(),
+        name(),
         "init",
         json::array(),
         mDevice->initialize(),
     };
 }
 
-CtudcController::Response TdcController::close(const Request& request) {
+Response TdcController::close(const Request& request) {
     return {
-        getName(),
+        name(),
         "close",
         json::array(),
         mDevice->close(),
     };
 }
 
-CtudcController::Response TdcController::isInit(const Request& request) {
+Response TdcController::isInit(const Request& request) {
     return {
-        getName(),
+        name(),
         "isInit",
         json::array({mDevice->isInit() }),
         true,
     };
 }
 
-CtudcController::Response TdcController::setLog(const Request& request) {
-    mDevice->setLog(request.getInputs().at(0));
+Response TdcController::setLog(const Request& request) {
+    mDevice->setLog(request.inputs().at(0));
     return {
-        getName(),
+        name(),
         "setLog",
         json::array(),
         true,
     };
 }
 
-CtudcController::Response TdcController::getLog(const Request& request) {
+Response TdcController::getLog(const Request& request) {
     json::array_t log;
     while(mDevice->hasMessages())
         log.push_back(mDevice->popMessage().first);
 
     return {
-        getName(),
+        name(),
         "getLog",
         log,
         true,
     };
 }
 
-CtudcController::Response TdcController::softwareClear(const Request& request) {
+Response TdcController::softwareClear(const Request& request) {
     return {
-        getName(),
+        name(),
         "softwareClear",
         json::array(),
         mDevice->softwareClear(),
     };
 }
 
-CtudcController::Response TdcController::getSettings(const Request& request) {
-    const auto& settings = mDevice->getSettings();
+Response TdcController::getSettings(const Request& request) {
+    const auto& settings = mDevice->settings();
     return {
-        getName(),
+        name(),
         "getSettings",
         {
-            settings.getTriggerMode(),
-            settings.getTriggerSubtraction(),
-            settings.getTdcMeta(),
-            settings.getWindowWidth(),
-            settings.getWindowOffset(),
-            uint16_t(settings.getEdgeDetection()),
-            uint16_t(settings.getLsb()),
-            settings.getAlmostFull(),
-            settings.getControl(),
-            settings.getStatus(),
-            settings.getDeadTime(),
-            settings.getEventBLT()
+            settings.triggerMode(),
+            settings.triggerSubtraction(),
+            settings.tdcMeta(),
+            settings.windowWidth(),
+            settings.windowOffset(),
+            uint16_t(settings.edgeDetection()),
+            uint16_t(settings.lsb()),
+            settings.almostFull(),
+            settings.control(),
+            settings.status(),
+            settings.deadTime(),
+            settings.eventBlt()
         },
         true
     };
 }
 
-CtudcController::Response TdcController::updateSettings(const Request& request) {
+Response TdcController::updateSettings(const Request& request) {
     return {
-        getName(),
+        name(),
         "updateSettings",
         json::array(),
         mDevice->updateSettings(),
     };
 }
 
-CtudcController::Response TdcController::setSettings(const Request& request) {
+Response TdcController::setSettings(const Request& request) {
     auto settings  = createSettings(request);
     return {
-        getName(),
+        name(),
         "setSettings",
         json::array(),
         mDevice->setSettings(settings),
     };
 }
 
-CtudcController::Response TdcController::setTriggerMode(const Request& request) {
+Response TdcController::setTriggerMode(const Request& request) {
     return {
-        getName(),
+        name(),
         "setTriggerMode",
         json::array(),
-        mDevice->setTriggerMode(request.getInputs().front()),
+        mDevice->setTriggerMode(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setTriggerSubtraction(const Request& request) {
+Response TdcController::setTriggerSubtraction(const Request& request) {
     return {
-        getName(),
+        name(),
         "setTriggerSubtraction",
         json::array(),
-        mDevice->setTriggerSubtraction(request.getInputs().front()),
+        mDevice->setTriggerSubtraction(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setTdcMeta(const Request& request) {
+Response TdcController::setTdcMeta(const Request& request) {
     return {
-        getName(),
+        name(),
         "setTdcMeta",
         json::array(),
-        mDevice->setTdcMeta(request.getInputs().front()),
+        mDevice->setTdcMeta(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setWindowWidth(const Request& request) {
+Response TdcController::setWindowWidth(const Request& request) {
     return {
-        getName(),
+        name(),
         "setWindowWidth",
         json::array(),
-        mDevice->setWindowWidth(request.getInputs().front()),
+        mDevice->setWindowWidth(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setWindowOffset(const Request& request) {
+Response TdcController::setWindowOffset(const Request& request) {
     return {
-        getName(),
+        name(),
         "setWindowOffset",
         json::array(),
-        mDevice->setWindowOffset(request.getInputs().front()),
+        mDevice->setWindowOffset(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setEdgeDetection(const Request& request) {
-    auto edgeDetection = request.getInputs().front().get<uint16_t>();
+Response TdcController::setEdgeDetection(const Request& request) {
+    auto edgeDetection = request.inputs().front().get<uint16_t>();
     return {
-        getName(),
+        name(),
         "setEdgeDetection",
         json::array(),
         mDevice->setEdgeDetection(static_cast<EdgeDetection>(edgeDetection)),
     };
 }
 
-CtudcController::Response TdcController::setLsb(const Request& request) {
-    auto lsb = request.getInputs().front().get<uint16_t>();
+Response TdcController::setLsb(const Request& request) {
+    auto lsb = request.inputs().front().get<uint16_t>();
     return {
-        getName(),
+        name(),
         "setLsb",
         json::array(),
         mDevice->setLsb(static_cast<Lsb>(lsb)),
     };
 }
 
-CtudcController::Response TdcController::setAlmostFull(const Request& request) {
+Response TdcController::setAlmostFull(const Request& request) {
     return {
-        getName(),
+        name(),
         "setAlmostFull",
         json::array(),
-        mDevice->setAlmostFull(request.getInputs().front()),
+        mDevice->setAlmostFull(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setControl(const Request& request) {
+Response TdcController::setControl(const Request& request) {
     return {
-        getName(),
+        name(),
         "setControl",
         json::array(),
-        mDevice->setControl(request.getInputs().front()),
+        mDevice->setControl(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setDeadTime(const Request& request) {
+Response TdcController::setDeadTime(const Request& request) {
     return {
-        getName(),
+        name(),
         "setDeadTime",
         json::array(),
-        mDevice->setDeadTime(request.getInputs().front()),
+        mDevice->setDeadTime(request.inputs().front()),
     };
 }
 
-CtudcController::Response TdcController::setEventBLT(const Request& request) {
+Response TdcController::setEventBLT(const Request& request) {
     return {
-        getName(),
+        name(),
         "setEventBLT",
         json::array(),
-        mDevice->setEventBLT(request.getInputs().front()),
+        mDevice->setEventBLT(request.inputs().front()),
     };
 }
 
-trekdata::Settings TdcController::createSettings(const Request& request) const {
-    trekdata::Settings settings;
-    const auto& input = request.getInputs();
+trek::data::Settings TdcController::createSettings(const Request& request) const {
+    trek::data::Settings settings;
+    const auto& input = request.inputs();
     settings.setTriggerMode(input.at(0));
     settings.setTriggerSubtraction(input.at(1));
     settings.setTdcMeta(input.at(2));
@@ -262,12 +265,11 @@ trekdata::Settings TdcController::createSettings(const Request& request) const {
     return settings;
 }
 
-const std::string& TdcController::getName() const {
-    return mName;
+const std::string& TdcController::name() const {
+    static string n("tdc");
+    return n;
 }
 
-TdcController::ModulePtr& TdcController::getModule() {
+TdcController::ModulePtr&TdcController::getModule() {
     return mDevice;
-}
-
 }

@@ -5,7 +5,7 @@
 #include <list>
 #include <memory>
 
-#include <trekdata/tdcrecord.hpp>
+#include <trek/data/tdcrecord.hpp>
 
 #include "threadmanager.hpp"
 #include "caen/tdcmodule.hpp"
@@ -16,7 +16,7 @@ namespace caen {
 class ProcessManager : public ThreadManager {
 protected:
     using ModulePtr     = std::shared_ptr<Module>;
-    using TdcRecordList  = std::list<trekdata::TdcRecord>;
+    using TdcRecordList  = std::list<trek::data::TdcRecord>;
 public:
 
     void setModule(ModulePtr module) {
@@ -48,7 +48,7 @@ public:
 protected:
     ProcessManager(ModulePtr module, const ChannelConfig& config);
     bool init() override;
-    void setBkpSettings(const trekdata::Settings& settings);
+    void setBkpSettings(const trek::data::Settings& settings);
     void returnSettings();
 
     TdcRecordList handleBuffer(const WordVector& buffer);
@@ -61,7 +61,7 @@ protected:
 private:
     ChannelConfig mConfig;
 
-    trekdata::Settings mBkpSettings;
+    trek::data::Settings mBkpSettings;
 
     static const uint32_t DATA_TYPE_MSK = 0xf8000000; /* Data type bit masks */
 

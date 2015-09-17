@@ -37,7 +37,7 @@ public:
     void setLog(bool flag) {
         mNeedLog = flag;
     }
-    virtual const char* getTitle() const = 0;
+    virtual const char* title() const = 0;
 protected:
     Subject();
     void pushMessage(std::string&& text) const;

@@ -16,7 +16,7 @@ public:
     void load(std::istream& stream) override;
     void save(std::ostream& stream) override;
 
-    const nlohmann::json& getConfig() const {
+    const nlohmann::json& config() const {
         return mConfig;
     }
 private:

@@ -2,8 +2,8 @@
 #include <sstream>
 #include <iomanip>
 
-#include <trekdata/tdcrecord.hpp>
-#include <trekdata/serialization.hpp>
+#include <trek/data/tdcrecord.hpp>
+#include <trek/common/serialization.hpp>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -23,9 +23,9 @@ using std::setw;
 
 namespace fs = boost::filesystem;
 
-using trekdata::TdcRecord;
-using trekdata::DataSetType;
-using trekdata::DataSetHeader;
+using trek::data::TdcRecord;
+using trek::data::DataSetType;
+using trek::data::DataSetHeader;
 
 namespace caen {
 
@@ -49,12 +49,11 @@ bool ReadManager::init() {
     if(!ProcessManager::init())
         return false;
     else {
-        mBuffer.clear();
         resetRecordCount();
         resetFileCount();
-        setBkpSettings(mTdcModule->getSettings());
+        setBkpSettings(mTdcModule->settings());
         mTdcModule->setTriggerMode(true);
-        if(mTdcModule->getSettings().getTriggerMode()) {
+        if(mTdcModule->settings().triggerMode()) {
             mTdcModule->softwareClear();
             mTdcModule->setBlocked(true);
             return true;
@@ -72,19 +71,18 @@ void ReadManager::shutDown() {
 }
 
 void ReadManager::workerFunc() {
-    mBuffer.clear();
-    auto readSize = mTdcModule->readBlock(mBuffer);
-    if(readSize) {
-        auto events = handleBuffer(mBuffer);
+    auto buffer = mTdcModule->read();
+    if(!buffer.empty()) {
+        auto events = handleBuffer(buffer);
         for(const auto& event : events)
             writeTdcRecord(event);
     }
 }
 
-void ReadManager::writeTdcRecord(const trekdata::TdcRecord& event) {
+void ReadManager::writeTdcRecord(const trek::data::TdcRecord& event) {
     if(mStream.is_open() == false || needNewStream())
         openStream(mStream);
-    ::serialize(mStream, event);
+    trek::serialize(mStream, event);
     increaseRecordCount();
 }
 
@@ -101,9 +99,9 @@ bool ReadManager::openStream(ofstream& stream) {
         closeStream(stream);
     stream.open(formFileName(), stream.binary | stream.trunc);
 
-    DataSetHeader header(mFileType, 52015, mTdcModule->getSettings());
+    DataSetHeader header(mFileType, 52015, mTdcModule->settings());
 
-    ::serialize(stream, header);
+    trek::serialize(stream, header);
 
     return true;
 }
@@ -131,7 +129,7 @@ void ReadManager::increaseFileCount()  {
     ++mNumberOfFiles;
 }
 
-void ReadManager::setFileType(trekdata::DataSetType type) {
+void ReadManager::setFileType(trek::data::DataSetType type) {
     mFileType = type;
 }
 

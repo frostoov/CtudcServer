@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 3.0)
 project(CtudcServer)
 
+add_definitions(${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic -fPIC)
+
 set(
-    SOURCE
+    SOURCES
     observer/observer.cpp
     caen/tdcmodule.cpp
     managers/threadmanager.cpp
@@ -12,14 +14,11 @@ set(
     managers/ctudcreadmanager.cpp
     net/nettools.cpp
     net/packagereceiver.cpp
-    net/server.cpp
-    net/session.cpp
     configparser/appconfigparser.cpp
     configparser/channelsconfigparser.cpp
     ftd/ftdmodule.cpp
     controller/ftdcontroller.cpp
     controller/tdccontroller.cpp
-    controller/ctudccontroller.cpp
     controller/processcontroller.cpp
     appsettings.cpp
     main.cpp
@@ -37,28 +36,19 @@ set(
     managers/channelconfig.hpp
     managers/processmanager.hpp
     net/packagereceiver.hpp
-    net/session.hpp
-    net/server.hpp
     net/nettools.hpp
     configparser/configparser.hpp
     configparser/appconfigparser.hpp
     configparser/channelsconfigparser.hpp
-    makestring.hpp
-    applog.hpp
     ftd/defines.hpp
     ftd/ftdmodule.hpp
-    controller/controller.hpp
     controller/ftdcontroller.hpp
     controller/tdccontroller.hpp
-    controller/ctudccontroller.hpp
     controller/processcontroller.hpp
     appsettings.hpp
-    timeprint.hpp
 )
 
-add_executable(CtudcServer ${SOURCE})
-
-set_property(TARGET CtudcServer PROPERTY CXX_STANDARD 14)
+add_executable(CtudcServer ${SOURCES} ${HEADERS})
 
 find_package(
     Boost
@@ -70,21 +60,23 @@ find_package(
 )
 
 include_directories(${PROJECT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(
     CtudcServer
+    trekcommon
     trekdata
+    treknet
     ftd2xx
     pthread
     ${Boost_LIBRARIES}
 )
 
 if(UNIX)
-target_link_libraries(
-    CtudcServer
-    CAENVME
-)
+    target_link_libraries(
+        CtudcServer
+        CAENVME
+    )
 endif(UNIX)
 
 if(WIN32)

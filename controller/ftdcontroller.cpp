@@ -1,21 +1,24 @@
 #include "ftdcontroller.hpp"
 
-namespace ctudc {
-
+using std::string;
 using std::make_shared;
 
 using nlohmann::json;
 
-FtdController::FtdController(uint32_t address)
-    : CtudcController(createMethods()),
-      mDevice(make_shared<ftdi::Module>(address)),
-      mName("ftd") { }
+using trek::net::JController;
+using trek::net::Request;
+using trek::net::Response;
 
-const std::string& FtdController::getName() const {
-    return mName;
+FtdController::FtdController(uint32_t address)
+    : JController(createMethods()),
+      mDevice(make_shared<ftdi::Module>(address)) { }
+
+const string& FtdController::name() const {
+    static string n("ftd");
+    return n;
 }
 
-CtudcController::Methods FtdController::createMethods() {
+JController::Methods FtdController::createMethods() {
     return {
         {"init",     [&](const Request& request) { return this->init(request);}},
         {"close",    [&](const Request& request) { return this->close(request);}},
@@ -24,46 +27,45 @@ CtudcController::Methods FtdController::createMethods() {
     };
 }
 
-CtudcController::Response FtdController::init(const Request& request) {
+Response FtdController::init(const Request& request) {
     if(mDevice->open("C232HM-EDHSL-0"))
         mDevice->initialize({ftdi::I2C_CLOCK_STANDARD_MODE, 1, 0});
     return {
-        getName(),
+        name(),
         "init",
         json::array(),
         mDevice->isOpen(),
     };
 }
 
-CtudcController::Response FtdController::close(const Request& request) {
+Response FtdController::close(const Request& request) {
     return {
-        getName(),
+        name(),
         "closeFtd",
         json::array(),
         mDevice->close()
     };
 }
 
-CtudcController::Response FtdController::isInit(const Request& request) {
+Response FtdController::isInit(const Request& request) {
     return {
-        getName(),
+        name(),
         "isInit",
         json::array({mDevice->isOpen()}),
         true
     };
 }
 
-CtudcController::Response FtdController::setCodes(const Request& request) {
+Response FtdController::setCodes(const Request& request) {
     uint8_t data[] = {
-        0x0, request.getInputs().at(0).get<uint8_t>(),
-        0x1, request.getInputs().at(1).get<uint8_t>(),
+        0x0, request.inputs().at(0).get<uint8_t>(),
+        0x1, request.inputs().at(1).get<uint8_t>(),
     };
     return {
-        getName(),
+        name(),
         "setCodes",
         json::array(),
         mDevice->write(data, sizeof(data)),
     };
 }
 
-}

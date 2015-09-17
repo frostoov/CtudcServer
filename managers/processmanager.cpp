@@ -15,12 +15,12 @@ bool ProcessManager::init() {
         return false;
 }
 
-void ProcessManager::setBkpSettings(const trekdata::Settings& settings) {
+void ProcessManager::setBkpSettings(const trek::data::Settings& settings) {
     mBkpSettings = settings;
 }
 
 void ProcessManager::returnSettings() {
-    if(mBkpSettings != mTdcModule->getSettings())
+    if(mBkpSettings != mTdcModule->settings())
         mTdcModule->setSettings(mBkpSettings);
 }
 

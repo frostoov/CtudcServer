@@ -7,19 +7,26 @@ FrequencyManager::FrequencyManager(ModulePtr module, const ChannelConfig& config
                                    const Microseconds& time)
     : ProcessManager(module, config),
       mDataValid(false),
-      mTotalMsrTime(Microseconds::zero()),
+      mTotalTime(Microseconds::zero()),
       mMsrTime(time) {}
+
+bool FrequencyManager::isDataValid() {
+    return mDataValid;
+}
+
+const TrekFrequency&FrequencyManager::frequency() const {
+    return mFrequency;
+}
 
 bool FrequencyManager::init() {
     if(!ProcessManager::init())
         return false;
     else {
-        mBuffer.clear();
         mFrequency.clear();
-        setBkpSettings(mTdcModule->getSettings());
+        setBkpSettings(mTdcModule->settings());
         mTdcModule->setTriggerMode(false);
-        if(!mTdcModule->getSettings().getTriggerMode()) {
-            mTotalMsrTime = Microseconds::zero();
+        if(!mTdcModule->settings().triggerMode()) {
+            mTotalTime = Microseconds::zero();
             mDataValid = false;
             mTdcModule->setBlocked(true);
             return true;
@@ -31,17 +38,16 @@ bool FrequencyManager::init() {
 }
 
 void FrequencyManager::shutDown() {
-    calculateFrequency(getTotalTime());
+    calculateFrequency(totalTime());
     mDataValid = true;
     returnSettings();
     mTdcModule->setBlocked(false);
 }
 
 void FrequencyManager::workerFunc() {
-    mTdcModule->readBlock(mBuffer, mMsrTime);
-    handleData(mBuffer);
-    mBuffer.clear();
-    mTotalMsrTime += mMsrTime;
+    auto buffer = mTdcModule->readWithClear(mMsrTime);
+    handleData(buffer);
+    mTotalTime += mMsrTime;
 }
 
 void FrequencyManager::handleData(WordVector& data) {
@@ -65,6 +71,18 @@ void FrequencyManager::calculateFrequency(double time) {
                 wireData /= time;
     } else
         mFrequency.clear();
+}
+
+void FrequencyManager::setFreqValid(bool flag) {
+    mDataValid = flag;
+}
+
+FrequencyManager::Microseconds FrequencyManager::msrTime() const {
+    return mMsrTime;
+}
+
+double FrequencyManager::totalTime() const {
+    return double(mTotalTime.count()) / 1000000;
 }
 
 

@@ -9,9 +9,9 @@ using std::unique_ptr;
 using std::runtime_error;
 using std::exception;
 using std::string;
-using trekdata::EdgeDetection;
-using trekdata::Lsb;
-using trekdata::Settings;
+using trek::data::EdgeDetection;
+using trek::data::Lsb;
+using trek::data::Settings;
 
 static constexpr uint16_t hShakeWo = 1;
 static constexpr uint16_t hShakeRo = 2;
@@ -29,7 +29,7 @@ Module::Module(uint16_t vmeAddress)
       mIsBlocked(false),
       mVmeHandle(0),
       mBaseAddress(vmeAddress),
-      mSettings(getDefaultSettings()) { }
+      mSettings(defaultSettings()) { }
 
 Module::~Module() {
     CAENVME_End(mVmeHandle);
@@ -47,11 +47,11 @@ void Module::setBlocked(bool flag) {
     mIsBlocked = flag;
 }
 
-const char* Module::getTitle() const {
+const char* Module::title() const {
     return "CAENVME Tdc";
 }
 
-Settings Module::getDefaultSettings() {
+Settings Module::defaultSettings() {
     Settings settings;
     settings.setTriggerMode(false);
     settings.setTriggerSubtraction(false);
@@ -76,7 +76,7 @@ bool Module::initialize() {
         status = CAENVME_Init(cvV2718, 0, 0, &mVmeHandle);
         if(status == cvSuccess) {
             mIsInit = true;
-            mSettings = getDefaultSettings();
+            mSettings = defaultSettings();
         } else {
             mIsInit = false;
             throw runtime_error(CAENVME_DecodeError(status));
@@ -100,17 +100,17 @@ bool Module::close() {
 
 bool Module::setSettings(const Settings& settings) {
     auto status = true;
-    status &= setTriggerMode(settings.getTriggerMode());
-    status &= setTriggerSubtraction(settings.getTriggerSubtraction());
-    status &= setTdcMeta(settings.getTdcMeta());
-    status &= setWindowWidth(settings.getWindowWidth());
-    status &= setWindowOffset(settings.getWindowOffset());
-    status &= setAlmostFull(settings.getAlmostFull());
-    status &= setLsb(settings.getLsb());
-    status &= setEdgeDetection(settings.getEdgeDetection());
-    status &= setControl(settings.getControl());
-    status &= setEventBLT(settings.getEventBLT());
-    status &= setDeadTime(settings.getDeadTime());
+    status &= setTriggerMode(settings.triggerMode());
+    status &= setTriggerSubtraction(settings.triggerSubtraction());
+    status &= setTdcMeta(settings.tdcMeta());
+    status &= setWindowWidth(settings.windowWidth());
+    status &= setWindowOffset(settings.windowOffset());
+    status &= setAlmostFull(settings.almostFull());
+    status &= setLsb(settings.lsb());
+    status &= setEdgeDetection(settings.edgeDetection());
+    status &= setControl(settings.control());
+    status &= setEventBLT(settings.eventBlt());
+    status &= setDeadTime(settings.deadTime());
     return status;
 }
 
@@ -129,7 +129,7 @@ bool Module::updateSettings() {
     return status;
 }
 
-const trekdata::Settings& Module::getSettings() const {
+const trek::data::Settings& Module::settings() const {
     return mSettings;
 }
 
@@ -148,8 +148,8 @@ bool Module::doAction(string&& message, std::function<void()>&& func) {
     }
 }
 
-bool Module::setLsb(trekdata::Lsb lsb) {
-    if(lsb != mSettings.getLsb())
+bool Module::setLsb(trek::data::Lsb lsb) {
+    if(lsb != mSettings.lsb())
         return doAction("Set LSB", [&]() {
         auto value = static_cast<uint16_t>(lsb);
         if(value > 2)
@@ -165,7 +165,7 @@ bool Module::setLsb(trekdata::Lsb lsb) {
 
 bool Module::setWindowWidth(uint16_t windowWidth) {
     windowWidth = (windowWidth / 25) * 25;
-    if(windowWidth != mSettings.getWindowWidth())
+    if(windowWidth != mSettings.windowWidth())
         return doAction("Set window width", [&]() {
         uint16_t value = windowWidth / 25;
         if(value < 1 || value > 4095)
@@ -181,7 +181,7 @@ bool Module::setWindowWidth(uint16_t windowWidth) {
 
 bool Module::setWindowOffset(int16_t windowOffset) {
     windowOffset = (windowOffset / 25) * 25;
-    if(windowOffset != mSettings.getWindowOffset())
+    if(windowOffset != mSettings.windowOffset())
         return doAction("Set window offset", [&]() {
         uint16_t value = static_cast<uint16_t>(windowOffset / 25);
         if(static_cast<int16_t>(value) < -2048 || static_cast<int16_t>(value) > 40)
@@ -196,7 +196,7 @@ bool Module::setWindowOffset(int16_t windowOffset) {
 }
 
 bool Module::setAlmostFull(uint16_t value) {
-    if(value != mSettings.getAlmostFull())
+    if(value != mSettings.almostFull())
         return doAction("Set almost Full", [&]() {
         if(value < 1 || value > 32735)
             throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -210,7 +210,7 @@ bool Module::setAlmostFull(uint16_t value) {
 }
 
 bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
-    if(edgeDetection != mSettings.getEdgeDetection())
+    if(edgeDetection != mSettings.edgeDetection())
         return doAction("Set edge detection", [&]() {
         auto value = static_cast<uint16_t>(edgeDetection);
         if(value > 4)
@@ -225,7 +225,7 @@ bool Module::setEdgeDetection(EdgeDetection edgeDetection) {
 }
 
 bool Module::setControl(uint16_t control) {
-    if(control != mSettings.getControl())
+    if(control != mSettings.control())
         return doAction("Set control register", [&]() {
         writeReg16(control, Reg::controlReg);
         mSettings.setControlRegister(control);
@@ -235,7 +235,7 @@ bool Module::setControl(uint16_t control) {
 }
 
 bool Module::setDeadTime(uint16_t deadTime) {
-    if(deadTime != mSettings.getDeadTime())
+    if(deadTime != mSettings.deadTime())
         return doAction("Set dead time", [&]() {
         writeMicro(&deadTime, OpCode::setDeadTime);
         mSettings.setDeadTime(deadTime);
@@ -245,7 +245,7 @@ bool Module::setDeadTime(uint16_t deadTime) {
 }
 
 bool Module::setEventBLT(uint16_t eventBLT) {
-    if(eventBLT == mSettings.getEventBLT())
+    if(eventBLT == mSettings.eventBlt())
         return doAction("Set event alignment", [&]() {
         if(eventBLT > 255)
             throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -259,7 +259,7 @@ bool Module::setEventBLT(uint16_t eventBLT) {
 }
 
 bool Module::setTriggerMode(bool flag) {
-    if(flag != mSettings.getTriggerMode()) {
+    if(flag != mSettings.triggerMode()) {
         auto status = doAction("Set Trigger Mode", [&]() {
             if(flag) {
                 writeMicro(nullptr, OpCode::setTriggerMatching);
@@ -277,9 +277,9 @@ bool Module::setTriggerMode(bool flag) {
 }
 
 bool Module::setTriggerSubtraction(bool flag) {
-    if(flag != mSettings.getTriggerSubtraction())
+    if(flag != mSettings.triggerSubtraction())
         return doAction("Set Trigger subtraction", [&]() {
-        if(flag && !mSettings.getTriggerMode())
+        if(flag && !mSettings.triggerMode())
             throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
         if(flag)
             writeMicro(nullptr, OpCode::enableSubTrig);
@@ -292,7 +292,7 @@ bool Module::setTriggerSubtraction(bool flag) {
 }
 
 bool Module::setTdcMeta(bool flag) {
-    if(flag != mSettings.getTdcMeta())
+    if(flag != mSettings.tdcMeta())
         return doAction("Set Tdc metdata", [&]() {
         if(flag)
             writeMicro(nullptr, OpCode::enableTdcMeta);
@@ -344,11 +344,11 @@ bool Module::updateLSB() {
     });
 }
 
-uint16_t Module::getFirmwareRev() {
+uint16_t Module::firmwareRev() {
     return readReg16(Reg::firmwareRev);
 }
 
-uint16_t Module::getMicroRev() {
+uint16_t Module::microRev() {
     uint16_t rev;
     readMicro(&rev, OpCode::microRev);
     return rev;
@@ -394,34 +394,30 @@ bool Module::softwareClear() {
     });
 }
 
-size_t Module::readBlock(WordVector& buff, const Microseconds& delay) {
-    const int blockSize = getBlockSize();
-    const uint32_t buffAddr = formAddress(Reg::outputBuffer);
-    const uint32_t restAddr = formAddress(Reg::softwareClear);
-    size_t readSize = 0 , dummy;
+
+WordVector Module::read() {
+    static uint32_t buffer[1024];
     int readBytes;
 
-    auto prevSize = buff.size();
-    buff.resize(prevSize + blockSize);
+    auto errCode = CAENVME_BLTReadCycle(mVmeHandle, formAddress(Reg::outputBuffer),
+                                        buffer, sizeof(buffer),
+                                        cvA32_U_BLT, cvD32,
+                                        &readBytes);
 
-    if(delay != Microseconds::zero()) {
-        CAENVME_WriteCycle(mVmeHandle, restAddr, &dummy, cvA32_S_DATA, cvD16);
-        sleep_for(delay);
-    }
-    auto errCode = CAENVME_BLTReadCycle(mVmeHandle, buffAddr,
-                                        reinterpret_cast<void*>(buff.data() + prevSize),
-                                        blockSize * sizeof(uint32_t),
-                                        cvA32_U_BLT, cvD32, &readBytes);
-    if((errCode == cvBusError && (mSettings.getControl() & 1)) || errCode == cvSuccess) {
-        readSize += readBytes / sizeof(uint32_t);
-        buff.resize(prevSize + readBytes / sizeof(uint32_t));
+    if((errCode == cvBusError && (mSettings.control() & 1)) || errCode == cvSuccess) {
+        auto readSize = readBytes / sizeof(uint32_t);
+        return WordVector(buffer, buffer + readSize);
     } else
-        buff.resize(prevSize);
-    return readSize;
+        return {};
 }
 
-size_t Module::getBlockSize() const {
-    return 1024;
+WordVector Module::readWithClear(const Module::Microseconds& delay) {
+    int dummy;
+    auto errCode = CAENVME_WriteCycle(mVmeHandle, formAddress(Reg::softwareClear),
+                                      &dummy,cvA32_S_DATA, cvD32);
+    if(errCode != cvSuccess)
+        throw runtime_error("Module::readWithDelay: Failed perfom software clear");
+    return read();
 }
 
 uint32_t Module::readReg32(Reg addr) const {

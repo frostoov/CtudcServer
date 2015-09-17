@@ -15,12 +15,8 @@ public:
 
     FrequencyManager(ModulePtr module, const ChannelConfig& config,
                      const Microseconds& time);
-    bool isDataValid() {
-        return mDataValid;
-    }
-    const TrekFrequency& getFrequency() const {
-        return mFrequency;
-    }
+    bool isDataValid();
+    const TrekFrequency& frequency() const;
 
 protected:
     bool init() override;
@@ -29,23 +25,16 @@ protected:
     void handleData(WordVector& data);
     void calculateFrequency(double time);
     void clearFreq();
-    void setFreqValid(bool flag) {
-        mDataValid = flag;
-    }
+    void setFreqValid(bool flag);
 
-    Microseconds getMsrTime() const {
-        return mMsrTime;
-    }
-    double getTotalTime() const {
-        return ((double) mTotalMsrTime.count()) / 1000000;
-    }
+    Microseconds msrTime() const;
+    double totalTime() const;
 
 private:
     TrekFrequency mFrequency;
     bool mDataValid;
-    Microseconds mTotalMsrTime;
+    Microseconds mTotalTime;
     Microseconds mMsrTime;
-    WordVector mBuffer;
 };
 
 }

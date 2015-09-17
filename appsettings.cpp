@@ -6,7 +6,7 @@ void AppSettings::load(const std::string& fileName) {
     AppConfigParser parser;
     parser.load(fileName);
 
-    unMarshal(parser.getConfig());
+    unMarshal(parser.config());
 }
 
 void AppSettings::save(const std::string& fileName) {
@@ -16,8 +16,8 @@ void AppSettings::save(const std::string& fileName) {
 
 nlohmann::json AppSettings::marshal() const {
     return {
-        {"address", getIpAddress() },
-        {"port", getPort() },
+        {"address", ipAddress() },
+        {"port", port() },
         {"process", mProcSettings.marshal() }
     };
 }
@@ -28,15 +28,15 @@ void AppSettings::unMarshal(const nlohmann::json& doc) {
     mProcSettings.unMarshal(doc.at("process"));
 }
 
-const std::string& AppSettings::getIpAddress() const {
+const std::string& AppSettings::ipAddress() const {
     return mIpAddress;
 }
 
-uint16_t AppSettings::getPort() const {
+uint16_t AppSettings::port() const {
     return mPort;
 }
 
-const ProcSettings& AppSettings::getProcessSettings() const {
+const ProcSettings& AppSettings::processSettings() const {
     return mProcSettings;
 }
 

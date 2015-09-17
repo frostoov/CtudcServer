@@ -1,7 +1,7 @@
 #ifndef URAGANREADMANAGER_HPP
 #define URAGANREADMANAGER_HPP
 
-#include <trekdata/ctudcrecord.hpp>
+#include <trek/data/ctudcrecord.hpp>
 
 #include "net/packagereceiver.hpp"
 #include "readmanager.hpp"
@@ -10,7 +10,7 @@ namespace caen {
 
 class CtudcReadManager : public ReadManager {
 protected:
-    using NevodPkgPtr     = std::unique_ptr<trekdata::NevodPackage>;
+    using NevodPkgPtr     = std::unique_ptr<trek::data::NevodPackage>;
     using SystemClock     = std::chrono::high_resolution_clock;
     using TimePoint       = SystemClock::time_point;
 public:
@@ -39,7 +39,7 @@ protected:
     void resetTriggerCount();
     void handleDataPackages(WordVector& tdcData);
     void handleNevodPackage(PackageReceiver::ByteVector& buffer);
-    void writeCtudcRecord(const trekdata::CtudcRecord& record);
+    void writeCtudcRecord(const trek::data::CtudcRecord& record);
 private:
     PackageReceiver mNevodReciever;
     NevodPkgPtr mNevodPackage;

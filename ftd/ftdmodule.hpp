@@ -38,7 +38,7 @@ public:
         return mIsOpen;
     }
 
-    const char* getTitle() const override {
+    const char* title() const override {
         return "FTD";
     }
 protected:

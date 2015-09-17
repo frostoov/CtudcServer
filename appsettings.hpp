@@ -5,7 +5,7 @@
 #include "controller/processcontroller.hpp"
 
 namespace {
-using ProcSettings = ctudc::ProcessController::Settings;
+using ProcSettings = ProcessController::Settings;
 }
 
 class AppSettings {
@@ -17,9 +17,9 @@ public:
     nlohmann::json marshal() const;
     void unMarshal(const nlohmann::json& doc);
 
-    const std::string& getIpAddress() const;
-    uint16_t getPort() const;
-    const ProcSettings& getProcessSettings() const;
+    const std::string& ipAddress() const;
+    uint16_t port() const;
+    const ProcSettings& processSettings() const;
 
     void setIpAddress(const std::string& address);
     void setPort(uint16_t port);

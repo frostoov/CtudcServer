@@ -2,7 +2,7 @@
 #define READMANAGER_HPP
 
 #include <fstream>
-#include <trekdata/datasetheader.hpp>
+#include <trek/data/datasetheader.hpp>
 
 #include "processmanager.hpp"
 
@@ -20,7 +20,7 @@ protected:
     bool init() override;
     void shutDown() override;
     void workerFunc() override;
-    void writeTdcRecord(const trekdata::TdcRecord& event);
+    void writeTdcRecord(const trek::data::TdcRecord& event);
     bool needNewStream();
     bool openStream(std::ofstream& stream);
     void closeStream(std::ofstream& stream);
@@ -31,14 +31,13 @@ protected:
     void increaseRecordCount();
     void increaseFileCount();
 
-    void setFileType(trekdata::DataSetType type);
+    void setFileType(trek::data::DataSetType type);
 
     uintmax_t getNumberOfRecord() const;
     uint64_t  getNumberOfRun() const;
     std::string formFileName() const;
 
     std::ofstream mStream;
-    WordVector mBuffer;
 private:
     std::string mPath;
     uint64_t mNumberOfRun;
@@ -46,7 +45,7 @@ private:
     uintmax_t mNumberOfFiles;
     const uintmax_t mEventsPerFile;
 
-    trekdata::DataSetType mFileType;
+    trek::data::DataSetType mFileType;
 };
 
 } // caen
