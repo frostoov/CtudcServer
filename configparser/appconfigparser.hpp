@@ -1,5 +1,4 @@
-#ifndef TREKVIEWER_APPCONFIGPARSER_HPP
-#define TREKVIEWER_APPCONFIGPARSER_HPP
+#pragma once
 
 #include <unordered_map>
 #include <json.hpp>
@@ -8,19 +7,17 @@
 
 class AppConfigParser : public AbstractConfigParser {
 public:
-    AppConfigParser() {};
-    AppConfigParser(const nlohmann::json&& defaultConfig);
+	AppConfigParser() {};
+	AppConfigParser(const nlohmann::json&& defaultConfig);
 
-    void load(const std::string& fileName) override;
-    void save(const std::string& fileName) override;
-    void load(std::istream& stream) override;
-    void save(std::ostream& stream) override;
+	void load(const std::string& fileName) override;
+	void save(const std::string& fileName) override;
+	void load(std::istream& stream) override;
+	void save(std::ostream& stream) override;
 
-    const nlohmann::json& config() const {
-        return mConfig;
-    }
+	const nlohmann::json& config() const {
+		return mConfig;
+	}
 private:
-    nlohmann::json mConfig;
+	nlohmann::json mConfig;
 };
-
-#endif // TREKVIEWER_APPCONFIGPARSER_HPP

@@ -1,46 +1,32 @@
-#ifndef TDCCONTROLLER_HPP
-#define TDCCONTROLLER_HPP
+#pragma once
 
-#include "caen/tdcmodule.hpp"
+#include "tdc/caenv2718.hpp"
 
-#include <trek/data/tdcsettings.hpp>
-#include <trek/net/jcontroller.hpp>
+#include <trek/net/controller.hpp>
 
-class TdcController : public trek::net::JController {
-    using ModulePtr = std::shared_ptr<caen::Module>;
+class TdcController : public trek::net::Controller {
+	using Module = CaenV2718;
+	using ModulePtr = std::shared_ptr<Module>;
 public:
-    TdcController(int32_t vmeAddress);
-    const std::string& name() const override;
-    ModulePtr& getModule();
-
+	TdcController(const std::string& name, const ModulePtr& module);
 protected:
-    Methods createMethods();
+	Methods createMethods();
 
-    trek::net::Response init(const trek::net::Request& request);
-    trek::net::Response close(const trek::net::Request& request);
-    trek::net::Response isInit(const trek::net::Request& request);
+	trek::net::Response init(const trek::net::Request& request);
+	trek::net::Response close(const trek::net::Request& request);
+	trek::net::Response isInit(const trek::net::Request& request);
 
-    trek::net::Response setLog(const trek::net::Request& request);
-    trek::net::Response getLog(const trek::net::Request& request);
-    trek::net::Response softwareClear(const trek::net::Request& request);
-    trek::net::Response getSettings(const trek::net::Request& request);
-    trek::net::Response updateSettings(const trek::net::Request& request);
-    trek::net::Response setSettings(const trek::net::Request& request);
-    trek::net::Response setTriggerMode(const trek::net::Request& request);
-    trek::net::Response setTriggerSubtraction(const trek::net::Request& request);
-    trek::net::Response setTdcMeta(const trek::net::Request& request);
-    trek::net::Response setWindowWidth(const trek::net::Request& request);
-    trek::net::Response setWindowOffset(const trek::net::Request& request);
-    trek::net::Response setEdgeDetection(const trek::net::Request& request);
-    trek::net::Response setLsb(const trek::net::Request& request);
-    trek::net::Response setAlmostFull(const trek::net::Request& request);
-    trek::net::Response setControl(const trek::net::Request& request);
-    trek::net::Response setDeadTime(const trek::net::Request& request);
-    trek::net::Response setEventBLT(const trek::net::Request& request);
-
-    trek::data::Settings createSettings(const trek::net::Request& request) const;
+	trek::net::Response clear(const trek::net::Request &request);
+	trek::net::Response reset(const trek::net::Request &request);
+	trek::net::Response stat(const trek::net::Request& request);
+	trek::net::Response ctrl(const trek::net::Request& request);
+	trek::net::Response setMode(const trek::net::Request& request);
+	trek::net::Response setWindowWidth(const trek::net::Request& request);
+	trek::net::Response setWindowOffset(const trek::net::Request& request);
+	trek::net::Response setEdgeDetection(const trek::net::Request& request);
+	trek::net::Response setLsb(const trek::net::Request& request);
+	trek::net::Response setCtrl(const trek::net::Request& request);
+	trek::net::Response setTdcMeta(const trek::net::Request& request);
 private:
-    ModulePtr mDevice;
+	ModulePtr mDevice;
 };
-
-#endif // TDCCONTROLLER_HPP

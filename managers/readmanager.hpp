@@ -1,53 +1,60 @@
-#ifndef READMANAGER_HPP
-#define READMANAGER_HPP
+#pragma once
 
-#include <fstream>
-#include <trek/data/datasetheader.hpp>
-
+#include "net/packagereceiver.hpp"
+#include "eventencoder.hpp"
 #include "processmanager.hpp"
 
-namespace caen {
+#include <json.hpp>
+#include <trek/common/threadmanager.hpp>
 
 class ReadManager : public ProcessManager {
-public:
-    ReadManager(ModulePtr module,
-                const ChannelConfig& channelConfig,
-                const std::string& dirName,
-                uint64_t numberOfRun,
-                uintmax_t eventsPerFile);
-
 protected:
-    bool init() override;
-    void shutDown() override;
-    void workerFunc() override;
-    void writeTdcRecord(const trek::data::TdcRecord& event);
-    bool needNewStream();
-    bool openStream(std::ofstream& stream);
-    void closeStream(std::ofstream& stream);
+	using ModulePtr       = std::shared_ptr<Tdc>;
+	using SystemClock     = std::chrono::high_resolution_clock;
+	using TimePoint       = SystemClock::time_point;
+	using RawEvent    = Tdc::EventHits;
+	using RawEvents   = std::vector<RawEvent>;
+public:
+	struct NetInfo {
+		std::string nevodIP;
+		uint16_t    nevodPort;
+	};
+	struct Settings {
+		unsigned    nRun;
+		unsigned    eventsPerFile;
+		std::string writeDir;
+		std::string infoIp;
+		uint16_t    infoPort;
 
-    void resetRecordCount();
-    void resetFileCount();
-
-    void increaseRecordCount();
-    void increaseFileCount();
-
-    void setFileType(trek::data::DataSetType type);
-
-    uintmax_t getNumberOfRecord() const;
-    uint64_t  getNumberOfRun() const;
-    std::string formFileName() const;
-
-    std::ofstream mStream;
+		nlohmann::json marshal() const;
+		void unMarshal(const nlohmann::json& doc);
+	};
+public:
+	ReadManager(ModulePtr module,
+                const Settings& settings,
+				const ChannelConfig& config);
+	~ReadManager();
+	void run() override;
+	void stop() override;
+	double getTriggerFrequency() const;
+	double getPackageFrequency() const;
+protected:
+	void increasePackageCount();
+	void increaseTriggerCount(uintmax_t val);
+	void resetPackageCount();
+	void resetTriggerCount();
+	void handleNevodPackage(PackageReceiver::ByteVector& buffer, trek::data::NevodPackage& nvdPkg);
+	static std::string formDir(const Settings& settings);
 private:
-    std::string mPath;
-    uint64_t mNumberOfRun;
-    uintmax_t mNumberOfRecord;
-    uintmax_t mNumberOfFiles;
-    const uintmax_t mEventsPerFile;
+	ModulePtr                mModule;
+	EventEncoder             mEncoder;
+	PackageReceiver          mNevodReceiver;
+	trek::ThreadManager      mThread;
+	trek::data::NevodPackage mNevodPackage;
+	RawEvents                mBuffer;
 
-    trek::data::DataSetType mFileType;
+	uintmax_t mPackageCount;
+	uintmax_t mTriggerCount;
+
+	TimePoint mStartPoint;
 };
-
-} // caen
-
-#endif  // READMANAGER_HPP

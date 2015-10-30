@@ -1,25 +1,18 @@
-#ifndef FTDCONTROLLER_HPP
-#define FTDCONTROLLER_HPP
-
+#pragma once
 #include "ftd/ftdmodule.hpp"
 
-#include <trek/net/jcontroller.hpp>
+#include <trek/net/controller.hpp>
 
-class FtdController : public trek::net::JController {
-    using ModulePtr = std::shared_ptr<ftdi::Module>;
+class FtdController : public trek::net::Controller {
+	using ModulePtr = std::shared_ptr<ftdi::Module>;
 public:
-    FtdController(uint32_t address);
-    const std::string& name() const override;
+	FtdController(const std::string& name, const ModulePtr& module);
 protected:
-    Methods createMethods();
-
-    trek::net::Response init(const trek::net::Request& request);
-    trek::net::Response close(const trek::net::Request& request);
-    trek::net::Response isInit(const trek::net::Request& request);
-    trek::net::Response setCodes(const trek::net::Request& request);
+	Methods createMethods();
+	trek::net::Response init(const trek::net::Request& request);
+	trek::net::Response close(const trek::net::Request& request);
+	trek::net::Response isInit(const trek::net::Request& request);
+	trek::net::Response setCodes(const trek::net::Request& request);
 private:
-    ModulePtr mDevice;
+	ModulePtr mDevice;
 };
-
-
-#endif // FTDCONTROLLER_HPP

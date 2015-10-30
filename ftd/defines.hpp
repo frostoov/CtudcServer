@@ -1,5 +1,4 @@
-#ifndef FTD_DEFINES_HPP
-#define FTD_DEFINES_HPP
+#pragma once
 
 /* Macros to provide branch prediction information to compiler */
 #define START_DURATION_1							10
@@ -145,6 +144,3 @@ Implement the lock/unlock only if really required, otherwise keep as placeholder
 #define SET_CLOCK_FREQUENCY		 0x86
 #define TURN_ON_LOOPBACK		 0x84
 #define TURN_OFF_LOOPBACK		 0x85
-
-
-#endif // FTD_DEFINES_HPP
