@@ -3,6 +3,7 @@
 #include "controller/tdccontroller.hpp"
 #include "controller/processcontroller.hpp"
 #include "controller/ftdcontroller.hpp"
+#include "controller/ardcontroller.hpp"
 
 #include "configparser/channelsconfigparser.hpp"
 
@@ -55,8 +56,11 @@ int main() {
 
     auto tdc = make_shared<CaenV2718>(0xEE00);
     auto ftd = make_shared<ftdi::Module>(0x28);
+    auto ard = make_shared<Voltage>();
 
 	auto tdcController  = make_shared<TdcController>("tdc",tdc);
+    auto ftdController  = make_shared<FtdController>("ftd", ftd);
+    auto ardController  = make_shared<ArdController>("ard", ard);
 	auto procController = make_shared<ProcessController>(
 		"process",
 		tdc,
@@ -67,10 +71,10 @@ int main() {
 		appSettings.procSettings.nRun = nRun;
 		appSettings.save("CtudcServer.conf");
 	};
-	auto ftdController  = make_shared<FtdController>("ftd", ftd);
+
 
 	trek::net::Server server(
-		{tdcController, procController, ftdController},
+		{tdcController, procController, ftdController, ardController},
 		appSettings.ip,
 		appSettings.port
 	);
