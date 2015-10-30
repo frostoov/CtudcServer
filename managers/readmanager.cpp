@@ -40,7 +40,7 @@ ReadManager::ReadManager(ModulePtr module,
 void ReadManager::run() {
 	resetPackageCount();
 	resetTriggerCount();
-	if(mModule == nullptr || !mModule->isInit())
+	if(mModule == nullptr || !mModule->isOpen())
 		throw runtime_error("ReadManager::run tdc is not init");
 	mNevodReceiver.setCallback([this](PackageReceiver::ByteVector& nevodBuffer) {
 		try {

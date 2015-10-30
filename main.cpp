@@ -1,7 +1,7 @@
 #include "appsettings.hpp"
 
 #include "controller/tdccontroller.hpp"
-#include "controller/processcontroller.hpp"
+#include "controller/proccontroller.hpp"
 #include "controller/ftdcontroller.hpp"
 #include "controller/ardcontroller.hpp"
 

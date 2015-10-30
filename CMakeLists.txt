@@ -16,7 +16,7 @@ set(
 	ftd/ftdmodule.cpp
 	controller/ftdcontroller.cpp
 	controller/tdccontroller.cpp
-	controller/processcontroller.cpp
+	controller/proccontroller.cpp
 	controller/ardcontroller.cpp
 	voltage/serialbuf.cpp
 	voltage/voltage.cpp
@@ -42,7 +42,7 @@ set(
 	ftd/ftdmodule.hpp
 	controller/ftdcontroller.hpp
 	controller/tdccontroller.hpp
-	controller/processcontroller.hpp
+	controller/proccontroller.hpp
 	controller/ardcontroller.hpp
 	voltage/serialbuf.hpp
 	voltage/voltage.hpp

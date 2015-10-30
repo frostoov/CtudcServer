@@ -90,7 +90,7 @@ CaenV2718::~CaenV2718() {
 	close();
 }
 
-void CaenV2718::init() {
+void CaenV2718::open() {
 	if(mIsInit)
 		throw runtime_error("CAENVME already init");
 	auto status = CAENVME_Init(cvV2718, 0, 0, &mHandle);
@@ -109,7 +109,7 @@ void CaenV2718::close() {
 	mIsInit = false;
 }
 
-bool CaenV2718::isInit() const {
+bool CaenV2718::isOpen() const {
 	return mIsInit;
 }
 
@@ -146,7 +146,7 @@ void CaenV2718::read(vector<EventHits>& buffer) {
 		Decoder::decode(mLsb, buf, readSize, buffer);
 	} else {
 		buffer.clear();
-		throw std::runtime_error("CaenV2718::read: failed");
+		throw runtime_error("CaenV2718::read: failed");
 	}
 }
 

@@ -31,7 +31,7 @@ public:
 	virtual void read(std::vector<EventHits>& buffer) = 0;
 	virtual const std::string& name() const = 0;
 	virtual Settings settings() = 0;
-	virtual bool isInit() const = 0;
+	virtual bool isOpen() const = 0;
 	virtual void clear() = 0;
 protected:
 	Tdc() = default;

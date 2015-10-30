@@ -16,10 +16,10 @@ public:
 	void read(std::vector<EventHits>& buffer) override;
 	const std::string& name() const override;
 	Settings settings() override;
-	bool isInit() const override;
+	bool isOpen() const override;
 	void clear() override;
 
-	void init();
+	void open();
 	void close();
 
 	void reset();

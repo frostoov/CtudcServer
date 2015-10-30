@@ -12,9 +12,9 @@ public:
 protected:
 	Methods createMethods();
 
-	trek::net::Response init(const trek::net::Request& request);
+	trek::net::Response open(const trek::net::Request& request);
 	trek::net::Response close(const trek::net::Request& request);
-	trek::net::Response isInit(const trek::net::Request& request);
+	trek::net::Response isOpen(const trek::net::Request& request);
 
 	trek::net::Response clear(const trek::net::Request &request);
 	trek::net::Response reset(const trek::net::Request &request);

@@ -16,9 +16,9 @@ TdcController::TdcController(const std::string& name, const ModulePtr& module)
 
 Controller::Methods TdcController::createMethods() {
 	return {
-		{"init",                  [&](const Request& query) { return this->init(query); } },
+		{"open",                  [&](const Request& query) { return this->open(query); } },
 		{"close",                 [&](const Request& query) { return this->close(query); } },
-		{"isInit",                [&](const Request& query) { return this->isInit(query); } },
+		{"isOpen",                [&](const Request& query) { return this->isOpen(query); } },
 		{"clear",                 [&](const Request& query) { return this->clear(query); } },
 		{"reset",                 [&](const Request& query) { return this->reset(query); } },
 		{"stat",                  [&](const Request& query) { return this->stat(query); } },
@@ -33,8 +33,8 @@ Controller::Methods TdcController::createMethods() {
 	};
 }
 
-Response TdcController::init(const Request& request) {
-	mDevice->init();
+Response TdcController::open(const Request& request) {
+	mDevice->open();
 	return {
 		name(),
 		"init",
@@ -53,11 +53,11 @@ Response TdcController::close(const Request& request) {
 	};
 }
 
-Response TdcController::isInit(const Request& request) {
+Response TdcController::isOpen(const Request& request) {
 	return {
 		name(),
 		"isInit",
-		{mDevice->isInit()},
+		{mDevice->isOpen()},
 		true,
 	};
 }

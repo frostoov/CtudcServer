@@ -118,10 +118,6 @@ EmissEM1::Settings EmissEM1::settings() {
     };
 }
 
-bool EmissEM1::isInit() const {
-    return mDev.isOpen();
-}
-
 bool EmissEM1::isOpen() const {
     return mDev.isOpen();
 }
