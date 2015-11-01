@@ -1,6 +1,7 @@
 #include "voltage.hpp"
 
 #include <algorithm>
+#include <thread>
 #include <cmath>
 
 using std::string;
@@ -8,6 +9,7 @@ using std::stoul;
 using std::round;
 using std::runtime_error;
 using std::chrono::system_clock;
+using std::chrono::milliseconds;
 
 constexpr unsigned voltageInPin   = 0;
 constexpr unsigned voltageOutPin  = 7;
@@ -28,6 +30,7 @@ Voltage::Voltage(const std::string& name)
 
 void Voltage::open(const std::string& name) {
 	mBuffer.open(name);
+	mStream.clear();
 }
 
 void Voltage::close() {
@@ -38,46 +41,38 @@ bool Voltage::isOpen() const {
 	return mBuffer.isOpen();
 }
 
-void Voltage::turnOn() {
-	setVoltage(12);
-}
-
-void Voltage::turnOff() {
-	setVoltage(0);
-}
-
 double Voltage::voltage() {
 	return code2val(readPin(voltageInPin, 100));
 }
 
-void Voltage::setTimeout(const Seconds& tm) {
-	mTimeout = tm;
+void Voltage::setAmperage(double val) {
+	writePin(amperageOutPin, val2code(val));
 }
 
-
 void Voltage::setVoltage(double val) {
-	auto code = readPin(voltageInPin, 100);
+	auto code = readPin(voltageInPin, 10000);
 	auto newCode = val2code(val);
 	if(newCode == code)
 		return;
 	auto dir = ((newCode > code) ? 1 : -1);
 	while( newCode != code ) {
 		code += dir;
-		if(code == 6) {
-			auto c = ((newCode > code) ? 2 : 1);
-			writePin(amperageOutPin, c);
-		}
 		writePin(voltageOutPin, code);
 		auto startTime = system_clock::now();
-		while( readPin(voltageInPin, 100) != code) {
+		while( readPin(voltageInPin, 10000) != code) {
 			if(system_clock::now() - startTime > mTimeout)
 				throw runtime_error("Voltage::setVoltage timeout");
 		}
+		std::this_thread::sleep_for(milliseconds(200));
 	}
 }
 
+void Voltage::setTimeout(const Seconds& tm) {
+	mTimeout = tm;
+}
+
 double Voltage::code2val(unsigned code) {
-	return 3.221985345674413e-02*code + 1.502873020242141e-01;
+	return 1.218059405940594e-01*code + 6.277227722772505e-02;
 }
 
 unsigned Voltage::val2code(double val) {
@@ -88,29 +83,32 @@ unsigned Voltage::val2code(double val) {
 }
 
 unsigned Voltage::in2out(unsigned code) {
+	if(code == 0)
+		return 0;
 	return round(2.645179121649108e-01*code + 7.184796712165564e-01 );
 }
 
 void Voltage::writePin(unsigned pin, unsigned code) {
+	Lock lk(mMutex);
 	mStream << "writePin:" << pin << ',' << code << std::endl;
-	std::string ans;
-	std::getline(mStream, ans);
-	mResponse.parse(ans);
+	std::getline(mStream, mResponseBuffer);
+	mResponse.parse(mResponseBuffer);
 	if(mResponse.status != 0)
 		throw runtime_error("Voltage::writePin failed write pin");
 	if(mResponse.command != "writePin" || stoul(mResponse.args.at(0)) != pin || stoul(mResponse.args.at(1)) != code)
-		throw runtime_error("Voltage::writePin invalid response " + ans);
+		throw runtime_error("Voltage::writePin invalid response");
 }
 
 unsigned Voltage::readPin(unsigned pin, unsigned cycles) {
+	Lock lk(mMutex);
 	mStream << "readPin:" << pin << ',' << cycles << std::endl;
 	std::string ans;
-	std::getline(mStream, ans);
-	mResponse.parse(ans);
+	std::getline(mStream, mResponseBuffer);
+	mResponse.parse(mResponseBuffer);
 	if(mResponse.status != 0)
 		throw runtime_error("Voltage::readPin failed write pin");
 	if(mResponse.command != "readPin" || stoul(mResponse.args.at(0)) != pin || stoul(mResponse.args.at(1)) != cycles)
-		throw runtime_error("Voltage::readPin invalid response " + ans);
+		throw runtime_error("Voltage::readPin invalid response");
 	return in2out(stoul(mResponse.args.at(2)));
 }
 

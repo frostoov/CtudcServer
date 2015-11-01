@@ -53,9 +53,9 @@ void EventEncoder::writeBuffer(const RawEvents& buffer, const EventId& eventId) 
 		openStream();
 	auto curEvent = eventId.nRecord;
 	for(auto& evt : buffer) {
-		EventRecord record(eventId.nRun, curEvent++, convertHits(evt));
 		if(mEventCount % mEventsPerFile == 0 && mEventCount != 0)
 			reopenStream();
+        EventRecord record(eventId.nRun, curEvent++, convertHits(evt));
 		trek::serialize(mStream, record);
 		++mEventCount;
 	}

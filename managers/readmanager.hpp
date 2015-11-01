@@ -5,7 +5,7 @@
 #include "processmanager.hpp"
 
 #include <json.hpp>
-#include <trek/common/threadmanager.hpp>
+#include <atomic>
 
 class ReadManager : public ProcessManager {
 protected:
@@ -45,16 +45,16 @@ protected:
 	void resetTriggerCount();
 	void handleNevodPackage(PackageReceiver::ByteVector& buffer, trek::data::NevodPackage& nvdPkg);
 	static std::string formDir(const Settings& settings);
+	void outputMeta(const std::string& dirName, const Settings& settings, Tdc& module);
 private:
 	ModulePtr                mModule;
 	EventEncoder             mEncoder;
 	PackageReceiver          mNevodReceiver;
-	trek::ThreadManager      mThread;
 	trek::data::NevodPackage mNevodPackage;
 	RawEvents                mBuffer;
 
-	uintmax_t mPackageCount;
-	uintmax_t mTriggerCount;
+	std::atomic<uintmax_t> mPackageCount;
+	std::atomic<uintmax_t> mTriggerCount;
 
 	TimePoint mStartPoint;
 };

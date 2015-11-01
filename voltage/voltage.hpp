@@ -1,12 +1,15 @@
 #pragma once
 
 #include "serialbuf.hpp"
-#include <vector>
 #include <iostream>
 #include <chrono>
+#include <vector>
+#include <mutex>
 
 
 class Voltage {
+	using Mutex = std::recursive_mutex;
+	using Lock = std::lock_guard<Mutex>;
 public:
 	using Seconds = std::chrono::seconds;
 	struct Response {
@@ -26,12 +29,12 @@ public:
 	void close();
 	bool isOpen() const;
 
-	void turnOn();
-	void turnOff();
+	void setVoltage(double val);
+	void setAmperage(double val);
 	void setTimeout(const Seconds& time);
 	double voltage();
 protected:
-	void setVoltage(double val);
+
 	static double code2val(unsigned code);
 	static unsigned val2code(double val);
 	static unsigned in2out(unsigned code);
@@ -42,7 +45,9 @@ protected:
 private:
 	serialbuf     mBuffer;
 	std::iostream mStream;
+	std::string   mResponseBuffer;
 	Response      mResponse;
 
 	Seconds mTimeout;
+	Mutex mMutex;
 };

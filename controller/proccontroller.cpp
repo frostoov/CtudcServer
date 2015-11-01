@@ -9,7 +9,6 @@
 #include <json.hpp>
 
 using std::make_unique;
-using std::chrono::microseconds;
 using std::string;
 using std::ostringstream;
 using std::setw;
@@ -34,6 +33,14 @@ ProcessController::ProcessController(const std::string& name,
 	  mDevice(module),
 	  mChannelConfig(config),
 	  mSettings(settings) { }
+
+ProcessController::~ProcessController() {
+    if(mFuture.valid() || mProcess != nullptr) {
+        mProcess->stop();
+        mFuture.get();
+        mProcess.reset();
+    }
+}
 
 const Callback<void(unsigned)>& ProcessController::onNewRun() {
 	return mOnNewRun;
@@ -68,10 +75,10 @@ Response ProcessController::getRun(const Request& request) {
 }
 
 Response ProcessController::startRead(const Request& request) {
-	if(mProcess)
-		throw logic_error("ProcessController::startRead process already active");
+    if(mFuture.valid())
+        throw logic_error("ProcessController::startRead process already active");
 	mProcess = createReadManager(request);
-	mProcess->run();
+    mFuture = std::async(std::launch::async, [&] {mProcess->run();});
 	return {
 		name(),
 		"startRead",
@@ -81,9 +88,12 @@ Response ProcessController::startRead(const Request& request) {
 }
 
 Response ProcessController::stopRead(const Request& request) {
-	if(!isReadManager(mProcess))
-		throw logic_error("ProcessController::stopRead process isnt reader");
-	mProcess->stop();
+    auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
+    if(readManager == nullptr || !mFuture.valid())
+        throw logic_error("ProcessController::stopRead process isnt reader");
+	readManager->stop();
+    mFuture.get();
+    mProcess.reset();
 	++mSettings.nRun;
 	mOnNewRun(mSettings.nRun);
 	return {
@@ -95,27 +105,25 @@ Response ProcessController::stopRead(const Request& request) {
 }
 
 Response ProcessController::getTriggerFrequency(const Request& request) const {
-	if(!isReadManager(mProcess))
-		throw logic_error("ProcessController::stopRead process isnt reader");
-	auto ctudcManager = dynamic_cast<ReadManager*>(mProcess.get());
-	auto freq = ctudcManager->getTriggerFrequency();
+	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
+    if(readManager == nullptr)
+        throw logic_error("ProcessController::stopRead process isnt reader");
 	return {
 		name(),
 		"getTriggerFrequency",
-		{freq},
+		{readManager->getTriggerFrequency()},
 		true
 	};
 }
 
 Response ProcessController::getPackageFrequency(const Request& request) const {
-	if(!isReadManager(mProcess))
-		throw logic_error("ProcessController::stopRead process isnt reader");
-	auto ctudcManager = dynamic_cast<ReadManager*>(mProcess.get());
-	auto freq = ctudcManager->getPackageFrequency();
+	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
+    if(readManager == nullptr)
+        throw logic_error("ProcessController::stopRead process isnt reader");
 	return {
 		name(),
 		"getPackageFrequency",
-		json::array({freq}),
+		{readManager->getPackageFrequency()},
 		true
 	};
 }

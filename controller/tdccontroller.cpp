@@ -30,6 +30,7 @@ Controller::Methods TdcController::createMethods() {
 		{"setLsb",                [&](const Request& query) { return this->setLsb(query);  } },
 		{"setCtrl",               [&](const Request& query) { return this->setCtrl(query); } },
 		{"setTdcMeta",            [&](const Request& query) { return this->setTdcMeta(query); } },
+		{"settings",              [&](const Request& query) { return this->settings(query); } },
 	};
 }
 
@@ -159,6 +160,21 @@ Response TdcController::ctrl(const Request& request) {
 		"ctrl",
 		{mDevice->ctrl()},
 		true
+	};
+}
+
+Response TdcController::settings(const Request& request) {
+	auto settings = mDevice->settings();
+	return {
+		name(),
+		"settings",
+		json::array({
+			settings.windowWidth,
+			settings.windowOffset,
+			int(settings.edgeDetection),
+			settings.lsb,
+		}),
+		true,
 	};
 }
 

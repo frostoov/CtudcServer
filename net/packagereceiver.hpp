@@ -14,14 +14,11 @@ public:
 	using Callback  = std::function<void (ByteVector&) >;
 public:
 	PackageReceiver(const std::string& multicastAddress, uint16_t port);
-	PackageReceiver(const std::string& multicastAddress, uint16_t port, const Callback& function);
 	~PackageReceiver();
-	bool start();
+	void start();
 	void stop();
-	void setCallback(Callback&& callback);
-	void resetCallback();
+	void onRecv(Callback&& callback);
 protected:
-	void callback(ByteVector& buffer);
 	void doReceive();
 	void joinMulticastGroup(const IpAddress& multicastAddress);
 	void leaveMulticastGroup(const IpAddress& multicastAddress);

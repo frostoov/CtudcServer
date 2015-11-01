@@ -2,6 +2,7 @@
 
 #include <trek/common/applog.hpp>
 #include <trek/common/stringbuilder.hpp>
+#include <trek/common/timeprint.hpp>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -35,14 +36,16 @@ ReadManager::ReadManager(ModulePtr module,
 				         const ChannelConfig& config)
 	: mModule(module),
 	  mEncoder(formDir(settings), settings.eventsPerFile, config),
-	  mNevodReceiver(settings.infoIp, settings.infoPort) { }
+	  mNevodReceiver(settings.infoIp, settings.infoPort) {
+    outputMeta(formDir(settings), settings, *module);
+}
 
 void ReadManager::run() {
 	resetPackageCount();
 	resetTriggerCount();
 	if(mModule == nullptr || !mModule->isOpen())
 		throw runtime_error("ReadManager::run tdc is not init");
-	mNevodReceiver.setCallback([this](PackageReceiver::ByteVector& nevodBuffer) {
+	mNevodReceiver.onRecv([this](PackageReceiver::ByteVector& nevodBuffer) {
 		try {
 			handleNevodPackage(nevodBuffer, mNevodPackage);
 			increasePackageCount();
@@ -53,9 +56,7 @@ void ReadManager::run() {
 			Log::instance() << "ReadManager: Failed handle buffer " << e.what() << std::endl;
 		}
 	});
-	mThread.run([this]() {
-		mNevodReceiver.start();
-	});
+    mNevodReceiver.start();
 }
 
 ReadManager::~ReadManager() {
@@ -64,8 +65,6 @@ ReadManager::~ReadManager() {
 
 void ReadManager::stop() {
 	mNevodReceiver.stop();
-	mNevodReceiver.resetCallback();
-	mThread.join();
 }
 
 double ReadManager::getTriggerFrequency() const {
@@ -103,7 +102,20 @@ void ReadManager::handleNevodPackage(PackageReceiver::ByteVector& buffer, NevodP
 	trek::deserialize(stream, nvdPkg);
 	if(memcmp(nvdPkg.keyword, "TRACK ", sizeof(nvdPkg.keyword)) != 0)
 		throw runtime_error("ReadManager::handleNevodPackage invalid package");
-	increasePackageCount();
+}
+
+void ReadManager::outputMeta(const string& dirName, const Settings& settings, Tdc& module) {
+    std::ofstream stream;
+    stream.exceptions(stream.failbit | stream.badbit);
+    stream.open(dirName + "/meta", stream.binary);
+    stream << "Run: " << settings.nRun << '\n';
+    stream << "Time: " << std::chrono::system_clock::now();
+    stream << "TDC: " << module.name() << '\n';
+    auto tdcSettings = module.settings();
+    stream << "windowWidth:   " << tdcSettings.windowWidth << '\n';
+    stream << "windowOffset:  " << tdcSettings.windowOffset << '\n';
+    stream << "lsb:           " << tdcSettings.lsb << '\n';
+    stream << "edgeDetection: " << int(tdcSettings.edgeDetection) << '\n';
 }
 
 string ReadManager::formDir(const Settings& settings) {

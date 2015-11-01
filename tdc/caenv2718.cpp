@@ -8,7 +8,7 @@ using std::string;
 using std::vector;
 using std::runtime_error;
 
-using std::chrono::milliseconds;
+using std::chrono::seconds;
 using std::chrono::system_clock;
 
 enum class CaenV2718::Reg : uint16_t {
@@ -52,18 +52,17 @@ class CaenV2718::Decoder {
 public:
 	static void decode(unsigned lsb, const uint32_t* data, size_t size,
 		               vector<Tdc::EventHits>& buffer) {
-		Tdc::EventHits tmp;
+		buffer.clear();
 		bool header = false;
 		for(size_t i = 0; i < size; ++i) {
 			if(isMeasurement(data[i]))
-				tmp.push_back({ chan(data[i]), lsb*time(data[i]) });
-			else if(isGlobalHeader(data[i]) && !header)
+				buffer.back().push_back({ chan(data[i]), lsb*time(data[i]) });
+			else if(isGlobalHeader(data[i]) && !header) {
+				buffer.push_back(Tdc::EventHits());
 				header = true;
-			else if(isGlobalTrailer(data[i]) && header) {
-				header = false;
-				buffer.push_back(tmp);
-				tmp.clear();
 			}
+			else if(isGlobalTrailer(data[i]) && header)
+				header = false;
 		}
 	}
 protected:
@@ -131,7 +130,6 @@ void CaenV2718::reset() {
 }
 
 void CaenV2718::read(vector<EventHits>& buffer) {
-	buffer.clear();
 	static uint32_t buf[1024];
 	int readBytes;
 	auto errCode = CAENVME_BLTReadCycle(
@@ -197,12 +195,12 @@ void CaenV2718::setEdgeDetection(EdgeDetection ed) {
 void CaenV2718::setLsb(unsigned ps) {
 	uint16_t value;
 	switch(ps) {
-	case 100:
+	case 98:
 		value = 2;
 		break;
-	case 200:
+	case 195:
 		value = 1;
-	case 800:
+	case 781:
 		value = 0;
 	default:
 		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
@@ -241,7 +239,7 @@ CaenV2718::EdgeDetection CaenV2718::edgeDetection() {
 	case 2:
 		return EdgeDetection::leading;
 	default:
-		throw runtime_error("CaenV2718::lsb unknown lsb");
+		throw runtime_error("CaenV2718::edgeDetection unknown edgeDetection");
 	}
 }
 
@@ -250,13 +248,13 @@ unsigned CaenV2718::lsb() {
 	readMicro(OpCode::getLSB, &value, 1);
 	switch(value) {
 	case 2:
-		mLsb = 100;
+		mLsb = 98;
 		break;
 	case 1:
-		mLsb = 200;
+		mLsb = 195;
 		break;
 	case 0:
-		mLsb = 800;
+		mLsb = 781;
 		break;
 	default:
 		throw runtime_error("CaenV2718::lsb unknown lsb");
@@ -378,7 +376,7 @@ CaenV2718::TriggerConf CaenV2718::getTriggerConf() {
 void CaenV2718::checkMicroWrite() {
 	static constexpr uint16_t hShakeWo = 1;
 
-	milliseconds timeout(500);
+	seconds timeout(2);
 	auto s = system_clock::now();
 	while(system_clock::now() - s < timeout) {
 		auto hShake = readCycle16(Reg::handshake);
@@ -391,7 +389,7 @@ void CaenV2718::checkMicroWrite() {
 void CaenV2718::checkMicroRead() {
 	static constexpr uint16_t hShakeRo = 2;
 
-	milliseconds timeout(500);
+	seconds timeout(2);
 	auto s = system_clock::now();
 	while(system_clock::now() - s < timeout) {
 		auto hShake = readCycle16(Reg::handshake);

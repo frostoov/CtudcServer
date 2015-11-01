@@ -37,11 +37,11 @@ void ChannelsConfigParser::load(std::istream& stream) {
 
 	const auto& channelsConfig = jsonConfig.at(channelsIdent);
 	for(const auto& channelConfig : channelsConfig) {
-		const auto channelNumber = channelConfig.at(numberIdent).get<uint32_t>() - 1;
+		const auto channelNumber = channelConfig.at(numberIdent).get<unsigned>() - 1;
 		if(mConfig.count(channelNumber))
 			throw std::runtime_error("ChannelsConfigParser::load: channel config already exists");
-		const auto wireNumber    = channelConfig.at(wireIdent).get<uint32_t>() - 1;
-		const auto chamberNumber = channelConfig.at(chamberIdent).get<uint32_t>() - 1;
+		const auto wireNumber    = channelConfig.at(wireIdent).get<unsigned>() - 1;
+		const auto chamberNumber = channelConfig.at(chamberIdent).get<unsigned>() - 1;
 
 		mConfig.insert({channelNumber, {chamberNumber, wireNumber} });
 	}
@@ -65,4 +65,3 @@ void ChannelsConfigParser::save(std::ostream& stream) {
 const ChannelConfig& ChannelsConfigParser::getConfig() const {
 	return mConfig;
 }
-

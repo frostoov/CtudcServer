@@ -2,6 +2,7 @@
 
 #include <trek/net/controller.hpp>
 #include <trek/common/callback.hpp>
+#include <future>
 
 #include "tdc/tdc.hpp"
 #include "managers/channelconfig.hpp"
@@ -16,6 +17,7 @@ public:
                       const ModulePtr& module,
 					  const ReadManager::Settings& settings,
                       const ChannelConfig& config);
+	~ProcessController();
 	const trek::Callback<void(unsigned)>& onNewRun();
 protected:
 	Methods createMethods();
@@ -36,4 +38,5 @@ private:
 
 	ReadManager::Settings         mSettings;
 	trek::Callback<void(unsigned)> mOnNewRun;
+	std::future<void> mFuture;
 };

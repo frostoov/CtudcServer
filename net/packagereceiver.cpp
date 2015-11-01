@@ -24,10 +24,9 @@ PackageReceiver::~PackageReceiver() {
 	stop();
 }
 
-bool PackageReceiver::start() {
+void PackageReceiver::start() {
 	doReceive();
 	mIoService.run();
-	return true;
 }
 
 void PackageReceiver::stop() {
@@ -35,20 +34,8 @@ void PackageReceiver::stop() {
 	mIoService.reset();
 }
 
-void PackageReceiver::setCallback(Callback&& callback) {
-	unique_lock<mutex> lock(callbackMutex);
+void PackageReceiver::onRecv(Callback&& callback) {
 	mCallback = std::move(callback);
-}
-
-void PackageReceiver::resetCallback() {
-	unique_lock<mutex> lock(callbackMutex);
-	mCallback = nullptr;
-}
-
-void PackageReceiver::callback(ByteVector& buffer) {
-	unique_lock<mutex> lock(callbackMutex);
-	if(mCallback)
-		mCallback(buffer);
 }
 
 void PackageReceiver::doReceive() {
@@ -57,7 +44,7 @@ void PackageReceiver::doReceive() {
 	[&, this](auto& error, size_t size) {
 		if(!error) {
 			mBuffer.resize(size);
-			this->callback(mBuffer);
+			this->mCallback(mBuffer);
 		}
 		this->doReceive();
 	});

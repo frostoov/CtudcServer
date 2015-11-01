@@ -27,6 +27,7 @@ protected:
 	trek::net::Response setLsb(const trek::net::Request& request);
 	trek::net::Response setCtrl(const trek::net::Request& request);
 	trek::net::Response setTdcMeta(const trek::net::Request& request);
+	trek::net::Response settings(const trek::net::Request& request);
 private:
 	ModulePtr mDevice;
 };

@@ -40,7 +40,7 @@ void serialbuf::open(const std::string& dev_name) {
 	if (mFile == -1)
 		throw runtime_error("serialbuf::open failed open device");
 	if (!setProperties(mFile)) {
-		::close(mFile);
+		close();
 		throw runtime_error("serialbuf::open failed setup device");
 	}
 	std::this_thread::sleep_for(seconds(2));
@@ -50,6 +50,7 @@ void serialbuf::open(const std::string& dev_name) {
 void serialbuf::close() {
 	if (isOpen() && ::close(mFile) == -1)
 		throw runtime_error("serialbuf::open failed close device");
+	mFile = -1;
 }
 
 bool serialbuf::isOpen() const {

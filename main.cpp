@@ -57,6 +57,7 @@ int main() {
     auto tdc = make_shared<CaenV2718>(0xEE00);
     auto ftd = make_shared<ftdi::Module>(0x28);
     auto ard = make_shared<Voltage>();
+    ard->setTimeout(std::chrono::seconds(15));
 
 	auto tdcController  = make_shared<TdcController>("tdc",tdc);
     auto ftdController  = make_shared<FtdController>("ftd", ftd);

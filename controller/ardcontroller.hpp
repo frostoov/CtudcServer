@@ -3,6 +3,7 @@
 #include "voltage/voltage.hpp"
 
 #include <trek/net/controller.hpp>
+#include <future>
 
 class ArdController : public trek::net::Controller {
 	using Module = Voltage;
@@ -21,4 +22,6 @@ protected:
     trek::net::Response voltage(const trek::net::Request& request);
 private:
 	ModulePtr mDevice;
+
+	std::future<void> mFuture;
 };

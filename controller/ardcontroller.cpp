@@ -1,7 +1,10 @@
 #include "ardcontroller.hpp"
 
+using std::chrono::milliseconds;
+using std::runtime_error;
 using std::make_shared;
 using std::string;
+using std::async;
 
 using nlohmann::json;
 
@@ -53,7 +56,19 @@ Response ArdController::isOpen(const Request& request) {
 }
 
 Response ArdController::turnOn(const Request& request) {
-    mDevice->turnOn();
+    if(mFuture.valid()) {
+        auto status = mFuture.wait_for(milliseconds(0));
+        if(status != std::future_status::ready)
+            throw runtime_error("ArdController::turnOn busy");
+        try {
+            mFuture.get();
+        } catch(...) { }
+    }
+
+    mFuture = async(std::launch::async, [&] {
+        mDevice->setAmperage(2);
+        mDevice->setVoltage(12);
+    });
     return {
         name(),
         "turnOn",
@@ -63,7 +78,18 @@ Response ArdController::turnOn(const Request& request) {
 
 }
 Response ArdController::turnOff(const Request& request) {
-    mDevice->turnOff();
+    if(mFuture.valid()) {
+        auto status = mFuture.wait_for(milliseconds(0));
+        if(status != std::future_status::ready)
+            throw runtime_error("ArdController::turnOn busy");
+            try {
+                mFuture.get();
+            } catch(...) { }
+    }
+    mFuture = async(std::launch::async, [&] {
+        mDevice->setAmperage(2);
+        mDevice->setVoltage(12);
+    });
     return {
         name(),
         "turnOn",
