@@ -40,6 +40,8 @@ void EventEncoder::encode(const RawEvents& tdcEvents, const NevodPackage& nvdPkg
 			mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
 			return;
 		}
+		trek::Log::instance() << "trigger: " << tdcEvents.size() << std::endl;
+		trek::Log::instance() << "package: " << (nvdPkg.numberOfRecord - mNevodId->nRecord) << std::endl;
 		if(nvdPkg.numberOfRecord - mNevodId->nRecord == tdcEvents.size())
 			writeBuffer(tdcEvents, *mNevodId);
 		mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
@@ -52,23 +54,28 @@ void EventEncoder::writeBuffer(const RawEvents& buffer, const EventId& eventId) 
 	if(!mStream.is_open())
 		openStream();
 	auto curEvent = eventId.nRecord;
+	trek::Log::instance() << "write" << std::endl;
 	for(auto& evt : buffer) {
 		if(mEventCount % mEventsPerFile == 0 && mEventCount != 0)
 			reopenStream();
-        EventRecord record(eventId.nRun, curEvent++, convertHits(evt));
+		EventRecord record(eventId.nRun, curEvent++, convertHits(evt));
 		trek::serialize(mStream, record);
 		++mEventCount;
 	}
 }
 
 trek::data::EventHits EventEncoder::convertHits(const Tdc::EventHits& hits) {
+	trek::Log::instance() << "conv end" << std::endl;
 	trek::data::EventHits newHits;
 	for(auto& hit : hits) {
 		if(mConfig.count(hit.channel)) {
 			auto& conf = mConfig.at(hit.channel);
 			newHits.push_back({conf.wire, conf.chamber, hit.time});
+		} else {
+			trek::Log::instance() << "Failed find channel config: " << std::endl;
 		}
 	}
+	trek::Log::instance() << "conv end" << std::endl;
 	return newHits;
 }
 

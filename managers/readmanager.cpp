@@ -45,9 +45,11 @@ void ReadManager::run() {
 	resetTriggerCount();
 	if(mModule == nullptr || !mModule->isOpen())
 		throw runtime_error("ReadManager::run tdc is not init");
+	mStartPoint = SystemClock::now();
 	mNevodReceiver.onRecv([this](PackageReceiver::ByteVector& nevodBuffer) {
 		try {
 			handleNevodPackage(nevodBuffer, mNevodPackage);
+			Log::instance() << "Package" << std::endl;
 			increasePackageCount();
 			mModule->read(mBuffer);
 			increaseTriggerCount(mBuffer.size());
@@ -56,7 +58,7 @@ void ReadManager::run() {
 			Log::instance() << "ReadManager: Failed handle buffer " << e.what() << std::endl;
 		}
 	});
-    mNevodReceiver.start();
+	mNevodReceiver.start();
 }
 
 ReadManager::~ReadManager() {
@@ -99,9 +101,11 @@ void ReadManager::handleNevodPackage(PackageReceiver::ByteVector& buffer, NevodP
 		}
 	} tempBuffer(buffer.data(), buffer.size());
 	istream stream(&tempBuffer);
+	stream.exceptions(stream.badbit | stream.failbit);
 	trek::deserialize(stream, nvdPkg);
 	if(memcmp(nvdPkg.keyword, "TRACK ", sizeof(nvdPkg.keyword)) != 0)
-		throw runtime_error("ReadManager::handleNevodPackage invalid package");
+		throw runtime_error("ReadManager::handleNevodPackage invalid package: " +
+		                    string(reinterpret_cast<char*>(nvdPkg.keyword), sizeof(nvdPkg.keyword)));
 }
 
 void ReadManager::outputMeta(const string& dirName, const Settings& settings, Tdc& module) {
@@ -109,7 +113,7 @@ void ReadManager::outputMeta(const string& dirName, const Settings& settings, Td
     stream.exceptions(stream.failbit | stream.badbit);
     stream.open(dirName + "/meta", stream.binary);
     stream << "Run: " << settings.nRun << '\n';
-    stream << "Time: " << std::chrono::system_clock::now();
+    stream << "Time: " << std::chrono::system_clock::now() << '\n';
     stream << "TDC: " << module.name() << '\n';
     auto tdcSettings = module.settings();
     stream << "windowWidth:   " << tdcSettings.windowWidth << '\n';

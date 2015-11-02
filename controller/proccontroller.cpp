@@ -75,10 +75,10 @@ Response ProcessController::getRun(const Request& request) {
 }
 
 Response ProcessController::startRead(const Request& request) {
-    if(mFuture.valid())
-        throw logic_error("ProcessController::startRead process already active");
+	if(mFuture.valid())
+        	throw logic_error("ProcessController::startRead process already active");
 	mProcess = createReadManager(request);
-    mFuture = std::async(std::launch::async, [&] {mProcess->run();});
+	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
 	return {
 		name(),
 		"startRead",
@@ -88,12 +88,12 @@ Response ProcessController::startRead(const Request& request) {
 }
 
 Response ProcessController::stopRead(const Request& request) {
-    auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
-    if(readManager == nullptr || !mFuture.valid())
-        throw logic_error("ProcessController::stopRead process isnt reader");
+	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
+	if(readManager == nullptr || !mFuture.valid())
+		throw logic_error("ProcessController::stopRead process isnt reader");
 	readManager->stop();
-    mFuture.get();
-    mProcess.reset();
+	mFuture.get();
+	mProcess.reset();
 	++mSettings.nRun;
 	mOnNewRun(mSettings.nRun);
 	return {

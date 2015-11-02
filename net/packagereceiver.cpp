@@ -26,12 +26,12 @@ PackageReceiver::~PackageReceiver() {
 
 void PackageReceiver::start() {
 	doReceive();
+	mIoService.reset();
 	mIoService.run();
 }
 
 void PackageReceiver::stop() {
 	mIoService.stop();
-	mIoService.reset();
 }
 
 void PackageReceiver::onRecv(Callback&& callback) {

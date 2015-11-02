@@ -23,7 +23,8 @@ Controller::Methods TdcController::createMethods() {
 		{"reset",                 [&](const Request& query) { return this->reset(query); } },
 		{"stat",                  [&](const Request& query) { return this->stat(query); } },
 		{"ctrl",                  [&](const Request& query) { return this->ctrl(query); } },
-		{"setMode",	              [&](const Request& query) { return this->setMode(query); } },
+		{"setMode",	          [&](const Request& query) { return this->setMode(query); } },
+		{"mode",                  [&](const Request& query) { return this->mode(query); } },
 		{"setWindowWidth",        [&](const Request& query) { return this->setWindowWidth(query); } },
 		{"setWindowOffset",       [&](const Request& query) { return this->setWindowOffset(query); } },
 		{"setEdgeDetection",      [&](const Request& query) { return this->setEdgeDetection(query); } },
@@ -159,6 +160,15 @@ Response TdcController::ctrl(const Request& request) {
 		name(),
 		"ctrl",
 		{mDevice->ctrl()},
+		true
+	};
+}
+
+Response TdcController::mode(const Request& request) {
+	return {
+		name(),
+		"mode",
+		{int(mDevice->mode())},
 		true
 	};
 }

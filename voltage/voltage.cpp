@@ -63,7 +63,7 @@ void Voltage::setVoltage(double val) {
 			if(system_clock::now() - startTime > mTimeout)
 				throw runtime_error("Voltage::setVoltage timeout");
 		}
-		std::this_thread::sleep_for(milliseconds(200));
+		std::this_thread::sleep_for(milliseconds(800));
 	}
 }
 
@@ -76,6 +76,8 @@ double Voltage::code2val(unsigned code) {
 }
 
 unsigned Voltage::val2code(double val) {
+	if(val == 0)
+		return 0;
 	val = 8.209770179674672*val - 5.152849095111165e-01;
 	if(val < 0)
 		return 0;

@@ -20,6 +20,7 @@ protected:
 	trek::net::Response reset(const trek::net::Request &request);
 	trek::net::Response stat(const trek::net::Request& request);
 	trek::net::Response ctrl(const trek::net::Request& request);
+	trek::net::Response mode(const trek::net::Request& request);
 	trek::net::Response setMode(const trek::net::Request& request);
 	trek::net::Response setWindowWidth(const trek::net::Request& request);
 	trek::net::Response setWindowOffset(const trek::net::Request& request);

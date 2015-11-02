@@ -56,46 +56,46 @@ Response ArdController::isOpen(const Request& request) {
 }
 
 Response ArdController::turnOn(const Request& request) {
-    if(mFuture.valid()) {
-        auto status = mFuture.wait_for(milliseconds(0));
-        if(status != std::future_status::ready)
-            throw runtime_error("ArdController::turnOn busy");
-        try {
-            mFuture.get();
-        } catch(...) { }
-    }
+	if(mFuture.valid()) {
+		auto status = mFuture.wait_for(milliseconds(0));
+		if(status != std::future_status::ready)
+		throw runtime_error("ArdController::turnOn busy");
+		try {
+			mFuture.get();
+		} catch(...) { }
+	}
 
-    mFuture = async(std::launch::async, [&] {
-        mDevice->setAmperage(2);
-        mDevice->setVoltage(12);
-    });
-    return {
-        name(),
-        "turnOn",
-        json::array(),
-        true
-    };
+	mFuture = async(std::launch::async, [&] {
+		mDevice->setAmperage(0.30);
+		mDevice->setVoltage(12);
+	});
+	return {
+		name(),
+		"turnOn",
+		json::array(),
+		true
+	};
 
 }
 Response ArdController::turnOff(const Request& request) {
-    if(mFuture.valid()) {
-        auto status = mFuture.wait_for(milliseconds(0));
-        if(status != std::future_status::ready)
-            throw runtime_error("ArdController::turnOn busy");
-            try {
-                mFuture.get();
-            } catch(...) { }
-    }
-    mFuture = async(std::launch::async, [&] {
-        mDevice->setAmperage(2);
-        mDevice->setVoltage(12);
-    });
-    return {
-        name(),
-        "turnOn",
-        json::array(),
-        true
-    };
+	if(mFuture.valid()) {
+		auto status = mFuture.wait_for(milliseconds(0));
+		if(status != std::future_status::ready)
+		    throw runtime_error("ArdController::turnOff busy");
+		try {
+			mFuture.get();
+		} catch(...) { }
+	}
+	mFuture = async(std::launch::async, [&] {
+		mDevice->setVoltage(0);
+		mDevice->setAmperage(0);
+	});
+	return {
+		name(),
+		"turnOff",
+		json::array(),
+		true
+	};
 
 }
 Response ArdController::voltage(const Request& request) {

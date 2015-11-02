@@ -11,12 +11,12 @@ public:
 		unsigned time;
 	};
 	enum class EdgeDetection {
-		trailing,
-		leading,
+		trailing = 0,
+		leading  = 1,
 	};
 	enum class Mode {
-		trigger,
-		continuous,
+		trigger    = 0,
+		continuous = 1,
 	};
 	struct Settings {
 		unsigned      windowWidth;
