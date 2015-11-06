@@ -1,7 +1,7 @@
 #pragma once
 
 #include "configparser.hpp"
-#include "managers/channelconfig.hpp"
+#include "exposition/channelconfig.hpp"
 
 class ChannelsConfigParser : public AbstractConfigParser {
 public:

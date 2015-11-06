@@ -1,6 +1,6 @@
 #include "caenv2718.hpp"
 
-#include <CAENVME/CAENVMElib.h>
+#include <CAENVMElib.h>
 
 #include <chrono>
 #include <iostream>
@@ -52,13 +52,13 @@ enum class CaenV2718::OpCode : uint16_t {
 class CaenV2718::Decoder {
 public:
 	static void decode(unsigned lsb, const uint32_t* data, size_t size,
-		               vector<Tdc::EventHits>& buffer) {
+	                   vector<Tdc::EventHits>& buffer) {
 		buffer.clear();
 		std::cout << "decode buffer size: " << size << std::endl;
 		bool header = false;
 		for(size_t i = 0; i < size; ++i) {
 			if(isMeasurement(data[i]) && !buffer.empty() )
-				buffer.back().push_back({ chan(data[i]), lsb*time(data[i]) });
+				buffer.back().push_back({ chan(data[i]), lsb * time(data[i]) });
 			else if(isGlobalHeader(data[i]) && !header) {
 				buffer.push_back(Tdc::EventHits());
 				header = true;
@@ -136,12 +136,12 @@ void CaenV2718::read(vector<EventHits>& buffer) {
 	static uint32_t buf[1024];
 	int readBytes;
 	auto errCode = CAENVME_BLTReadCycle(
-		mHandle,
-		formAddress(Reg::outputBuffer),
-		buf, sizeof(buf),
-		cvA32_U_BLT, cvD32,
-		&readBytes
-	);
+	                   mHandle,
+	                   formAddress(Reg::outputBuffer),
+	                   buf, sizeof(buf),
+	                   cvA32_U_BLT, cvD32,
+	                   &readBytes
+	               );
 	if((errCode == cvBusError && (mCtrl & 1)) || errCode == cvSuccess) {
 		size_t readSize = size_t(readBytes / sizeof(uint32_t));
 		Decoder::decode(mLsb, buf, readSize, buffer);
@@ -304,11 +304,11 @@ uint16_t CaenV2718::readCycle16(Reg addr) {
 		throw runtime_error("CaenV2718::readCycle15 device is not open");
 	uint16_t word;
 	auto errCode = CAENVME_ReadCycle(
-		mHandle,
-		formAddress(addr),
-		reinterpret_cast<void*>(&word),
-		cvA32_S_DATA, cvD16
-	);
+	                   mHandle,
+	                   formAddress(addr),
+	                   reinterpret_cast<void*>(&word),
+	                   cvA32_S_DATA, cvD16
+	               );
 	if(errCode != cvSuccess)
 		throw runtime_error(CAENVME_DecodeError(errCode));
 	return word;
@@ -317,11 +317,11 @@ void CaenV2718::writeCycle16(Reg addr, uint16_t word) {
 	if(!mIsInit)
 		throw runtime_error("CaenV2718::readCycle15 device is not open");
 	auto errCode = CAENVME_WriteCycle(
-		mHandle,
-		formAddress(addr),
-		reinterpret_cast<void*>(&word),
-		cvA32_S_DATA, cvD16
-	);
+	                   mHandle,
+	                   formAddress(addr),
+	                   reinterpret_cast<void*>(&word),
+	                   cvA32_S_DATA, cvD16
+	               );
 	if(errCode != cvSuccess)
 		throw runtime_error(CAENVME_DecodeError(errCode));
 }
@@ -331,11 +331,11 @@ uint32_t CaenV2718::readCycle32(Reg addr) {
 		throw runtime_error("CaenV2718::readCycle15 device is not open");
 	uint16_t word;
 	auto errCode = CAENVME_ReadCycle(
-		mHandle,
-		formAddress(addr),
-		reinterpret_cast<void*>(&word),
-		cvA32_S_DATA, cvD32
-	);
+	                   mHandle,
+	                   formAddress(addr),
+	                   reinterpret_cast<void*>(&word),
+	                   cvA32_S_DATA, cvD32
+	               );
 	if(errCode != cvSuccess)
 		throw runtime_error(CAENVME_DecodeError(errCode));
 	return word;
@@ -344,11 +344,11 @@ void CaenV2718::writeCycle32(Reg addr, uint32_t word) {
 	if(!mIsInit)
 		throw runtime_error("CaenV2718::readCycle15 device is not open");
 	auto errCode = CAENVME_WriteCycle(
-		mHandle,
-		formAddress(addr),
-		reinterpret_cast<void*>(&word),
-		cvA32_S_DATA, cvD32
-	);
+	                   mHandle,
+	                   formAddress(addr),
+	                   reinterpret_cast<void*>(&word),
+	                   cvA32_S_DATA, cvD32
+	               );
 	if(errCode != cvSuccess)
 		throw runtime_error(CAENVME_DecodeError(errCode));
 }

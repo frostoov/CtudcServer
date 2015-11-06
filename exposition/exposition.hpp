@@ -1,17 +1,15 @@
 #pragma once
 
 #include "net/packagereceiver.hpp"
-#include "eventencoder.hpp"
-#include "processmanager.hpp"
+#include "eventwriter.hpp"
+#include "process.hpp"
 
 #include <json.hpp>
 #include <atomic>
 
-class ReadManager : public ProcessManager {
+class Exposition : public ProcessManager {
 protected:
-	using ModulePtr       = std::shared_ptr<Tdc>;
-	using SystemClock     = std::chrono::high_resolution_clock;
-	using TimePoint       = SystemClock::time_point;
+	using ModulePtr   = std::shared_ptr<Tdc>;
 	using RawEvent    = Tdc::EventHits;
 	using RawEvents   = std::vector<RawEvent>;
 public:
@@ -30,14 +28,15 @@ public:
 		void unMarshal(const nlohmann::json& doc);
 	};
 public:
-	ReadManager(ModulePtr module,
-                const Settings& settings,
-				const ChannelConfig& config);
-	~ReadManager();
+	Exposition(ModulePtr module,
+	           const Settings& settings,
+	           const ChannelConfig& config);
+	~Exposition();
 	void run() override;
 	void stop() override;
-	double getTriggerFrequency() const;
-	double getPackageFrequency() const;
+	uintmax_t triggerCount() const;
+	uintmax_t packageCount() const;
+	uintmax_t duration() const;
 protected:
 	void increasePackageCount();
 	void increaseTriggerCount(uintmax_t val);
@@ -45,10 +44,11 @@ protected:
 	void resetTriggerCount();
 	void handleNevodPackage(PackageReceiver::ByteVector& buffer, trek::data::NevodPackage& nvdPkg);
 	static std::string formDir(const Settings& settings);
+	static std::string formPrefix(const Settings& settings);
 	void outputMeta(const std::string& dirName, const Settings& settings, Tdc& module);
 private:
 	ModulePtr                mModule;
-	EventEncoder             mEncoder;
+	EventWriter mEncoder;
 	PackageReceiver          mNevodReceiver;
 	trek::data::NevodPackage mNevodPackage;
 	RawEvents                mBuffer;
@@ -56,5 +56,5 @@ private:
 	std::atomic<uintmax_t> mPackageCount;
 	std::atomic<uintmax_t> mTriggerCount;
 
-	TimePoint mStartPoint;
+	std::chrono::system_clock::time_point mStartPoint;
 };

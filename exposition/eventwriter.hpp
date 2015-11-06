@@ -14,7 +14,7 @@
 #include <fstream>
 
 
-class EventEncoder {
+class EventWriter {
 	struct EventId {
 		EventId(unsigned r, unsigned e)
 			: nRun(r), nRecord(e) { }
@@ -25,17 +25,17 @@ class EventEncoder {
 	using RawEvent = Tdc::EventHits;
 	using RawEvents = std::vector<RawEvent>;
 public:
-	EventEncoder(const std::string& path,
-	             unsigned eventsPerFile,
-			 	 const ChannelConfig& config);
-	void encode(const RawEvents& tdcEvents, const trek::data::NevodPackage& nvdPkg);
+	EventWriter(const std::string& path,
+	            const std::string& prefix,
+	            unsigned eventsPerFile,
+	            const ChannelConfig& config);
+	void write(const RawEvents& tdcEvents, const trek::data::NevodPackage& nvdPkg);
 protected:
 	void writeBuffer(const RawEvents& buffer, const EventId& eventId);
 	trek::data::EventHits convertHits(const RawEvent& eventrecord);
 	void reopenStream();
 	void openStream();
 	void closeStream();
-	void newRun(const trek::data::NevodPackage& nvdPkg);
 	std::string formFileName() const;
 private:
 	EventIdPtr    mNevodId;
@@ -44,6 +44,7 @@ private:
 	unsigned      mEventCount;
 
 	const std::string   mPath;
+	const std::string   mPrefix;
 	const unsigned      mEventsPerFile;
 	const ChannelConfig mConfig;
 };

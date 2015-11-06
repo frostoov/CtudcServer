@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 
-#include <ftd/ftd2xx.h>
+#include <ftd2xx.h>
 
 namespace ftdi {
 
@@ -38,7 +38,7 @@ public:
 protected:
 	bool doAction(const std::string& action, std::function<void()>&& func);
 	void init(const ChannelConfig& conf);
-	void initChannel(uint32_t clock, uchar_t timer, uint32_t options);
+	void initChannel(uint32_t clock, uint8_t timer, uint32_t options);
 
 	void deviceRead(uint32_t sizeToTransfer, uint8_t* buffer, uint32_t& sizeTransferred, uint32_t options);
 	void deviceWrite(uint32_t sizeToTransfer, uint8_t* buffer, uint32_t& sizeTransferred, uint32_t options);
@@ -49,7 +49,7 @@ protected:
 	void write8bitsAndGetAck(uint8_t data, bool& ack);
 
 	void writeDeviceAddress(bool direction, bool AddLen10Bit, bool& ack);
-	void sendReceiveCmdFromMPSSE(bool echoCmdFlag, uchar_t ecoCmd, bool& cmdEchoed);
+	void sendReceiveCmdFromMPSSE(bool echoCmdFlag, uint8_t ecoCmd, bool& cmdEchoed);
 	void setGPIOLow(uint8_t value, uint8_t direction);
 	void setClock(FT_DEVICE device, uint32_t clock);
 	void setDeviceLoopbackState(bool loopBackFlag);
@@ -61,14 +61,14 @@ protected:
 	void stop();
 
 	void getFtDeviceType(FT_DEVICE* Module);
-	bool checkMPSSEAvailable(const deviceInfo_t& devList);
+	bool checkMPSSEAvailable(const FT_DEVICE_LIST_INFO_NODE& devList);
 
 	bool stat2bool(FT_STATUS status);
 
 	void sleep(size_t time);
 	void checkOpen();
 private:
-	ft_handle mHandle;
+	FT_HANDLE mHandle;
 	uint32_t mDevAddr;
 	bool mIsOpen;
 	string mDescription;

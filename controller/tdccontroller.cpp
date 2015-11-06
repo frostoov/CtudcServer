@@ -16,22 +16,22 @@ TdcController::TdcController(const std::string& name, const ModulePtr& module)
 
 Controller::Methods TdcController::createMethods() {
 	return {
-		{"open",                  [&](const Request& query) { return this->open(query); } },
-		{"close",                 [&](const Request& query) { return this->close(query); } },
-		{"isOpen",                [&](const Request& query) { return this->isOpen(query); } },
-		{"clear",                 [&](const Request& query) { return this->clear(query); } },
-		{"reset",                 [&](const Request& query) { return this->reset(query); } },
-		{"stat",                  [&](const Request& query) { return this->stat(query); } },
-		{"ctrl",                  [&](const Request& query) { return this->ctrl(query); } },
-		{"setMode",	          [&](const Request& query) { return this->setMode(query); } },
-		{"mode",                  [&](const Request& query) { return this->mode(query); } },
-		{"setWindowWidth",        [&](const Request& query) { return this->setWindowWidth(query); } },
-		{"setWindowOffset",       [&](const Request& query) { return this->setWindowOffset(query); } },
-		{"setEdgeDetection",      [&](const Request& query) { return this->setEdgeDetection(query); } },
-		{"setLsb",                [&](const Request& query) { return this->setLsb(query);  } },
-		{"setCtrl",               [&](const Request& query) { return this->setCtrl(query); } },
-		{"setTdcMeta",            [&](const Request& query) { return this->setTdcMeta(query); } },
-		{"settings",              [&](const Request& query) { return this->settings(query); } },
+		{"open",                  [&](const Request & query) { return this->open(query); } },
+		{"close",                 [&](const Request & query) { return this->close(query); } },
+		{"isOpen",                [&](const Request & query) { return this->isOpen(query); } },
+		{"clear",                 [&](const Request & query) { return this->clear(query); } },
+		{"reset",                 [&](const Request & query) { return this->reset(query); } },
+		{"stat",                  [&](const Request & query) { return this->stat(query); } },
+		{"ctrl",                  [&](const Request & query) { return this->ctrl(query); } },
+		{"setMode",	          [&](const Request & query) { return this->setMode(query); } },
+		{"mode",                  [&](const Request & query) { return this->mode(query); } },
+		{"setWindowWidth",        [&](const Request & query) { return this->setWindowWidth(query); } },
+		{"setWindowOffset",       [&](const Request & query) { return this->setWindowOffset(query); } },
+		{"setEdgeDetection",      [&](const Request & query) { return this->setEdgeDetection(query); } },
+		{"setLsb",                [&](const Request & query) { return this->setLsb(query);  } },
+		{"setCtrl",               [&](const Request & query) { return this->setCtrl(query); } },
+		{"setTdcMeta",            [&](const Request & query) { return this->setTdcMeta(query); } },
+		{"settings",              [&](const Request & query) { return this->settings(query); } },
 	};
 }
 
@@ -64,7 +64,7 @@ Response TdcController::isOpen(const Request& request) {
 	};
 }
 
-Response TdcController::clear(const Request &request) {
+Response TdcController::clear(const Request& request) {
 	mDevice->clear();
 	return {
 		name(),
@@ -74,7 +74,7 @@ Response TdcController::clear(const Request &request) {
 	};
 }
 
-Response TdcController::reset(const Request &request) {
+Response TdcController::reset(const Request& request) {
 	mDevice->reset();
 	return {
 		name(),

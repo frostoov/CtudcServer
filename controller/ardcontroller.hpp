@@ -17,9 +17,9 @@ protected:
 	trek::net::Response close(const trek::net::Request& request);
 	trek::net::Response isOpen(const trek::net::Request& request);
 
-    trek::net::Response turnOn(const trek::net::Request& request);
-    trek::net::Response turnOff(const trek::net::Request& request);
-    trek::net::Response voltage(const trek::net::Request& request);
+	trek::net::Response turnOn(const trek::net::Request& request);
+	trek::net::Response turnOff(const trek::net::Request& request);
+	trek::net::Response voltage(const trek::net::Request& request);
 private:
 	ModulePtr mDevice;
 

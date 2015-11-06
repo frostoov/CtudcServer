@@ -41,7 +41,7 @@ void PackageReceiver::onRecv(Callback&& callback) {
 void PackageReceiver::doReceive() {
 	mBuffer.resize(mBufferSize);
 	mSocket.async_receive_from(boost::asio::buffer(mBuffer), mEndpoint,
-	[&, this](auto& error, size_t size) {
+	[&, this](auto & error, size_t size) {
 		if(!error) {
 			mBuffer.resize(size);
 			this->mCallback(mBuffer);

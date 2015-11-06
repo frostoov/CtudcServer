@@ -13,53 +13,53 @@ using trek::net::Response;
 using trek::net::Controller;
 
 ArdController::ArdController(const std::string& name, const ModulePtr& module)
-    : Controller(name, createMethods()),
-      mDevice(module) { }
+	: Controller(name, createMethods()),
+	  mDevice(module) { }
 
 Controller::Methods ArdController::createMethods() {
-    return {
-        {"open",                  [&](const Request& query) { return this->open(query); } },
-		{"close",                 [&](const Request& query) { return this->close(query); } },
-		{"isOpen",                [&](const Request& query) { return this->isOpen(query); } },
-		{"turnOn",                [&](const Request& query) { return this->turnOn(query); } },
-		{"turnOff",               [&](const Request& query) { return this->turnOff(query); } },
-		{"voltage",               [&](const Request& query) { return this->voltage(query); } },
-    };
+	return {
+		{"open",                  [&](const Request & query) { return this->open(query); } },
+		{"close",                 [&](const Request & query) { return this->close(query); } },
+		{"isOpen",                [&](const Request & query) { return this->isOpen(query); } },
+		{"turnOn",                [&](const Request & query) { return this->turnOn(query); } },
+		{"turnOff",               [&](const Request & query) { return this->turnOff(query); } },
+		{"voltage",               [&](const Request & query) { return this->voltage(query); } },
+	};
 }
 
 Response ArdController::open(const Request& request) {
-    mDevice->open(request.inputs().at(0).get<string>());
-    return {
-        name(),
-        "open",
-        json::array(),
-        true
-    };
+	mDevice->open(request.inputs().at(0).get<string>());
+	return {
+		name(),
+		"open",
+		json::array(),
+		true
+	};
 }
 
 Response ArdController::close(const Request& request) {
-    mDevice->close();
-    return {
-        name(),
-        "close",
-        json::array(),
-        true
-    };
+	mDevice->close();
+	return {
+		name(),
+		"close",
+		json::array(),
+		true
+	};
 }
 Response ArdController::isOpen(const Request& request) {
-    return {
-        name(),
-        "close",
-        {mDevice->isOpen()},
-        true
-    };
+	return {
+		name(),
+		"isOpen",
+		{mDevice->isOpen()},
+		true
+	};
 }
 
 Response ArdController::turnOn(const Request& request) {
 	if(mFuture.valid()) {
 		auto status = mFuture.wait_for(milliseconds(0));
 		if(status != std::future_status::ready)
-		throw runtime_error("ArdController::turnOn busy");
+			throw runtime_error("ArdController::turnOn device is busy");
 		try {
 			mFuture.get();
 		} catch(...) { }
@@ -81,7 +81,7 @@ Response ArdController::turnOff(const Request& request) {
 	if(mFuture.valid()) {
 		auto status = mFuture.wait_for(milliseconds(0));
 		if(status != std::future_status::ready)
-		    throw runtime_error("ArdController::turnOff busy");
+			throw runtime_error("ArdController::turnOff device is busy");
 		try {
 			mFuture.get();
 		} catch(...) { }
@@ -99,10 +99,10 @@ Response ArdController::turnOff(const Request& request) {
 
 }
 Response ArdController::voltage(const Request& request) {
-    return {
-        name(),
-        "turnOn",
-        {mDevice->voltage()},
-        true
-    };
+	return {
+		name(),
+		"voltage",
+		{mDevice->voltage(request.inputs().at(0))},
+		true
+	};
 }

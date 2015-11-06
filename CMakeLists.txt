@@ -8,8 +8,8 @@ set(
 	tdc/caenv2718.cpp
 	tdc/emissem1.cpp
 	tdc/pciqbus.cpp
-	managers/readmanager.cpp
-	managers/eventencoder.cpp
+	exposition/exposition.cpp
+	exposition/eventwriter.cpp
 	net/packagereceiver.cpp
 	configparser/appconfigparser.cpp
 	configparser/channelsconfigparser.cpp
@@ -30,10 +30,10 @@ set(
 	tdc/emissem1.hpp
 	tdc/pciqbus.hpp
 	tdc/tdc.hpp
-	managers/readmanager.hpp
-	managers/channelconfig.hpp
-	managers/processmanager.hpp
-	managers/eventencoder.hpp
+	exposition/exposition.hpp
+	exposition/channelconfig.hpp
+	exposition/process.hpp
+	exposition/eventwriter.hpp
 	net/packagereceiver.hpp
 	configparser/configparser.hpp
 	configparser/appconfigparser.hpp

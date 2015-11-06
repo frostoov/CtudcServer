@@ -5,7 +5,7 @@
 #include "ftdmodule.hpp"
 #include "defines.hpp"
 
-static const char* decodeStatus(FT_STATUS item) {
+static const char* decodeStatus(int item) {
 	switch(item) {
 	case FT_OK:
 		return "Success";
@@ -84,7 +84,7 @@ bool Module::open(const string& desc) {
 	/*Get the number of devices connected to the system(FT_CreateDeviceInfoList)*/
 	auto status = FT_CreateDeviceInfoList(&tempNumChannels);
 	if(status == FT_OK) {
-		deviceInfo_t devices[tempNumChannels];
+		FT_DEVICE_LIST_INFO_NODE devices[tempNumChannels];
 		status = FT_GetDeviceInfoList(devices, &tempNumChannels);
 		if(status == FT_OK) {
 			/*loop until No of devices */
@@ -147,21 +147,21 @@ void Module::init(const ChannelConfig& conf) {
 	initChannel(clock, conf.latencyTimer, conf.options);
 	if(!(conf.options & I2C_DISABLE_3PHASE_CLOCKING)) {
 		uint32_t retCount = 0;
-		uchar_t cmd = MPSSE_CMD_ENABLE_3PHASE_CLOCKING;
+		uint8_t cmd = MPSSE_CMD_ENABLE_3PHASE_CLOCKING;
 		status = FT_Write(mHandle, &cmd, sizeof(cmd), &retCount);
 		if(status != FT_OK)
 			throw runtime_error(decodeStatus(status));
 	}
-	uchar_t data[16];
+	uint8_t data[16];
 	uint32_t retCount;
 	data[0] = 0x9E;
 	data[1] = 0x03;
 	data[2] = 0x0;
-	status = FT_Write(mHandle, data, 3 * sizeof(uchar_t), &retCount);
+	status = FT_Write(mHandle, data, 3 * sizeof(uint8_t), &retCount);
 	handleStatus(status);
 }
 
-bool Module::checkMPSSEAvailable(const deviceInfo_t& devList) {
+bool Module::checkMPSSEAvailable(const FT_DEVICE_LIST_INFO_NODE& devList) {
 	bool isMPSSEAvailable = false;
 	/*check TYPE field*/
 	switch(devList.Type) {
@@ -186,7 +186,7 @@ bool Module::checkMPSSEAvailable(const deviceInfo_t& devList) {
 	return isMPSSEAvailable;
 }
 
-void Module::initChannel(uint32_t clock, uchar_t timer, uint32_t options) {
+void Module::initChannel(uint32_t clock, uint8_t timer, uint32_t options) {
 	FT_DEVICE ftDevice;
 
 	/*Check parameters*/
@@ -205,7 +205,7 @@ void Module::initChannel(uint32_t clock, uchar_t timer, uint32_t options) {
 	handleStatus(status);
 	status = FT_SetTimeouts(mHandle, 5000, writeTimeout);
 	handleStatus(status);
-	status = FT_SetLatencyTimer(mHandle, (uchar_t) timer);
+	status = FT_SetLatencyTimer(mHandle, uint8_t(timer));
 	handleStatus(status);
 	//Reset
 	status = FT_SetBitMode(mHandle, interfaceMaskIn, resetInterface);
@@ -772,7 +772,7 @@ void Module::stop() {
 
 
 void Module::setGPIOLow(uint8_t value, uint8_t direction) {
-	uchar_t inputBuffer[10];
+	uint8_t inputBuffer[10];
 	uint32_t bytesWritten = 0;
 	uint32_t bufIdx = 0;
 
@@ -808,7 +808,7 @@ void Module::emptyDeviceInputBuff() {
 	if(bytesInInputBuf == 0)
 		return;
 
-	uchar_t readBuffer[MID_MAX_IN_BUF_SIZE];
+	uint8_t readBuffer[MID_MAX_IN_BUF_SIZE];
 	uint32_t numOfBytesRead = 0;
 	do {
 		if(bytesInInputBuf > MID_MAX_IN_BUF_SIZE)
@@ -825,7 +825,7 @@ void Module::emptyDeviceInputBuff() {
 }
 
 void Module::setClock(FT_DEVICE device, uint32_t clock) {
-	uchar_t inputBuffer[10];
+	uint8_t inputBuffer[10];
 	uint32_t bytesWritten = 0;
 	uint32_t bufIdx = 0;
 	uint8_t valueH, valueL;
@@ -869,7 +869,7 @@ void Module::setClock(FT_DEVICE device, uint32_t clock) {
 
 
 void Module::setDeviceLoopbackState(bool loopBackFlag) {
-	uchar_t inputBuffer[10];
+	uint8_t inputBuffer[10];
 	uint32_t bytesWritten = 0;
 	uint32_t bufIdx = 0;
 
@@ -890,7 +890,7 @@ void Module::getFtDeviceType(FT_DEVICE* ftDevice) {
 	handleStatus(status);
 }
 
-void Module::sendReceiveCmdFromMPSSE(bool echoCmdFlag, uchar_t ecoCmd, bool& cmdEchoed) {
+void Module::sendReceiveCmdFromMPSSE(bool echoCmdFlag, uint8_t ecoCmd, bool& cmdEchoed) {
 	FT_STATUS status;
 	uint32_t bytesInInputBuf = 0;
 	uint32_t numOfBytesRead = 0;
@@ -898,7 +898,7 @@ void Module::sendReceiveCmdFromMPSSE(bool echoCmdFlag, uchar_t ecoCmd, bool& cmd
 
 	uint32_t loopCounter = 0;
 
-	uchar_t readBuffer[MID_MAX_IN_BUF_SIZE];
+	uint8_t readBuffer[MID_MAX_IN_BUF_SIZE];
 	/*initialize cmdEchoed to MID_CMD_NOT_ECHOED*/
 	cmdEchoed = false;
 	/* check whether command has to be sent only once*/
@@ -924,7 +924,7 @@ void Module::sendReceiveCmdFromMPSSE(bool echoCmdFlag, uchar_t ecoCmd, bool& cmd
 			handleStatus(status);
 			if(numOfBytesRead) {
 				uint32_t byteCounter = 0;
-				uchar_t cmdResponse = 0;
+				uint8_t cmdResponse = 0;
 				do {
 					if(byteCounter <= (numOfBytesRead - 1)) {
 						if(readBuffer[byteCounter] == MID_BAD_COMMAND_RESPONSE)

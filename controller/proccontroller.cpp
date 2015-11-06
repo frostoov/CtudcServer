@@ -1,6 +1,6 @@
 #include "proccontroller.hpp"
 
-#include "managers/readmanager.hpp"
+#include "exposition/exposition.hpp"
 
 #include <trek/net/request.hpp>
 #include <trek/net/response.hpp>
@@ -27,7 +27,7 @@ using trek::net::Controller;
 
 ProcessController::ProcessController(const std::string& name,
                                      const ModulePtr& module,
-                                     const ReadManager::Settings& settings,
+                                     const Exposition::Settings& settings,
                                      const ChannelConfig& config)
 	: Controller(name, createMethods()),
 	  mDevice(module),
@@ -35,11 +35,11 @@ ProcessController::ProcessController(const std::string& name,
 	  mSettings(settings) { }
 
 ProcessController::~ProcessController() {
-    if(mFuture.valid() || mProcess != nullptr) {
-        mProcess->stop();
-        mFuture.get();
-        mProcess.reset();
-    }
+	if(mFuture.valid() || mProcess != nullptr) {
+		mProcess->stop();
+		mFuture.get();
+		mProcess.reset();
+	}
 }
 
 const Callback<void(unsigned)>& ProcessController::onNewRun() {
@@ -51,8 +51,9 @@ Controller::Methods ProcessController::createMethods() {
 		{"getType",             [&](const Request & request) { return this->getType(request); } },
 		{"startRead",           [&](const Request & request) { return this->startRead(request); } },
 		{"stopRead",            [&](const Request & request) { return this->stopRead(request); } },
-		{"getTriggerFrequency", [&](const Request & request) { return this->getTriggerFrequency(request); } },
-		{"getPackageFrequency", [&](const Request & request) { return this->getPackageFrequency(request); } },
+		{"triggerCount",     [&](const Request & request) { return this->triggerCount(request); } },
+		{"packageCount",        [&](const Request & request) { return this->packageCount(request); } },
+		{"duration",            [&](const Request & request) { return this->duration(request); } },
 	};
 }
 
@@ -75,8 +76,8 @@ Response ProcessController::getRun(const Request& request) {
 }
 
 Response ProcessController::startRead(const Request& request) {
-	if(mFuture.valid())
-        	throw logic_error("ProcessController::startRead process already active");
+	if(mProcess != nullptr || mFuture.valid())
+		throw logic_error("ProcessController::startRead process already active");
 	mProcess = createReadManager(request);
 	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
 	return {
@@ -88,7 +89,7 @@ Response ProcessController::startRead(const Request& request) {
 }
 
 Response ProcessController::stopRead(const Request& request) {
-	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
+	auto readManager = dynamic_cast<Exposition*>(mProcess.get());
 	if(readManager == nullptr || !mFuture.valid())
 		throw logic_error("ProcessController::stopRead process isnt reader");
 	readManager->stop();
@@ -104,46 +105,59 @@ Response ProcessController::stopRead(const Request& request) {
 	};
 }
 
-Response ProcessController::getTriggerFrequency(const Request& request) const {
-	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
-    if(readManager == nullptr)
-        throw logic_error("ProcessController::stopRead process isnt reader");
+Response ProcessController::triggerCount(const Request& request) const {
+	auto expo = dynamic_cast<Exposition*>(mProcess.get());
+	if(expo == nullptr)
+		throw runtime_error("ProcessController::stopRead process isnt reader");
 	return {
 		name(),
-		"getTriggerFrequency",
-		{readManager->getTriggerFrequency()},
+		"triggerCount",
+		{expo->triggerCount()},
 		true
 	};
 }
 
-Response ProcessController::getPackageFrequency(const Request& request) const {
-	auto readManager = dynamic_cast<ReadManager*>(mProcess.get());
-    if(readManager == nullptr)
-        throw logic_error("ProcessController::stopRead process isnt reader");
+Response ProcessController::packageCount(const Request& request) const {
+	auto expo = dynamic_cast<Exposition*>(mProcess.get());
+	if(expo == nullptr)
+		throw runtime_error("ProcessController::stopRead process isnt reader");
 	return {
 		name(),
-		"getPackageFrequency",
-		{readManager->getPackageFrequency()},
+		"packageCount",
+		{expo->packageCount()},
 		true
 	};
 }
+
+Response ProcessController::duration(const Request& request) const {
+	auto expo = dynamic_cast<Exposition*>(mProcess.get());
+	if(expo == nullptr)
+		throw runtime_error("ProcessController::duration process isnt active");
+	return {
+		name(),
+		"duration",
+		{expo->duration()},
+		true,
+	};
+}
+
 
 ProcessController::ProcessPtr ProcessController::createReadManager(const Request& request) const {
-	return make_unique<ReadManager>(
-		mDevice,
-        mSettings,
-		mChannelConfig
-	);
+	return make_unique<Exposition>(
+	           mDevice,
+	           mSettings,
+	           mChannelConfig
+	       );
 }
 
 bool ProcessController::isReadManager(const ProcessPtr& processManager) const {
 	if(!processManager)
 		return false;
 	const auto& ref = *processManager.get();
-	return typeid(ref) == typeid(ReadManager);
+	return typeid(ref) == typeid(Exposition);
 }
 
-string ProcessController::getProcessType(const ProcessController::ProcessPtr &process) const {
+string ProcessController::getProcessType(const ProcessController::ProcessPtr& process) const {
 	if(isReadManager(process))
 		return "ctudc";
 	return "null";

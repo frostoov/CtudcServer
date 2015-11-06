@@ -16,8 +16,8 @@ protected:
 	trek::net::Response close(const trek::net::Request& request);
 	trek::net::Response isOpen(const trek::net::Request& request);
 
-	trek::net::Response clear(const trek::net::Request &request);
-	trek::net::Response reset(const trek::net::Request &request);
+	trek::net::Response clear(const trek::net::Request& request);
+	trek::net::Response reset(const trek::net::Request& request);
 	trek::net::Response stat(const trek::net::Request& request);
 	trek::net::Response ctrl(const trek::net::Request& request);
 	trek::net::Response mode(const trek::net::Request& request);
