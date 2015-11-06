@@ -42,8 +42,6 @@ void EventWriter::write(const RawEvents& tdcEvents, const NevodPackage& nvdPkg) 
 			mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
 			return;
 		}
-		std::cout << "trigger: " << tdcEvents.size() << std::endl;
-		std::cout << "package: " << (nvdPkg.numberOfRecord - mNevodId->nRecord) << std::endl;
 		if(nvdPkg.numberOfRecord - mNevodId->nRecord == tdcEvents.size())
 			writeBuffer(tdcEvents, *mNevodId);
 		mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
@@ -56,7 +54,6 @@ void EventWriter::writeBuffer(const RawEvents& buffer, const EventId& eventId) {
 	if(!mStream.is_open())
 		openStream();
 	auto curEvent = eventId.nRecord;
-	std::cout << "write" << std::endl;
 	for(auto& evt : buffer) {
 		if(mEventCount % mEventsPerFile == 0 && mEventCount != 0)
 			reopenStream();
@@ -67,24 +64,22 @@ void EventWriter::writeBuffer(const RawEvents& buffer, const EventId& eventId) {
 }
 
 trek::data::EventHits EventWriter::convertHits(const Tdc::EventHits& hits) {
-	std::cout << "conv end" << std::endl;
 	trek::data::EventHits newHits;
 	for(auto& hit : hits) {
 		if(mConfig.count(hit.channel)) {
 			auto& conf = mConfig.at(hit.channel);
 			newHits.push_back({conf.wire, conf.chamber, hit.time});
 		} else {
-			std::cerr << "Failed find channel config: " << std::endl;
+			std::cerr << "Failed find channel config: " << hit.channel  << std::endl;
 		}
 	}
-	std::cout << "conv end" << std::endl;
 	return newHits;
 }
 
 void EventWriter::openStream() {
 	assert(!mStream.is_open());
 	mStream.open(formFileName(), mStream.binary);
-	mStream << "TDS";
+	mStream << "TDSa\n";
 }
 
 void EventWriter::closeStream() {

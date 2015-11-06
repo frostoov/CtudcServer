@@ -87,7 +87,7 @@ bool Module::open(const string& desc) {
 		FT_DEVICE_LIST_INFO_NODE devices[tempNumChannels];
 		status = FT_GetDeviceInfoList(devices, &tempNumChannels);
 		if(status == FT_OK) {
-			/*loop until No of devices */
+			/*loop until No of devices*/
 			uint32_t devInd = 0;
 			for(const auto& dev : devices) {
 				if(checkMPSSEAvailable(dev))

@@ -45,7 +45,6 @@ void Exposition::run() {
 	mNevodReceiver.onRecv([this](PackageReceiver::ByteVector & nevodBuffer) {
 		try {
 			handleNevodPackage(nevodBuffer, mNevodPackage);
-			std::cout << "Package" << std::endl;
 			increasePackageCount();
 			mModule->read(mBuffer);
 			increaseTriggerCount(mBuffer.size());
@@ -134,7 +133,7 @@ string Exposition::formDir(const Settings& settings) {
 }
 
 string Exposition::formPrefix(const Settings& settings) {
-	return StringBuilder() << "set_" << setw(5) << setfill('0') << settings.nRun;
+	return StringBuilder() << "ctudc_" << setw(5) << setfill('0') << settings.nRun << '_';
 }
 
 

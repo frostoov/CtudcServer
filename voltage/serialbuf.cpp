@@ -42,15 +42,15 @@ const std::unordered_map<unsigned, int> baudRates{
 };
 
 serialbuf::serialbuf()
-	: mIBuffer(new char[mBufferSize]),
+	: mTimeout(-1),
+	  mIBuffer(new char[mBufferSize]),
 	  mOBuffer(new char[mBufferSize]),
-	  mTimeout(-1),
 	  mFile(-1) { }
 
 serialbuf::serialbuf(const std::string& dev_name, unsigned baudRate)
-	: mIBuffer(new char[mBufferSize]),
+	: mTimeout(-1),
+	  mIBuffer(new char[mBufferSize]),
 	  mOBuffer(new char[mBufferSize]),
-	  mTimeout(-1),
 	  mFile(-1) {
 	open(dev_name, baudRate);
 }

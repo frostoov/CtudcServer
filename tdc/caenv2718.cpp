@@ -3,7 +3,6 @@
 #include <CAENVMElib.h>
 
 #include <chrono>
-#include <iostream>
 
 using std::string;
 using std::vector;
@@ -54,7 +53,6 @@ public:
 	static void decode(unsigned lsb, const uint32_t* data, size_t size,
 	                   vector<Tdc::EventHits>& buffer) {
 		buffer.clear();
-		std::cout << "decode buffer size: " << size << std::endl;
 		bool header = false;
 		for(size_t i = 0; i < size; ++i) {
 			if(isMeasurement(data[i]) && !buffer.empty() )
