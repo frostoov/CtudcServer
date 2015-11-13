@@ -78,7 +78,7 @@ trek::data::EventHits EventWriter::convertHits(const Tdc::EventHits& hits) {
 
 void EventWriter::openStream() {
 	assert(!mStream.is_open());
-	mStream.open(formFileName(), mStream.binary);
+	mStream.open(formFileName(), mStream.binary | mStream.trunc);
 	mStream << "TDSa\n";
 }
 

@@ -114,8 +114,9 @@ void Voltage::setVoltage(double val) {
 	while( newCode != code ) {
 		code += dir;
 		writePin(voltageOutPin, code);
-		while( readPin(voltageInPin, 10000) != code) {	}
-		std::this_thread::sleep_for(milliseconds(800));
+		do {
+			std::this_thread::sleep_for(milliseconds(800));
+		} while(readPin(voltageInPin, 10000) != code);
 	}
 }
 
@@ -161,7 +162,7 @@ unsigned Voltage::readPin(unsigned pin, unsigned cycles) {
 	std::getline(mStream, str);
 	Response response(str);
 	if(response.status != 0)
-		throw runtime_error("Voltage::readPin failed write pin");
+		throw runtime_error("Voltage::readPin failed read pin");
 	if(response.command != "readPin" || stoul(response.args.at(0)) != pin || stoul(response.args.at(1)) != cycles)
 		throw runtime_error("Voltage::readPin invalid response");
 	return in2out(stoul(response.args.at(2)));
