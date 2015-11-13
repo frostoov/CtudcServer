@@ -22,7 +22,6 @@ using std::chrono::milliseconds;
 using std::runtime_error;
 
 using trek::StringBuilder;
-using trek::data::NevodPackage;
 
 using nlohmann::json;
 
@@ -32,29 +31,24 @@ Exposition::Exposition(ModulePtr module,
                        const Settings& settings,
                        const ChannelConfig& config)
 	: mModule(module),
-	  mEncoder(formDir(settings), formPrefix(settings), settings.eventsPerFile, config),
-	  mNevodReceiver(settings.infoIp, settings.infoPort) {
+	  mEncoder(formDir(settings), formPrefix(settings), settings.eventsPerFile, config) {
 	outputMeta(formDir(settings), settings, *module);
 }
 
 void Exposition::run() {
 	resetPackageCount();
 	resetTriggerCount();
+	mWorking = true;
 	if(mModule == nullptr || !mModule->isOpen())
 		throw runtime_error("Exposition::run tdc is not init");
-	mNevodReceiver.onRecv([this](PackageReceiver::ByteVector & nevodBuffer) {
-		try {
-			handleNevodPackage(nevodBuffer, mNevodPackage);
-			increasePackageCount();
-			mModule->read(mBuffer);
-			increaseTriggerCount(mBuffer.size());
-			mEncoder.write(mBuffer, mNevodPackage);
-		} catch(const std::exception& e) {
-			std::cerr << "Exposition: Failed handle buffer " << e.what() << std::endl;
-		}
-	});
 	mStartPoint = system_clock::now();
-	mNevodReceiver.start();
+
+	vector<Tdc::EventHits> buffer;
+	while(mWorking) {
+		mModule->read(buffer);
+		if(!buffer.empty())
+			mEncoder.write(buffer);
+	}
 }
 
 Exposition::~Exposition() {
@@ -62,7 +56,7 @@ Exposition::~Exposition() {
 }
 
 void Exposition::stop() {
-	mNevodReceiver.stop();
+	mWorking = false;
 }
 
 uintmax_t Exposition::triggerCount() const {
@@ -92,21 +86,6 @@ void Exposition::resetPackageCount() {
 
 void Exposition::resetTriggerCount() {
 	mTriggerCount = 0;
-}
-
-void Exposition::handleNevodPackage(PackageReceiver::ByteVector& buffer, NevodPackage& nvdPkg) {
-	struct membuf : public std::streambuf {
-		membuf(char* p, size_t n) {
-			setg(p, p, p + n);
-			setp(p, p + n);
-		}
-	} tempBuffer(buffer.data(), buffer.size());
-	istream stream(&tempBuffer);
-	stream.exceptions(stream.badbit | stream.failbit);
-	trek::deserialize(stream, nvdPkg);
-	if(memcmp(nvdPkg.keyword, "TRACK ", sizeof(nvdPkg.keyword)) != 0)
-		throw runtime_error("Exposition::handleNevodPackage invalid package: " +
-		                    string(reinterpret_cast<char*>(nvdPkg.keyword), sizeof(nvdPkg.keyword)));
 }
 
 void Exposition::outputMeta(const string& dirName, const Settings& settings, Tdc& module) {

@@ -7,21 +7,12 @@
 #include "tdc/tdc.hpp"
 #include "channelconfig.hpp"
 
-#include <trek/data/nevod.hpp>
 #include <trek/data/hitrecord.hpp>
 #include <trek/data/eventrecord.hpp>
-#include <memory>
 #include <fstream>
 
 
 class EventWriter {
-	struct EventId {
-		EventId(unsigned r, unsigned e)
-			: nRun(r), nRecord(e) { }
-		unsigned nRun;
-		unsigned nRecord;
-	};
-	using EventIdPtr = std::unique_ptr<EventId>;
 	using RawEvent = Tdc::EventHits;
 	using RawEvents = std::vector<RawEvent>;
 public:
@@ -29,16 +20,15 @@ public:
 	            const std::string& prefix,
 	            unsigned eventsPerFile,
 	            const ChannelConfig& config);
-	void write(const RawEvents& tdcEvents, const trek::data::NevodPackage& nvdPkg);
+	void write(const RawEvents& tdcEvents);
 protected:
-	void writeBuffer(const RawEvents& buffer, const EventId& eventId);
-	trek::data::EventHits convertHits(const RawEvent& eventrecord);
+	void writeBuffer(const RawEvents& buffer);
+	trek::data::EventHits convertHits(const RawEvent& eventRecord);
 	void reopenStream();
 	void openStream();
 	void closeStream();
 	std::string formFileName() const;
 private:
-	EventIdPtr    mNevodId;
 	std::ofstream mStream;
 	unsigned      mFileCount;
 	unsigned      mEventCount;

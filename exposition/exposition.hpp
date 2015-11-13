@@ -1,6 +1,5 @@
 #pragma once
 
-#include "net/packagereceiver.hpp"
 #include "eventwriter.hpp"
 #include "process.hpp"
 
@@ -42,17 +41,15 @@ protected:
 	void increaseTriggerCount(uintmax_t val);
 	void resetPackageCount();
 	void resetTriggerCount();
-	void handleNevodPackage(PackageReceiver::ByteVector& buffer, trek::data::NevodPackage& nvdPkg);
 	static std::string formDir(const Settings& settings);
 	static std::string formPrefix(const Settings& settings);
 	void outputMeta(const std::string& dirName, const Settings& settings, Tdc& module);
 private:
 	ModulePtr                mModule;
-	EventWriter mEncoder;
-	PackageReceiver          mNevodReceiver;
-	trek::data::NevodPackage mNevodPackage;
+	EventWriter              mEncoder;
 	RawEvents                mBuffer;
 
+	std::atomic<bool>      mWorking;
 	std::atomic<uintmax_t> mPackageCount;
 	std::atomic<uintmax_t> mTriggerCount;
 

@@ -5,13 +5,13 @@
 #include "eventwriter.hpp"
 
 #include <trek/data/eventrecord.hpp>
+#include <trek/common/serialization.hpp>
 
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 
-using trek::data::NevodPackage;
 using trek::data::EventRecord;
 
 using std::make_unique;
@@ -36,28 +36,21 @@ EventWriter::EventWriter(const string& path,
 	mStream.exceptions(mStream.failbit | mStream.badbit);
 }
 
-void EventWriter::write(const RawEvents& tdcEvents, const NevodPackage& nvdPkg) {
+void EventWriter::write(const RawEvents& tdcEvents) {
 	try {
-		if(mNevodId == nullptr || nvdPkg.numberOfRun != mNevodId->nRun) {
-			mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
-			return;
-		}
-		if(nvdPkg.numberOfRecord - mNevodId->nRecord == tdcEvents.size())
-			writeBuffer(tdcEvents, *mNevodId);
-		mNevodId = make_unique<EventId>(EventId{nvdPkg.numberOfRun, nvdPkg.numberOfRecord});
+		writeBuffer(tdcEvents);
 	} catch(const exception& e) {
 		std::cerr << "EventWriter::write " << e.what() << std::endl;
 	}
 }
 
-void EventWriter::writeBuffer(const RawEvents& buffer, const EventId& eventId) {
+void EventWriter::writeBuffer(const RawEvents& buffer) {
 	if(!mStream.is_open())
 		openStream();
-	auto curEvent = eventId.nRecord;
 	for(auto& evt : buffer) {
 		if(mEventCount % mEventsPerFile == 0 && mEventCount != 0)
 			reopenStream();
-		EventRecord record(eventId.nRun, curEvent++, convertHits(evt));
+		EventRecord record(0, mEventCount, convertHits(evt));
 		trek::serialize(mStream, record);
 		++mEventCount;
 	}
