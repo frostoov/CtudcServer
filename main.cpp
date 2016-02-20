@@ -29,8 +29,8 @@ using trek::StringBuilder;
 
 using nlohmann::json;
 
-void panic(const std::string& message) {
-	std::cerr << message << endl;
+void fatal(const string& msg) {
+	std::cerr << msg << endl;
 	std::exit(EXIT_FAILURE);
 }
 
@@ -41,14 +41,14 @@ int main() {
 	try {
 		appSettings.load("CtudcServer.conf");
 	} catch(const std::exception& e) {
-		panic(StringBuilder() << "Failed parse CtudcServer.conf: " << e.what());
+		fatal(StringBuilder() << "Failed parse CtudcServer.conf: " << e.what());
 	}
 
 	ChannelsConfigParser channelParser;
 	try {
 		channelParser.load("channels.conf");
 	} catch(const std::exception& e) {
-		panic(StringBuilder() << "Failed parse channels.conf: " << e.what());
+		fatal(StringBuilder() << "Failed parse channels.conf: " << e.what());
 	}
 
 	auto tdc = make_shared<CaenV2718>(0xEE00);

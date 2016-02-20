@@ -75,7 +75,7 @@ protected:
 EmissEM1::EmissEM1(long address)
 	: mAddress(address) {  }
 
-void EmissEM1::read(vector<EventHits>& buffer) {
+void EmissEM1::readEvents(vector<EventHits>& buffer) {
 	buffer.clear();
 	static uint16_t buf[1024];
 	setPchi();
@@ -90,6 +90,10 @@ void EmissEM1::read(vector<EventHits>& buffer) {
 		pchiStat = mDev.readWord(mAddress + long(Reg::pchiStatus));
 		Decoder::decode(buf, transfered, buffer);
 	} while(!pchiStat.stop());
+}
+
+void EmissEM1::readRaw(std::vector<Hit>& buffer) {
+	throw std::logic_error("EmissEM1::readRaw unimplemented");
 }
 
 void EmissEM1::clear() {

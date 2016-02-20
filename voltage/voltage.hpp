@@ -26,9 +26,9 @@ protected:
 	static double code2val(unsigned code);
 	static unsigned val2code(double val);
 	static unsigned in2out(unsigned code);
-
 	void writePin(unsigned pin, unsigned code);
 	unsigned readPin(unsigned pin, unsigned cycles);
+	void setDigital(unsigned pin, const std::string& level);
 private:
 	serialbuf     mBuffer;
 	std::iostream mStream;

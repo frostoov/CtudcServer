@@ -1,7 +1,5 @@
 #include "proccontroller.hpp"
 
-#include "exposition/exposition.hpp"
-
 #include <trek/net/request.hpp>
 #include <trek/net/response.hpp>
 #include <trek/net/controller.hpp>
@@ -17,6 +15,7 @@ using std::unordered_map;
 using std::function;
 using std::logic_error;
 using std::runtime_error;
+using std::chrono::microseconds;
 
 using nlohmann::json;
 
@@ -48,12 +47,14 @@ const Callback<void(unsigned)>& ProcessController::onNewRun() {
 
 Controller::Methods ProcessController::createMethods() {
 	return {
-		{"getType",             [&](const Request & request) { return this->getType(request); } },
-		{"startRead",           [&](const Request & request) { return this->startRead(request); } },
-		{"stopRead",            [&](const Request & request) { return this->stopRead(request); } },
-		{"triggerCount",     [&](const Request & request) { return this->triggerCount(request); } },
-		{"packageCount",        [&](const Request & request) { return this->packageCount(request); } },
-		{"duration",            [&](const Request & request) { return this->duration(request); } },
+		{"getType",      [&](const Request & request) { return this->getType(request); } },
+		{"startRead",    [&](const Request & request) { return this->startRead(request); } },
+		{"stopRead",     [&](const Request & request) { return this->stopRead(request); } },
+		{"startFreq",    [&](const Request & request) { return this->startFreq(request); } },
+		{"stopFreq",     [&](const Request & request) { return this->stopFreq(request); } },
+		{"triggerCount", [&](const Request & request) { return this->triggerCount(request); } },
+		{"packageCount", [&](const Request & request) { return this->packageCount(request); } },
+		{"duration",     [&](const Request & request) { return this->duration(request); } },
 	};
 }
 
@@ -78,7 +79,7 @@ Response ProcessController::getRun(const Request& request) {
 Response ProcessController::startRead(const Request& request) {
 	if(mProcess != nullptr || mFuture.valid())
 		throw logic_error("ProcessController::startRead process already active");
-	mProcess = createReadManager(request);
+	mProcess = make_unique<Exposition>(mDevice, mSettings, mChannelConfig);
 	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
 	return {
 		name(),
@@ -91,7 +92,7 @@ Response ProcessController::startRead(const Request& request) {
 Response ProcessController::stopRead(const Request& request) {
 	auto readManager = dynamic_cast<Exposition*>(mProcess.get());
 	if(readManager == nullptr || !mFuture.valid())
-		throw logic_error("ProcessController::stopRead process isnt reader");
+		throw logic_error("ProcessController::stopRead process isn not Exposition");
 	readManager->stop();
 	mFuture.get();
 	mProcess.reset();
@@ -101,6 +102,37 @@ Response ProcessController::stopRead(const Request& request) {
 		name(),
 		"stopRead",
 		json::array(),
+		true
+	};
+}
+
+Response ProcessController::startFreq(const Request& request) {
+	if(mProcess != nullptr || mFuture.valid())
+		throw logic_error("ProcessController::startFreq process already active");
+	auto delay = request.inputs().at(0).get<int>();
+	if(delay <= 0)
+		throw logic_error("ProcessController::startFreq invlid delay value");
+	mProcess = make_unique<FreqHandler>(mDevice, mChannelConfig, microseconds(delay));
+	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
+	return {
+		name(),
+		"startFreq",
+		json::array(),
+		true,
+	};
+}
+
+Response ProcessController::stopFreq(const Request& request) {
+	auto freqHandler = dynamic_cast<FreqHandler*>(mProcess.get());
+	if(freqHandler == nullptr || !mFuture.valid())
+		throw logic_error("ProcessController::stopRead process isn not FreqHandler");
+	freqHandler->stop();
+	mFuture.get();
+	mProcess.reset();
+	return {
+		name(),
+		"stopRead",
+		createFreqs( freqHandler->freq() ),
 		true
 	};
 }
@@ -141,15 +173,6 @@ Response ProcessController::duration(const Request& request) const {
 	};
 }
 
-
-ProcessController::ProcessPtr ProcessController::createReadManager(const Request& request) const {
-	return make_unique<Exposition>(
-	           mDevice,
-	           mSettings,
-	           mChannelConfig
-	       );
-}
-
 bool ProcessController::isReadManager(const ProcessPtr& processManager) const {
 	if(!processManager)
 		return false;
@@ -161,4 +184,17 @@ string ProcessController::getProcessType(const ProcessController::ProcessPtr& pr
 	if(isReadManager(process))
 		return "ctudc";
 	return "null";
+}
+
+json::array_t ProcessController::createFreqs(const FreqHandler::TrekFreq& freq) {
+	json::array_t jFreq;
+	for(const auto& chamFreqPair : freq) {
+		auto& chamFreq = chamFreqPair.second;
+		auto  chamNum  = chamFreqPair.first;
+		jFreq.push_back({
+			{"chamber", chamNum},
+			{"freq", chamFreq},
+		});
+	}
+	return jFreq;
 }

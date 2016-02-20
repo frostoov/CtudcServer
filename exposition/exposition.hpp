@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tdc/caenv2718.hpp"
 #include "net/packagereceiver.hpp"
 #include "eventwriter.hpp"
 #include "process.hpp"
@@ -7,9 +8,8 @@
 #include <json.hpp>
 #include <atomic>
 
-class Exposition : public ProcessManager {
-protected:
-	using ModulePtr   = std::shared_ptr<Tdc>;
+class Exposition : public Process {
+	using ModulePtr   = std::shared_ptr<CaenV2718>;
 	using RawEvent    = Tdc::EventHits;
 	using RawEvents   = std::vector<RawEvent>;
 public:
@@ -48,7 +48,7 @@ protected:
 	void outputMeta(const std::string& dirName, const Settings& settings, Tdc& module);
 private:
 	ModulePtr                mModule;
-	EventWriter mEncoder;
+	EventWriter              mEventWriter;
 	PackageReceiver          mNevodReceiver;
 	trek::data::NevodPackage mNevodPackage;
 	RawEvents                mBuffer;

@@ -53,7 +53,7 @@ void EventWriter::write(const RawEvents& tdcEvents, const NevodPackage& nvdPkg) 
 void EventWriter::writeBuffer(const RawEvents& buffer, const EventId& eventId) {
 	if(!mStream.is_open())
 		openStream();
-	auto curEvent = eventId.nRecord;
+	auto curEvent = eventId.nRecord + 1;
 	for(auto& evt : buffer) {
 		if(mEventCount % mEventsPerFile == 0 && mEventCount != 0)
 			reopenStream();

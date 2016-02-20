@@ -32,7 +32,7 @@ Exposition::Exposition(ModulePtr module,
                        const Settings& settings,
                        const ChannelConfig& config)
 	: mModule(module),
-	  mEncoder(formDir(settings), formPrefix(settings), settings.eventsPerFile, config),
+	  mEventWriter(formDir(settings), formPrefix(settings), settings.eventsPerFile, config),
 	  mNevodReceiver(settings.infoIp, settings.infoPort) {
 	outputMeta(formDir(settings), settings, *module);
 }
@@ -46,9 +46,9 @@ void Exposition::run() {
 		try {
 			handleNevodPackage(nevodBuffer, mNevodPackage);
 			increasePackageCount();
-			mModule->read(mBuffer);
+			mModule->readEvents(mBuffer);
 			increaseTriggerCount(mBuffer.size());
-			mEncoder.write(mBuffer, mNevodPackage);
+			mEventWriter.write(mBuffer, mNevodPackage);
 		} catch(const std::exception& e) {
 			std::cerr << "Exposition: Failed handle buffer " << e.what() << std::endl;
 		}

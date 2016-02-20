@@ -7,7 +7,8 @@ class EmissEM1 : public Tdc {
 		class Decoder;
 	public:
 		EmissEM1(long address);
-		void read(std::vector<EventHits>& buffer) override;
+		void readEvents(std::vector<EventHits>& buffer) override;
+		void readRaw(std::vector<Hit>& buffer) override;
 		const std::string& name() const override;
 		Settings settings() override;
 		bool isOpen() const override;

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <thread>
 #include <cmath>
+#include <iostream>
 
 using std::string;
 using std::stoul;
@@ -11,7 +12,8 @@ using std::runtime_error;
 using std::chrono::system_clock;
 using std::chrono::milliseconds;
 
-constexpr unsigned voltageInPin   = 0;
+constexpr unsigned voltageInPin   = 1;
+// constexpr unsigned amperageInPin  = 2;
 constexpr unsigned voltageOutPin  = 7;
 constexpr unsigned amperageOutPin = 6;
 
@@ -105,7 +107,11 @@ void Voltage::setAmperage(double val) {
 	writePin(amperageOutPin, val2code(val));
 }
 
-void Voltage::setVoltage(double val) {
+void Voltage::setVoltage(const double val) {
+	std::cout << "setVoltage: " << val << std::endl;
+	if(val == 0)
+		setDigital(13, "HIGH");
+
 	auto code = readPin(voltageInPin, 10000);
 	auto newCode = val2code(val);
 	if(newCode == code)
@@ -115,9 +121,13 @@ void Voltage::setVoltage(double val) {
 		code += dir;
 		writePin(voltageOutPin, code);
 		do {
-			std::this_thread::sleep_for(milliseconds(800));
+			std::this_thread::sleep_for(milliseconds(1000));
 		} while(readPin(voltageInPin, 10000) != code);
 	}
+	std::cout << "newCode: " << newCode << std::endl;
+	std::cout << "code: " << code << std::endl;
+	if(val != 0)
+		setDigital(13, "LOW");
 }
 
 void Voltage::setTimeout(int tm) {
@@ -129,8 +139,6 @@ double Voltage::code2val(unsigned code) {
 }
 
 unsigned Voltage::val2code(double val) {
-	if(val == 0)
-		return 0;
 	val = 8.209770179674672 * val - 5.152849095111165e-01;
 	if(val < 0)
 		return 0;
@@ -140,7 +148,7 @@ unsigned Voltage::val2code(double val) {
 unsigned Voltage::in2out(unsigned code) {
 	if(code == 0)
 		return 0;
-	return round(2.645179121649108e-01 * code + 7.184796712165564e-01 );
+	return round(2.645179121649108e-01 * code + 7.184796712165564e-01);
 }
 
 void Voltage::writePin(unsigned pin, unsigned code) {
@@ -168,3 +176,15 @@ unsigned Voltage::readPin(unsigned pin, unsigned cycles) {
 	return in2out(stoul(response.args.at(2)));
 }
 
+void Voltage::setDigital(unsigned pin, const string& level) {
+	Lock lk(mMutex);
+	mStream << "digitalWrite:" << pin << ',' << level << std::endl;
+	string str;
+	std::getline(mStream, str);
+	Response response(str);
+	if(response.status != 0)
+		throw runtime_error("Voltage::setDigital failed set digital");
+	if(response.command != "digitalWrite" || stoul(response.args.at(0)) != pin || response.args.at(1) != level)
+		throw runtime_error("Voltage::setDigital invalid response");
+
+}

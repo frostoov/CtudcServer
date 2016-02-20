@@ -1,13 +1,15 @@
 cmake_minimum_required (VERSION 3.0)
 project(CtudcServer)
 
-set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic -fPIC")
+set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic")
+include_directories(${PROJECT_SOURCE_DIR})
 
 set(
 	SOURCES
 	tdc/caenv2718.cpp
 	tdc/emissem1.cpp
 	tdc/pciqbus.cpp
+	exposition/freq.cpp
 	exposition/exposition.cpp
 	exposition/eventwriter.cpp
 	net/packagereceiver.cpp
@@ -30,6 +32,7 @@ set(
 	tdc/emissem1.hpp
 	tdc/pciqbus.hpp
 	tdc/tdc.hpp
+	exposition/freq.hpp
 	exposition/exposition.hpp
 	exposition/channelconfig.hpp
 	exposition/process.hpp
@@ -60,7 +63,7 @@ find_package(
 		REQUIRED
 )
 
-include_directories(${PROJECT_SOURCE_DIR})
+
 include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(

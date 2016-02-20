@@ -25,8 +25,8 @@ PackageReceiver::~PackageReceiver() {
 }
 
 void PackageReceiver::start() {
-	doReceive();
 	mIoService.reset();
+	doReceive();
 	mIoService.run();
 }
 
@@ -44,9 +44,9 @@ void PackageReceiver::doReceive() {
 	[&, this](auto & error, size_t size) {
 		if(!error) {
 			mBuffer.resize(size);
-			this->mCallback(mBuffer);
+			mCallback(mBuffer);
 		}
-		this->doReceive();
+		doReceive();
 	});
 }
 

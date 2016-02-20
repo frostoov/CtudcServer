@@ -1,10 +1,10 @@
 #pragma once
 
-class ProcessManager {
+class Process {
 public:
-	virtual ~ProcessManager() { };
+	virtual ~Process() { };
 	virtual void run() = 0;
 	virtual void stop() = 0;
 protected:
-	ProcessManager() = default;
+	Process() = default;
 };

@@ -64,6 +64,12 @@ public:
 				header = false;
 		}
 	}
+	static void decodeRaw(unsigned lsb, const uint32_t* data, size_t size, vector<Tdc::Hit>& buffer) {
+		buffer.clear();
+		for(size_t i = 0; i < size; ++i)
+			if(isMeasurement(data[i]) && !buffer.empty() )
+				buffer.push_back({ chan(data[i]), lsb * time(data[i]) });
+	}
 protected:
 	static uint32_t time(uint32_t data) { return (data & TDC_MSR_MEASURE_MSK);}
 	static uint32_t chan(uint32_t data) { return (data & TDC_MSR_CHANNEL_MSK) >> 19;}
@@ -128,7 +134,7 @@ void CaenV2718::reset() {
 	writeCycle16(Reg::softwareReset, 1);
 }
 
-void CaenV2718::read(vector<EventHits>& buffer) {
+void CaenV2718::readEvents(vector<EventHits>& buffer) {
 	if(!mIsInit)
 		throw runtime_error("CaenV2718::read device is not open");
 	static uint32_t buf[1024];
@@ -143,6 +149,27 @@ void CaenV2718::read(vector<EventHits>& buffer) {
 	if((errCode == cvBusError && (mCtrl & 1)) || errCode == cvSuccess) {
 		size_t readSize = size_t(readBytes / sizeof(uint32_t));
 		Decoder::decode(mLsb, buf, readSize, buffer);
+	} else {
+		buffer.clear();
+		throw runtime_error("CaenV2718::read: failed");
+	}
+}
+
+void CaenV2718::readRaw(vector<Hit>& buffer) {
+	if(!mIsInit)
+		throw runtime_error("CaenV2718::read device is not open");
+	static uint32_t buf[1024];
+	int readBytes;
+	auto errCode = CAENVME_BLTReadCycle(
+	                   mHandle,
+	                   formAddress(Reg::outputBuffer),
+	                   buf, sizeof(buf),
+	                   cvA32_U_BLT, cvD32,
+	                   &readBytes
+	               );
+	if((errCode == cvBusError && (mCtrl & 1)) || errCode == cvSuccess) {
+		size_t readSize = size_t(readBytes / sizeof(uint32_t));
+		Decoder::decodeRaw(mLsb, buf, readSize, buffer);
 	} else {
 		buffer.clear();
 		throw runtime_error("CaenV2718::read: failed");

@@ -13,7 +13,8 @@ class CaenV2718 : public Tdc {
 		CaenV2718(unsigned vmeAddress);
 		~CaenV2718();
 
-		void read(std::vector<EventHits>& buffer) override;
+		void readEvents(std::vector<EventHits>& buffer) override;
+		void readRaw(std::vector<Hit>& buffer) override;
 		const std::string& name() const override;
 		Settings settings() override;
 		bool isOpen() const override;
@@ -60,7 +61,7 @@ class CaenV2718 : public Tdc {
 		void checkMicroRead();
 
 		TriggerConf getTriggerConf();
-		uint32_t formAddress(Reg addr) const;
+		inline uint32_t formAddress(Reg addr) const;
 	private:
 		int32_t mHandle;
 		uint32_t mBaseAddress;
