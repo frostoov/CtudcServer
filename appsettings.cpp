@@ -18,12 +18,14 @@ nlohmann::json AppSettings::marshal() const {
 	return {
 		{"address", ip },
 		{"port", port },
-		{"process", procSettings.marshal()}
+		{"expo", expoSettings.marshal()},
+		{"voltage", voltConfig.marshal()},
 	};
 }
 
 void AppSettings::unMarshal(const nlohmann::json& doc) {
 	ip   = doc.at("address").get<string>();
 	port = doc.at("port");
-	procSettings.unMarshal(doc.at("process"));
+	expoSettings.unMarshal(doc.at("expo"));
+	voltConfig.unMarhsal(doc.at("voltage"));
 }

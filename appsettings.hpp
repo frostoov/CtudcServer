@@ -2,11 +2,13 @@
 
 #include "configparser/appconfigparser.hpp"
 #include "exposition/exposition.hpp"
+#include "controller/voltagecontroller.hpp"
 
 struct AppSettings {
 	std::string ip;
 	uint16_t     port;
-	Exposition::Settings procSettings;
+	Exposition::Settings expoSettings;
+	VoltageController::Config voltConfig;
 
 	void load(const std::string& fileName);
 	void save(const std::string& fileName);

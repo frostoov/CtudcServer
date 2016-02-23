@@ -1,9 +1,8 @@
 #include "appsettings.hpp"
 
 #include "controller/tdccontroller.hpp"
-#include "controller/proccontroller.hpp"
-#include "controller/ftdcontroller.hpp"
-#include "controller/ardcontroller.hpp"
+#include "controller/expocontroller.hpp"
+#include "controller/voltagecontroller.hpp"
 
 #include "configparser/channelsconfigparser.hpp"
 
@@ -52,27 +51,25 @@ int main() {
 	}
 
 	auto tdc = make_shared<CaenV2718>(0xEE00);
-	auto ftd = make_shared<ftdi::Module>(0x28);
-	auto ard = make_shared<Voltage>();
-	ard->setTimeout(5000);
+	auto vlt = make_shared<Amplifier>();
+	vlt->setTimeout(5000);
 
 	auto tdcController  = make_shared<TdcController>("tdc", tdc);
-	auto ftdController  = make_shared<FtdController>("ftd", ftd);
-	auto ardController  = make_shared<ArdController>("ard", ard);
-	auto procController = make_shared<ProcessController>(
+	auto vltController  = make_shared<VoltageController>("vlt", vlt, appSettings.voltConfig);
+	auto expoController = make_shared<ExpoController>(
 	                          "process",
 	                          tdc,
-	                          appSettings.procSettings,
+	                          appSettings.expoSettings,
 	                          channelParser.getConfig()
 	                      );
-	procController->onNewRun() = [&](unsigned nRun) {
-		appSettings.procSettings.nRun = nRun;
+	expoController->onNewRun() = [&](unsigned nRun) {
+		appSettings.expoSettings.nRun = nRun;
 		appSettings.save("CtudcServer.conf");
 	};
 
 
 	trek::net::Server server(
-	{tdcController, procController, ftdController, ardController},
+	{tdcController, expoController, vltController},
 	appSettings.ip,
 	appSettings.port
 	);

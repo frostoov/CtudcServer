@@ -6,50 +6,45 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 set(
 	SOURCES
-	tdc/caenv2718.cpp
-	tdc/emissem1.cpp
-	tdc/pciqbus.cpp
-	exposition/freq.cpp
-	exposition/exposition.cpp
-	exposition/eventwriter.cpp
-	net/packagereceiver.cpp
 	configparser/appconfigparser.cpp
 	configparser/channelsconfigparser.cpp
-	ftd/ftdmodule.cpp
-	controller/ftdcontroller.cpp
 	controller/tdccontroller.cpp
-	controller/proccontroller.cpp
-	controller/ardcontroller.cpp
-	voltage/serialbuf.cpp
-	voltage/voltage.cpp
+	controller/expocontroller.cpp
+	controller/voltagecontroller.cpp
+	net/packagereceiver.cpp
 	appsettings.cpp
+	voltage/amplifier.cpp
+	voltage/serialbuf.cpp
+	exposition/exposition.cpp
+	exposition/eventwriter.cpp
+	exposition/freq.cpp
+	tdc/emissem1.cpp
+	tdc/pciqbus.cpp
+	tdc/caenv2718.cpp
 	main.cpp
 )
 
 set(
 	HEADERS
-	tdc/caenv2718.hpp
-	tdc/emissem1.hpp
-	tdc/pciqbus.hpp
-	tdc/tdc.hpp
-	exposition/freq.hpp
-	exposition/exposition.hpp
-	exposition/channelconfig.hpp
-	exposition/process.hpp
-	exposition/eventwriter.hpp
-	net/packagereceiver.hpp
 	configparser/configparser.hpp
 	configparser/appconfigparser.hpp
 	configparser/channelsconfigparser.hpp
-	ftd/defines.hpp
-	ftd/ftdmodule.hpp
-	controller/ftdcontroller.hpp
 	controller/tdccontroller.hpp
-	controller/proccontroller.hpp
-	controller/ardcontroller.hpp
+	controller/expocontroller.hpp
+	controller/voltagecontroller.hpp
+	net/packagereceiver.hpp
+	voltage/amplifier.hpp
 	voltage/serialbuf.hpp
-	voltage/voltage.hpp
+	exposition/channelconfig.hpp
+	exposition/process.hpp
+	exposition/eventwriter.hpp
+	exposition/exposition.hpp
+	exposition/freq.hpp
 	appsettings.hpp
+	tdc/tdc.hpp
+	tdc/pciqbus.hpp
+	tdc/caenv2718.hpp
+	tdc/emissem1.hpp
 )
 
 add_executable(CtudcServer ${SOURCES})

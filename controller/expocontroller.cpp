@@ -1,4 +1,4 @@
-#include "proccontroller.hpp"
+#include "expocontroller.hpp"
 
 #include <trek/net/request.hpp>
 #include <trek/net/response.hpp>
@@ -24,7 +24,7 @@ using trek::net::Request;
 using trek::net::Response;
 using trek::net::Controller;
 
-ProcessController::ProcessController(const std::string& name,
+ExpoController::ExpoController(const std::string& name,
                                      const ModulePtr& module,
                                      const Exposition::Settings& settings,
                                      const ChannelConfig& config)
@@ -33,7 +33,7 @@ ProcessController::ProcessController(const std::string& name,
 	  mChannelConfig(config),
 	  mSettings(settings) { }
 
-ProcessController::~ProcessController() {
+ExpoController::~ExpoController() {
 	if(mFuture.valid() || mProcess != nullptr) {
 		mProcess->stop();
 		mFuture.get();
@@ -41,11 +41,11 @@ ProcessController::~ProcessController() {
 	}
 }
 
-const Callback<void(unsigned)>& ProcessController::onNewRun() {
+const Callback<void(unsigned)>& ExpoController::onNewRun() {
 	return mOnNewRun;
 }
 
-Controller::Methods ProcessController::createMethods() {
+Controller::Methods ExpoController::createMethods() {
 	return {
 		{"getType",      [&](const Request & request) { return this->getType(request); } },
 		{"startRead",    [&](const Request & request) { return this->startRead(request); } },
@@ -58,7 +58,7 @@ Controller::Methods ProcessController::createMethods() {
 	};
 }
 
-Response ProcessController::getType(const Request& request) {
+Response ExpoController::getType(const Request& request) {
 	return {
 		name(),
 		"getType",
@@ -67,7 +67,7 @@ Response ProcessController::getType(const Request& request) {
 	};
 }
 
-Response ProcessController::getRun(const Request& request) {
+Response ExpoController::getRun(const Request& request) {
 	return {
 		name(),
 		"getType",
@@ -76,7 +76,7 @@ Response ProcessController::getRun(const Request& request) {
 	};
 }
 
-Response ProcessController::startRead(const Request& request) {
+Response ExpoController::startRead(const Request& request) {
 	if(mProcess != nullptr || mFuture.valid())
 		throw logic_error("ProcessController::startRead process already active");
 	mProcess = make_unique<Exposition>(mDevice, mSettings, mChannelConfig);
@@ -89,7 +89,7 @@ Response ProcessController::startRead(const Request& request) {
 	};
 }
 
-Response ProcessController::stopRead(const Request& request) {
+Response ExpoController::stopRead(const Request& request) {
 	auto readManager = dynamic_cast<Exposition*>(mProcess.get());
 	if(readManager == nullptr || !mFuture.valid())
 		throw logic_error("ProcessController::stopRead process isn not Exposition");
@@ -106,7 +106,7 @@ Response ProcessController::stopRead(const Request& request) {
 	};
 }
 
-Response ProcessController::startFreq(const Request& request) {
+Response ExpoController::startFreq(const Request& request) {
 	if(mProcess != nullptr || mFuture.valid())
 		throw logic_error("ProcessController::startFreq process already active");
 	auto delay = request.inputs().at(0).get<int>();
@@ -122,7 +122,7 @@ Response ProcessController::startFreq(const Request& request) {
 	};
 }
 
-Response ProcessController::stopFreq(const Request& request) {
+Response ExpoController::stopFreq(const Request& request) {
 	auto freqHandler = dynamic_cast<FreqHandler*>(mProcess.get());
 	if(freqHandler == nullptr || !mFuture.valid())
 		throw logic_error("ProcessController::stopRead process isn not FreqHandler");
@@ -137,7 +137,7 @@ Response ProcessController::stopFreq(const Request& request) {
 	};
 }
 
-Response ProcessController::triggerCount(const Request& request) const {
+Response ExpoController::triggerCount(const Request& request) const {
 	auto expo = dynamic_cast<Exposition*>(mProcess.get());
 	if(expo == nullptr)
 		throw runtime_error("ProcessController::stopRead process isnt reader");
@@ -149,7 +149,7 @@ Response ProcessController::triggerCount(const Request& request) const {
 	};
 }
 
-Response ProcessController::packageCount(const Request& request) const {
+Response ExpoController::packageCount(const Request& request) const {
 	auto expo = dynamic_cast<Exposition*>(mProcess.get());
 	if(expo == nullptr)
 		throw runtime_error("ProcessController::stopRead process isnt reader");
@@ -161,7 +161,7 @@ Response ProcessController::packageCount(const Request& request) const {
 	};
 }
 
-Response ProcessController::duration(const Request& request) const {
+Response ExpoController::duration(const Request& request) const {
 	auto expo = dynamic_cast<Exposition*>(mProcess.get());
 	if(expo == nullptr)
 		throw runtime_error("ProcessController::duration process isnt active");
@@ -173,20 +173,20 @@ Response ProcessController::duration(const Request& request) const {
 	};
 }
 
-bool ProcessController::isReadManager(const ProcessPtr& processManager) const {
+bool ExpoController::isReadManager(const ProcessPtr& processManager) const {
 	if(!processManager)
 		return false;
 	const auto& ref = *processManager.get();
 	return typeid(ref) == typeid(Exposition);
 }
 
-string ProcessController::getProcessType(const ProcessController::ProcessPtr& process) const {
+string ExpoController::getProcessType(const ExpoController::ProcessPtr& process) const {
 	if(isReadManager(process))
 		return "ctudc";
 	return "null";
 }
 
-json::array_t ProcessController::createFreqs(const FreqHandler::TrekFreq& freq) {
+json::array_t ExpoController::createFreqs(const FreqHandler::TrekFreq& freq) {
 	json::array_t jFreq;
 	for(const auto& chamFreqPair : freq) {
 		auto& chamFreq = chamFreqPair.second;

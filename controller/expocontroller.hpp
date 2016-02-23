@@ -10,15 +10,15 @@
 #include "exposition/exposition.hpp"
 #include "exposition/freq.hpp"
 
-class ProcessController : public trek::net::Controller {
+class ExpoController : public trek::net::Controller {
 	using ProcessPtr = std::unique_ptr<Process>;
 	using ModulePtr  = std::shared_ptr<CaenV2718>;
 public:
-	ProcessController(const std::string& name,
+	ExpoController(const std::string& name,
 	                  const ModulePtr& module,
 	                  const Exposition::Settings& settings,
 	                  const ChannelConfig& config);
-	~ProcessController();
+	~ExpoController();
 	const trek::Callback<void(unsigned)>& onNewRun();
 protected:
 	Methods createMethods();
