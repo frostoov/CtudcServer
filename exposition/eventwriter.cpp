@@ -13,6 +13,7 @@
 
 using trek::data::NevodPackage;
 using trek::data::EventRecord;
+using trek::data::HitRecord;
 
 using std::make_unique;
 using std::vector;
@@ -22,6 +23,7 @@ using std::setfill;
 using std::ostringstream;
 using std::runtime_error;
 using std::exception;
+using std::logic_error;
 
 EventWriter::EventWriter(const string& path,
                          const string& prefix,
@@ -68,12 +70,24 @@ trek::data::EventHits EventWriter::convertHits(const Tdc::EventHits& hits) {
 	for(auto& hit : hits) {
 		if(mConfig.count(hit.channel)) {
 			auto& conf = mConfig.at(hit.channel);
-			newHits.push_back({conf.wire, conf.chamber, hit.time});
+            auto type = convertEdgeDetection(hit.type);
+			newHits.push_back({type, conf.wire, conf.chamber, hit.time});
 		} else {
 			std::cerr << "Failed find channel config: " << hit.channel  << std::endl;
 		}
 	}
 	return newHits;
+}
+
+HitRecord::Type EventWriter::convertEdgeDetection(Tdc::EdgeDetection ed) {
+    switch(ed) {
+    case Tdc::EdgeDetection::leading:
+        return HitRecord::Type::leading;
+    case Tdc::EdgeDetection::trailing:
+        return HitRecord::Type::trailing;
+    default:
+        throw logic_error("EventWriter::convertEdgeDetection invalid value");
+    }
 }
 
 void EventWriter::openStream() {

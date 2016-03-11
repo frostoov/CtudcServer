@@ -1,7 +1,5 @@
 #include "tdccontroller.hpp"
 
-#include <iostream>
-
 using std::string;
 
 using nlohmann::json;
@@ -23,7 +21,8 @@ Controller::Methods TdcController::createMethods() {
 		{"reset",                 [&](const Request & query) { return this->reset(query); } },
 		{"stat",                  [&](const Request & query) { return this->stat(query); } },
 		{"ctrl",                  [&](const Request & query) { return this->ctrl(query); } },
-		{"setMode",	          [&](const Request & query) { return this->setMode(query); } },
+		{"tdcMeta",               [&](const Request & query) { return this->tdcMeta(query); } },
+		{"setMode",	              [&](const Request & query) { return this->setMode(query); } },
 		{"mode",                  [&](const Request & query) { return this->mode(query); } },
 		{"setWindowWidth",        [&](const Request & query) { return this->setWindowWidth(query); } },
 		{"setWindowOffset",       [&](const Request & query) { return this->setWindowOffset(query); } },
@@ -32,168 +31,110 @@ Controller::Methods TdcController::createMethods() {
 		{"setCtrl",               [&](const Request & query) { return this->setCtrl(query); } },
 		{"setTdcMeta",            [&](const Request & query) { return this->setTdcMeta(query); } },
 		{"settings",              [&](const Request & query) { return this->settings(query); } },
+		{"updateSettings",        [&](const Request & query) { return this->updateSettings(query); } },
 	};
 }
 
 Response TdcController::open(const Request& request) {
 	mDevice->open();
-	return {
-		name(),
-		"init",
-		json::array(),
-		true,
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::close(const Request& request) {
 	mDevice->close();
-	return {
-		name(),
-		"close",
-		json::array(),
-		true,
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::isOpen(const Request& request) {
-	return {
-		name(),
-		"isInit",
-		{mDevice->isOpen()},
-		true,
-	};
+	return { name(), __func__, {mDevice->isOpen()} };
 }
 
 Response TdcController::clear(const Request& request) {
 	mDevice->clear();
-	return {
-		name(),
-		"clear",
-		json::array(),
-		true
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::reset(const Request& request) {
 	mDevice->reset();
-	return {
-		name(),
-		"reset",
-		json::array(),
-		true,
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::setMode(const Request& request) {
-	auto mode = request.inputs().at(0).get<int>();
+	auto mode = request.inputs.at(0).get<int>();
 	mDevice->setMode(Tdc::Mode(mode));
-	return {
-		name(),
-		"setTriggerMode",
-		json::array(),
-		true
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::setWindowWidth(const Request& request) {
-	mDevice->setWindowWidth(request.inputs().at(0));
-	return {
-		name(),
-		"setWindowWidth",
-		json::array(),
-		true,
-	};
+	mDevice->setWindowWidth(request.inputs.at(0));
+	return { name(), __func__ };
 }
 
 Response TdcController::setWindowOffset(const Request& request) {
-	mDevice->setWindowOffset(request.inputs().at(0));
-	return {
-		name(),
-		"setWindowOffset",
-		json::array(),
-		true,
-	};
+	mDevice->setWindowOffset(request.inputs.at(0));
+	return { name(), __func__ };
 }
 
 Response TdcController::setEdgeDetection(const Request& request) {
-	auto ed = request.inputs().at(0).get<int>();
+	auto ed = request.inputs.at(0).get<int>();
 	mDevice->setEdgeDetection(Tdc::EdgeDetection(ed));
-	return {
-		name(),
-		"setEdgeDetection",
-		json::array(),
-		true,
-	};
+	return { name(), __func__ };
 }
 
 Response TdcController::setLsb(const Request& request) {
-	mDevice->setLsb(request.inputs().at(0));
-	return {
-		name(),
-		"setLsb",
-		json::array(),
-		true,
-	};
+	mDevice->setLsb(request.inputs.at(0));
+	return { name(), __func__ };
 }
 
 Response TdcController::setCtrl(const Request& request) {
-	mDevice->setCtrl(request.inputs().at(0));
-	return {
-		name(),
-		"setControl",
-		json::array(),
-		true,
-	};
+	mDevice->setCtrl(request.inputs.at(0));
+	return { name(), __func__ };
 }
 
 Response TdcController::stat(const Request& request) {
-	return {
-		name(),
-		"stat",
-		{mDevice->stat()},
-		true
-	};
+	return { name(), __func__, {mDevice->stat()} };
 }
 
 Response TdcController::ctrl(const Request& request) {
-	return {
-		name(),
-		"ctrl",
-		{mDevice->ctrl()},
-		true
-	};
+	return { name(), __func__, {mDevice->ctrl()} };
+}
+
+Response TdcController::tdcMeta(const Request& request) {
+	return { name(), __func__, {mDevice->tdcMeta()} };
 }
 
 Response TdcController::mode(const Request& request) {
+	return { name(), __func__, {int(mDevice->mode())} };
+}
+
+Response TdcController::updateSettings(const Request& request) {
+	mDevice->updateSettings();
+	auto settings = mDevice->settings();
 	return {
-		name(),
-		"mode",
-		{int(mDevice->mode())},
-		true
+		name(), __func__,
+		json::array({
+			settings.windowWidth,
+			settings.windowOffset,
+			int(settings.edgeDetection),
+			settings.lsb,
+		})
 	};
 }
 
 Response TdcController::settings(const Request& request) {
 	auto settings = mDevice->settings();
 	return {
-		name(),
-		"settings",
+		name(), __func__,
 		json::array({
 			settings.windowWidth,
 			settings.windowOffset,
 			int(settings.edgeDetection),
 			settings.lsb,
-		}),
-		true,
+		})
 	};
 }
 
 Response TdcController::setTdcMeta(const Request& request) {
-	mDevice->setTdcMeta(request.inputs().at(0));
-	return {
-		name(),
-		"setTdcMeta",
-		json::array(),
-		true,
-	};
+	mDevice->setTdcMeta(request.inputs.at(0));
+	return { name(), __func__ };
 }

@@ -10,18 +10,23 @@
 #include <unordered_map>
 #include <memory>
 
+using ChamberFreq  = std::array<uintmax_t, 4>;
+using TrekFreq     = std::unordered_map<unsigned, ChamberFreq>;
+
 class FreqHandler : public Process {
+	using SystemClock = std::chrono::system_clock;
 	using ModulePtr   = std::shared_ptr<CaenV2718>;
-public:
-	using ChamberFreq  = std::array<unsigned, 4>;
-	using TrekFreq     = std::unordered_map<unsigned, ChamberFreq>;
 public:
 	FreqHandler(ModulePtr module,
 	            const ChannelConfig& config,
 	            std::chrono::microseconds delay);
 	void run() override;
 	void stop() override;
-	TrekFreq freq() const;
+	bool running() override;
+	std::chrono::milliseconds duration() const override;
+
+	const TrekFreq& hitCount() const;
+	std::chrono::microseconds cleanTime() const;
 protected:
 	void handleBuffer(const std::vector<Tdc::Hit>& buffer);
 private:
@@ -30,5 +35,6 @@ private:
 	TrekFreq                  mHitCount;
 	std::chrono::microseconds mDelay;
 	std::chrono::microseconds mTotalTime;
+	SystemClock::time_point   mStartPoint;
 	std::atomic_bool          mActive;
 };

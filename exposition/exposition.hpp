@@ -34,9 +34,11 @@ public:
 	~Exposition();
 	void run() override;
 	void stop() override;
+	bool running() override;
+	std::chrono::milliseconds duration() const override;
 	uintmax_t triggerCount() const;
 	uintmax_t packageCount() const;
-	uintmax_t duration() const;
+
 protected:
 	void increasePackageCount();
 	void increaseTriggerCount(uintmax_t val);
@@ -57,4 +59,5 @@ private:
 	std::atomic<uintmax_t> mTriggerCount;
 
 	std::chrono::system_clock::time_point mStartPoint;
+	std::atomic_bool mActive;
 };

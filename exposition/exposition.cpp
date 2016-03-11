@@ -20,6 +20,7 @@ using std::chrono::duration_cast;
 using std::chrono::seconds;
 using std::chrono::milliseconds;
 using std::runtime_error;
+using std::logic_error;
 
 using trek::StringBuilder;
 using trek::data::NevodPackage;
@@ -33,7 +34,10 @@ Exposition::Exposition(ModulePtr module,
                        const ChannelConfig& config)
 	: mModule(module),
 	  mEventWriter(formDir(settings), formPrefix(settings), settings.eventsPerFile, config),
-	  mNevodReceiver(settings.infoIp, settings.infoPort) {
+	  mNevodReceiver(settings.infoIp, settings.infoPort),
+      mActive(false) {
+	if(!mModule->isOpen())
+		throw logic_error("Exposition::Exposition device is not open");
 	outputMeta(formDir(settings), settings, *module);
 }
 
@@ -54,15 +58,21 @@ void Exposition::run() {
 		}
 	});
 	mStartPoint = system_clock::now();
+    mActive.store(true);
 	mNevodReceiver.start();
 }
 
 Exposition::~Exposition() {
 	stop();
+    mActive.store(false);
 }
 
 void Exposition::stop() {
 	mNevodReceiver.stop();
+}
+
+bool Exposition::running() {
+    return mActive.load();
 }
 
 uintmax_t Exposition::triggerCount() const {
@@ -73,8 +83,8 @@ uintmax_t Exposition::packageCount() const {
 	return mPackageCount;
 }
 
-uintmax_t Exposition::duration() const {
-	return uintmax_t( duration_cast<milliseconds>(system_clock::now() - mStartPoint).count() );
+milliseconds Exposition::duration() const {
+	return duration_cast<milliseconds>(system_clock::now() - mStartPoint);
 }
 
 

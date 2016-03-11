@@ -2,6 +2,7 @@
 
 
 using std::string;
+using std::logic_error;
 
 using nlohmann::json;
 
@@ -10,9 +11,10 @@ using trek::net::Response;
 using trek::net::Controller;
 
 
-VoltageController::VoltageController(const string& name, const ModulePtr& module, const Config& config)
+VoltageController::VoltageController(const string& name, const ModulePtr& module, const FtdPtr& ftd, const Config& config)
 	: Controller(name, createMethods()),
 	  mDevice(module),
+	  mFtd(ftd),
 	  mConfig(config) { }
 
 Controller::Methods VoltageController::createMethods() {
@@ -20,128 +22,113 @@ Controller::Methods VoltageController::createMethods() {
 		{"open",                 [&](const Request& request) { return this->open(request); } },
 		{"close",                [&](const Request& request) { return this->close(request); } },
 		{"isOpen",               [&](const Request& request) { return this->isOpen(request); } },
-        {"turnOn2",              [&](const Request& request) { return this->turnOn2(request); } },
-		{"turnOff2",             [&](const Request& request) { return this->turnOff2(request); } },
-        {"setVoltage2",          [&](const Request& request) { return this->setVoltage2(request); } },
-		{"voltage2",             [&](const Request& request) { return this->voltage2(request); } },
 
-		{"turnOn12",              [&](const Request& request) { return this->turnOn12(request); } },
-		{"turnOff12",             [&](const Request& request) { return this->turnOff12(request); } },
-		{"voltage12",             [&](const Request& request) { return this->voltage12(request); } },
+        {"turnOn",              [&](const Request& request) { return this->turnOn(request);  } },
+		{"turnOff",             [&](const Request& request) { return this->turnOff(request); } },
+		{"stat",                [&](const Request& request) { return this->stat(request); } },
+        {"setVoltage",          [&](const Request& request) { return this->setVoltage(request); } },
+		{"setSpeedUp",          [&](const Request& request) { return this->setSpeedUp(request); } },
+		{"setSpeedDn",          [&](const Request& request) { return this->setSpeedDn(request); } },
+		{"speedUp",             [&](const Request& request) { return this->speedUp(request); } },
+		{"speedDn",             [&](const Request& request) { return this->speedDn(request); } },
+		{"voltage",             [&](const Request& request) { return this->voltage(request); } },
+		{"amperage",            [&](const Request& request) { return this->amperage(request); } },
 	};
 }
 
 
 Response VoltageController::open(const Request& request) {
-	mDevice->open(request.inputs().at(0).get<string>());
-	return {
-		name(),
-		"open",
-		json::array(),
-		true
-	};
+	mDevice->open("/dev/my_uart");
+	return { name(), __func__};
 }
 
 Response VoltageController::close(const Request& request) {
 	mDevice->close();
-	return {
-		name(),
-		"close",
-		json::array(),
-		true
-	};
+	return { name(), __func__ };
 }
 
 Response VoltageController::isOpen(const Request& request) {
-	return {
-		name(),
-		"isOpen",
-		{mDevice->isOpen()},
-		true
-	};
+	return { name(), __func__, {mDevice->isOpen()} };
 }
 
 
-Response VoltageController::turnOn2(const Request&) {
-	mDevice->turnOn(mConfig.cell2);
-	return {
-		name(),
-		"turnOn2",
-		{},
-		true
-	};
+Response VoltageController::stat(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	auto stat = mDevice->stat(cell);
+	return { name(), __func__, {stat.value()} };
 }
 
-Response VoltageController::turnOff2(const Request&) {
-	mDevice->turnOff(mConfig.cell2);
-	return {
-		name(),
-		"turnOff2",
-		{},
-		true
-	};
+Response VoltageController::turnOn(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	mDevice->turnOn(cell);
+	return { name(), __func__ };
 }
 
-Response VoltageController::setVoltage2(const Request& request) {
-	mDevice->setVoltage(mConfig.cell2, request.inputs().at(0).get<double>());
-	return {
-		name(),
-		"setVoltage2",
-		{},
-		true
-	};
+Response VoltageController::turnOff(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	mDevice->turnOff(cell);
+	return { name(), __func__ };
 }
 
-Response VoltageController::voltage2(const Request& request) {
-	return {
-		name(),
-		"voltage2",
-		{mDevice->voltage(mConfig.cell2)},
-		true
-	};
+Response VoltageController::setVoltage(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	auto val  = request.inputs.at(1).get<int>();
+	if(cell == -1) {
+		uint8_t data[] = { 0x0, 255, 0x1, uint8_t(val) };
+		mFtd->write(data, sizeof(data));
+	} else {
+		mDevice->setVoltage(cell, val);
+	}
+	return { name(), __func__ };
 }
 
-
-Response VoltageController::turnOn12(const Request& request) {
-	mDevice->turnOn(mConfig.cell12);
-	mDevice->setVoltage(mConfig.cell12, 12);
-	return {
-		name(),
-		"turnOn12",
-		{},
-		true
-	};
+Response VoltageController::setSpeedUp(const Request& request) {
+	auto cell = getCell(request.inputs.at(0));
+	auto val = request.inputs.at(1).get<int>();
+	mDevice->setSpeedUp(cell, val);
+	return { name(), __func__ };
+}
+Response VoltageController::setSpeedDn(const Request& request) {
+	auto cell = getCell(request.inputs.at(0));
+	auto val = request.inputs.at(1).get<int>();
+	mDevice->setSpeedDn(cell, val);
+	return { name(), __func__ };
 }
 
-Response VoltageController::turnOff12(const Request& request) {
-	mDevice->setVoltage(mConfig.cell12, 0);
-	mDevice->turnOff(mConfig.cell12);
-	return {
-		name(),
-		"turnOff12",
-		{},
-		true
-	};
-
+Response VoltageController::speedUp(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	return { name(), __func__, {mDevice->speedUp(cell)} };
+}
+Response VoltageController::speedDn(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	return { name(), __func__, {mDevice->speedDn(cell)} };
 }
 
-Response VoltageController::voltage12(const Request& request) {
-	return {
-		name(),
-		"voltage2",
-		{mDevice->voltage(mConfig.cell12)},
-		true
-	};
+Response VoltageController::voltage(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	return { name(), __func__, {mDevice->voltage(cell)} };
 }
 
+Response VoltageController::amperage(const Request& request) {
+	auto cell = getCell( request.inputs.at(0) );
+	return { name(), __func__, {mDevice->amperage(cell)} };
+}
+
+int VoltageController::getCell(const std::string& name) {
+	if(name == "signal")
+		return this->mConfig.signal;
+	if(name == "drift")
+		return this->mConfig.drift;
+	throw logic_error("VoltageController::getCell invalid cell");
+}
 
 json VoltageController::Config::marshal() const {
 	return {
-		{"cell2", cell2},
-		{"cell12", cell12},
+		{"signal", signal},
+		{"drift", drift},
 	};
 }
 void VoltageController::Config::unMarhsal(const json& json) {
-	cell2 = json.at("cell2").get<int>();
-	cell12 = json.at("cell12").get<int>();
+	signal = json.at("signal").get<int>();
+	drift = json.at("drift").get<int>();
 }

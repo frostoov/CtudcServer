@@ -7,7 +7,7 @@
 struct AppSettings {
 	std::string ip;
 	uint16_t     port;
-	Exposition::Settings expoSettings;
+	Exposition::Settings expoConfig;
 	VoltageController::Config voltConfig;
 
 	void load(const std::string& fileName);

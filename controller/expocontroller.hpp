@@ -22,8 +22,8 @@ public:
 	const trek::Callback<void(unsigned)>& onNewRun();
 protected:
 	Methods createMethods();
-	trek::net::Response getType(const trek::net::Request& request);
-	trek::net::Response getRun(const trek::net::Request& request);
+	trek::net::Response type(const trek::net::Request& request);
+	trek::net::Response run(const trek::net::Request& request);
 	trek::net::Response startRead(const trek::net::Request& request);
 	trek::net::Response stopRead(const trek::net::Request& request);
 	trek::net::Response startFreq(const trek::net::Request& request);
@@ -31,17 +31,18 @@ protected:
 	trek::net::Response triggerCount(const trek::net::Request& request) const;
 	trek::net::Response packageCount(const trek::net::Request& request) const;
 	trek::net::Response duration(const trek::net::Request& request) const;
-	bool isReadManager(const ProcessPtr& process) const;
-	ProcessPtr createReadManager(const trek::net::Request& request) const;
+	trek::net::Response freq(const trek::net::Request& request) const;
 
-	std::string getProcessType(const ProcessPtr& process) const;
-	static nlohmann::json::array_t createFreqs(const FreqHandler::TrekFreq& freq);
+	std::string getProcessType() const;
+	static TrekFreq createFreq(TrekFreq hitCount, std::chrono::microseconds dur);
+	static nlohmann::json::array_t convertFreq(const TrekFreq& mFreq);
 private:
 	ProcessPtr    mProcess;
 	ModulePtr     mDevice;
 	ChannelConfig mChannelConfig;
+	mutable TrekFreq mFreq;
 
-	Exposition::Settings         mSettings;
+	Exposition::Settings           mConfig;
 	trek::Callback<void(unsigned)> mOnNewRun;
 	std::future<void> mFuture;
 };

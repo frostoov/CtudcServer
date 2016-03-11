@@ -37,6 +37,7 @@ protected:
 	void openStream();
 	void closeStream();
 	std::string formFileName() const;
+	trek::data::HitRecord::Type convertEdgeDetection(Tdc::EdgeDetection ed);
 private:
 	EventIdPtr    mNevodId;
 	std::ofstream mStream;

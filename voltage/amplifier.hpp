@@ -26,6 +26,7 @@ public:
         bool stdby() const { return (mStat >> 4) & 1; }
         bool rdact() const { return (mStat >> 6) & 1; }
         bool ruact() const { return (mStat >> 7) & 1; }
+        uint8_t value() const { return mStat; }
     private:
         uint8_t mStat;
     };
@@ -37,18 +38,19 @@ public:
 	bool isOpen() const { return mBuffer.isOpen(); }
 
     Stat stat(int cell);
+    const CellStats& cellStats() const { return mCellStats; }
 
-	void setVoltage(int cell, double code);
-	void setAmperage(int cell, double amp);
+	void setVoltage(int cell,  int volt);
+	void setAmperage(int cell, int amp);
 
-    void setSpeedUp(int cell, uint8_t code);
-    void setSpeedDn(int cell, uint8_t code);
+    void setSpeedUp(int cell, int speed);
+    void setSpeedDn(int cell, int speed);
 
-    double speedUp(int cell);
-    double speedDn(int cell);
+    int speedUp(int cell);
+    int speedDn(int cell);
 
-    double voltage(int cell);
-    double amperage(int cell);
+    int voltage(int cell);
+    int amperage(int cell);
 
     void turnOn(int cell);
     void turnOff(int cell);
@@ -62,15 +64,14 @@ protected:
     uint16_t readWord(int cell, int addr);
     uint8_t readByte(int cell, int addr);
 
-    uint16_t volt2code(int cell, double volt);
-    double code2volt(int cell, uint16_t code);
+    uint16_t volt2code(int cell, int volt);
+    int code2volt(int cell, uint16_t code);
 
-    uint16_t amp2code(int cell, double amp);
-    double code2amp(int cell, uint16_t code);
+    uint16_t amp2code(int cell, int amp);
+    int code2amp(int cell, uint16_t code);
 
-    uint16_t speed2code(int cell, double speed);
-    double code2speed(int cell, uint16_t code);
-
+    uint16_t speed2code(int cell, int speed);
+    int code2speed(int cell, uint16_t code);
 private:
 	serialbuf mBuffer;
 	std::iostream mStream;

@@ -21,6 +21,7 @@ protected:
 	trek::net::Response stat(const trek::net::Request& request);
 	trek::net::Response ctrl(const trek::net::Request& request);
 	trek::net::Response mode(const trek::net::Request& request);
+	trek::net::Response tdcMeta(const trek::net::Request& request);
 	trek::net::Response setMode(const trek::net::Request& request);
 	trek::net::Response setWindowWidth(const trek::net::Request& request);
 	trek::net::Response setWindowOffset(const trek::net::Request& request);
@@ -28,6 +29,7 @@ protected:
 	trek::net::Response setLsb(const trek::net::Request& request);
 	trek::net::Response setCtrl(const trek::net::Request& request);
 	trek::net::Response setTdcMeta(const trek::net::Request& request);
+	trek::net::Response updateSettings(const trek::net::Request& request);
 	trek::net::Response settings(const trek::net::Request& request);
 private:
 	ModulePtr mDevice;

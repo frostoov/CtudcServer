@@ -46,24 +46,31 @@ int main() {
 	ChannelsConfigParser channelParser;
 	try {
 		channelParser.load("channels.conf");
-	} catch(const std::exception& e) {
+	} catch(std::exception& e) {
 		fatal(StringBuilder() << "Failed parse channels.conf: " << e.what());
 	}
 
 	auto tdc = make_shared<CaenV2718>(0xEE00);
+	auto ftd = make_shared<ftdi::Module>(0x28);
 	auto vlt = make_shared<Amplifier>();
 	vlt->setTimeout(5000);
+	try {
+		ftd->open("C232HM-EDHSL-0");
+		ftd->initialize({ftdi::I2C_CLOCK_STANDARD_MODE, 1, 0});
+	} catch(std::exception& e) {
+		std::cerr << "FTD: " << e.what() << std::endl;
+	}
 
 	auto tdcController  = make_shared<TdcController>("tdc", tdc);
-	auto vltController  = make_shared<VoltageController>("vlt", vlt, appSettings.voltConfig);
+	auto vltController  = make_shared<VoltageController>("vlt", vlt, ftd, appSettings.voltConfig);
 	auto expoController = make_shared<ExpoController>(
-	                          "process",
-	                          tdc,
-	                          appSettings.expoSettings,
-	                          channelParser.getConfig()
-	                      );
+          "expo",
+          tdc,
+          appSettings.expoConfig,
+          channelParser.getConfig()
+	);
 	expoController->onNewRun() = [&](unsigned nRun) {
-		appSettings.expoSettings.nRun = nRun;
+		appSettings.expoConfig.nRun = nRun;
 		appSettings.save("CtudcServer.conf");
 	};
 

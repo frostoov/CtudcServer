@@ -33,29 +33,41 @@ Amplifier::Stat Amplifier::stat(int cell) {
     return Amplifier::Stat(readByte(cell, 7));
 }
 
-void Amplifier::setVoltage(int cell, double code) {
-    writeWord(cell, 1, volt2code(cell, code));
+void Amplifier::setVoltage(int cell, int volt) {
+    auto code = volt2code(cell, volt);
+    if(code > 1023)
+        throw std::runtime_error("Amplifier::setVoltage invalid voltage");
+    writeWord(cell, 1, code);
     writeByte(cell, 0, 1);
 }
 
-void Amplifier::setAmperage(int cell, double amp) {
-    writeWord(cell, 1, amp2code(cell, amp));
+void Amplifier::setAmperage(int cell, int amp) {
+    auto code = amp2code(cell, amp);
+    if(code > 1023)
+        throw std::runtime_error("Amplifier::setAmperage invalid amperage");
+    writeWord(cell, 1, code);
     writeByte(cell, 0, 1);
 }
 
-void Amplifier::setSpeedUp(int cell, uint8_t code) {
+void Amplifier::setSpeedUp(int cell, int speed) {
+    auto code = speed2code(cell, speed);
+    if(code == 0 || code > 255)
+        throw std::runtime_error("Amplifier::setSpeedUp invalid speed");
     writeByte(cell, 10, code);
 }
 
-void Amplifier::setSpeedDn(int cell, uint8_t code) {
+void Amplifier::setSpeedDn(int cell, int speed) {
+    auto code = speed2code(cell, speed);
+    if(code > 255)
+        throw std::runtime_error("Amplifier::setSpeedUp invalid speed");
     writeByte(cell, 11, code);
 }
 
-double Amplifier::speedUp(int cell) {
+int Amplifier::speedUp(int cell) {
     return code2speed(cell, readByte(cell, 10));
 }
 
-double Amplifier::speedDn(int cell) {
+int Amplifier::speedDn(int cell) {
     return code2speed(cell, readByte(cell, 11));
 }
 
@@ -68,12 +80,12 @@ void Amplifier::turnOff(int cell) {
     writeByte(cell, 0, 5);
 }
 
-double Amplifier::voltage(int cell) {
-    auto code = readWord(cell, 5);
+int Amplifier::voltage(int cell) {
+    auto code = readWord(cell, 5)&0xfff;
     return code2volt(cell,code);
 }
 
-double Amplifier::amperage(int cell) {
+int Amplifier::amperage(int cell) {
     auto code = readWord(cell, 8);
     return code2amp(cell, code);
 }
@@ -148,34 +160,34 @@ uint8_t Amplifier::readByte(int cell, int addr) {
     return uint8_t( std::stoi(response, nullptr, 16) );
 }
 
-double Amplifier::code2volt(int cell, uint16_t code) {
+int Amplifier::code2volt(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return double(stat.umesmax)/4095*(code&0xfff);
+    return round( double(stat.umesmax)/4095*code );
 }
 
-double Amplifier::code2amp(int cell, uint16_t code) {
+int Amplifier::code2amp(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return double(stat.imesmax)/1023*code;
+    return round( double(stat.imesmax)/1023*code );
 }
 
-uint16_t Amplifier::volt2code(int cell, double volt) {
+uint16_t Amplifier::volt2code(int cell, int volt) {
     auto& stat = mCellStats.at(cell);
     return round( 1023*(volt-stat.umin)/(stat.umax - stat.umin) );
 }
 
-uint16_t Amplifier::amp2code(int cell, double amp) {
+uint16_t Amplifier::amp2code(int cell, int amp) {
     auto& stat = mCellStats.at(cell);
     return round( amp*1023/stat.imax );
 }
 
-uint16_t Amplifier::speed2code(int cell, double speed) {
+uint16_t Amplifier::speed2code(int cell, int speed) {
     auto& stat = mCellStats.at(cell);
-    return round( double(stat.umax - stat.umin)*200/speed );
+    return round( double(stat.umax - stat.umin)*200/(speed*1024) );
 }
 
-double Amplifier::code2speed(int cell, uint16_t code) {
+int Amplifier::code2speed(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return double(stat.umax - stat.umin)*200/code;
+    return round( double(stat.umax - stat.umin)*200/(code*1024) );
 }
 
 

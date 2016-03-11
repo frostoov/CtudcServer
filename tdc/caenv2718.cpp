@@ -3,11 +3,13 @@
 #include <CAENVMElib.h>
 
 #include <chrono>
+#include <thread>
 
 using std::string;
 using std::vector;
 using std::runtime_error;
-
+using std::logic_error;
+using std::chrono::milliseconds;
 using std::chrono::seconds;
 using std::chrono::system_clock;
 
@@ -44,38 +46,46 @@ enum class CaenV2718::OpCode : uint16_t {
 	getDeadTime    = 0x2900,
 	enableTdcMeta  = 0x3000,
 	disableTdcMeta = 0x3100,
-	readTdcMeta    = 0x3200,
+	getTdcMeta     = 0x3200,
 	microRev       = 0x6100
 };
 
 class CaenV2718::Decoder {
 public:
-	static void decode(unsigned lsb, const uint32_t* data, size_t size,
+	static void decode(const CaenV2718::Settings& settings,
+		               const uint32_t* data, size_t size,
 	                   vector<Tdc::EventHits>& buffer) {
 		buffer.clear();
 		bool header = false;
 		for(size_t i = 0; i < size; ++i) {
 			if(isMeasurement(data[i]) && !buffer.empty() )
-				buffer.back().push_back({ chan(data[i]), lsb * time(data[i]) });
+				buffer.back().emplace_back(edgeDetection(data[i]), chan(data[i]), settings.lsb * time(data[i]));
 			else if(isGlobalHeader(data[i]) && !header) {
-				buffer.push_back(Tdc::EventHits());
+				buffer.emplace_back();
 				header = true;
 			} else if(isGlobalTrailer(data[i]) && header)
 				header = false;
 		}
 	}
-	static void decodeRaw(unsigned lsb, const uint32_t* data, size_t size, vector<Tdc::Hit>& buffer) {
+	static void decodeRaw(const CaenV2718::Settings& settings,
+		                  const uint32_t* data, size_t size,
+						  vector<Tdc::Hit>& buffer) {
 		buffer.clear();
 		for(size_t i = 0; i < size; ++i)
-			if(isMeasurement(data[i]) && !buffer.empty() )
-				buffer.push_back({ chan(data[i]), lsb * time(data[i]) });
+			if(isMeasurement(data[i]) )
+				buffer.emplace_back(edgeDetection(data[i]), chan(data[i]), settings.lsb * time(data[i]));
 	}
 protected:
-	static uint32_t time(uint32_t data) { return (data & TDC_MSR_MEASURE_MSK);}
-	static uint32_t chan(uint32_t data) { return (data & TDC_MSR_CHANNEL_MSK) >> 19;}
+	static unsigned time(uint32_t data) { return (data & TDC_MSR_MEASURE_MSK);}
+	static unsigned chan(uint32_t data) { return (data & TDC_MSR_CHANNEL_MSK) >> 19;}
 	static bool isGlobalHeader(uint32_t data) { return (data & DATA_TYPE_MSK) == HEADER;}
 	static bool isGlobalTrailer(uint32_t data) {return (data & DATA_TYPE_MSK) == TRAILER;}
 	static bool isMeasurement(uint32_t data) {return (data & DATA_TYPE_MSK) == TDC_MEASURE;}
+	static EdgeDetection edgeDetection(uint32_t data) {
+		if((data >> 26) > 0)
+			return Tdc::EdgeDetection::trailing;
+		return Tdc::EdgeDetection::leading;
+	}
 private:
 	static const uint32_t DATA_TYPE_MSK = 0xf8000000; /* Data type bit masks */
 	static const uint32_t HEADER = 0x40000000;      /* Global header data type */
@@ -96,14 +106,14 @@ CaenV2718::~CaenV2718() {
 
 void CaenV2718::open() {
 	if(mIsInit)
-		throw runtime_error("CAENVME already init");
+		throw logic_error("CAENVME already init");
 	auto status = CAENVME_Init(cvV2718, 0, 0, &mHandle);
 	if(status != cvSuccess)
 		throw runtime_error(CAENVME_DecodeError(status));
 	mIsInit = true;
+	std::this_thread::sleep_for(milliseconds(150));
+	updateSettings();
 	mCtrl = ctrl();
-	mLsb  = lsb();
-	setTdcMeta(false);
 }
 
 void CaenV2718::close() {
@@ -118,12 +128,9 @@ bool CaenV2718::isOpen() const {
 }
 
 CaenV2718::Settings CaenV2718::settings() {
-	return {
-		windowWidth(),
-		windowOffset(),
-		edgeDetection(),
-		lsb()
-	};
+	if(!mIsInit)
+		throw logic_error("CaenV2718::settings device is not open");
+	return mSettings;
 }
 
 void CaenV2718::clear() {
@@ -136,7 +143,7 @@ void CaenV2718::reset() {
 
 void CaenV2718::readEvents(vector<EventHits>& buffer) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::read device is not open");
+		throw logic_error("CaenV2718::read device is not open");
 	static uint32_t buf[1024];
 	int readBytes;
 	auto errCode = CAENVME_BLTReadCycle(
@@ -148,7 +155,7 @@ void CaenV2718::readEvents(vector<EventHits>& buffer) {
 	               );
 	if((errCode == cvBusError && (mCtrl & 1)) || errCode == cvSuccess) {
 		size_t readSize = size_t(readBytes / sizeof(uint32_t));
-		Decoder::decode(mLsb, buf, readSize, buffer);
+		Decoder::decode(mSettings, buf, readSize, buffer);
 	} else {
 		buffer.clear();
 		throw runtime_error("CaenV2718::read: failed");
@@ -157,7 +164,7 @@ void CaenV2718::readEvents(vector<EventHits>& buffer) {
 
 void CaenV2718::readRaw(vector<Hit>& buffer) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::read device is not open");
+		throw logic_error("CaenV2718::read device is not open");
 	static uint32_t buf[1024];
 	int readBytes;
 	auto errCode = CAENVME_BLTReadCycle(
@@ -169,7 +176,7 @@ void CaenV2718::readRaw(vector<Hit>& buffer) {
 	               );
 	if((errCode == cvBusError && (mCtrl & 1)) || errCode == cvSuccess) {
 		size_t readSize = size_t(readBytes / sizeof(uint32_t));
-		Decoder::decodeRaw(mLsb, buf, readSize, buffer);
+		Decoder::decodeRaw(mSettings, buf, readSize, buffer);
 	} else {
 		buffer.clear();
 		throw runtime_error("CaenV2718::read: failed");
@@ -181,6 +188,15 @@ const string& CaenV2718::name() const {
 	return n;
 }
 
+void CaenV2718::updateSettings() {
+	mSettings = {
+		windowWidth(),
+		windowOffset(),
+		edgeDetection(),
+		lsb(),
+	};
+}
+
 void CaenV2718::setMode(Mode mode) {
 	switch(mode) {
 	case Mode::trigger:
@@ -188,22 +204,24 @@ void CaenV2718::setMode(Mode mode) {
 	case Mode::continuous:
 		return setContinuousMode();
 	default:
-		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	}
 }
 
 void CaenV2718::setWindowWidth(unsigned width) {
 	auto value = uint16_t(width / 25);
 	if(value < 1 || value > 4095)
-		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	writeMicro(OpCode::setWinWidth, &value, 1);
+	mSettings.windowWidth = (width/25)*25;
 }
 
 void CaenV2718::setWindowOffset(int offset) {
 	auto value = uint16_t(offset / 25);
 	if(int16_t(value) < -2048 || int16_t(value) > 40)
-		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	writeMicro(OpCode::setWinOffset, &value, 1);
+	mSettings.windowOffset = (offset/25)*25;
 }
 
 void CaenV2718::setEdgeDetection(EdgeDetection ed) {
@@ -215,10 +233,14 @@ void CaenV2718::setEdgeDetection(EdgeDetection ed) {
 	case EdgeDetection::leading:
 		value = 2;
 		break;
+	case EdgeDetection::leadingTrailing:
+		value = 3;
+		break;
 	default:
-		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	}
 	writeMicro(OpCode::setDetection, &value, 1);
+	mSettings.edgeDetection = ed;
 }
 void CaenV2718::setLsb(unsigned ps) {
 	uint16_t value;
@@ -233,10 +255,10 @@ void CaenV2718::setLsb(unsigned ps) {
 		value = 0;
 		break;
 	default:
-		throw runtime_error(CAENVME_DecodeError(cvInvalidParam));
+		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	}
 	writeMicro(OpCode::setLSB, &value, 1);
-	mLsb = value;
+	mSettings.lsb = value;
 }
 
 CaenV2718::Mode CaenV2718::mode() {
@@ -268,6 +290,8 @@ CaenV2718::EdgeDetection CaenV2718::edgeDetection() {
 		return EdgeDetection::trailing;
 	case 2:
 		return EdgeDetection::leading;
+	case 3:
+		return EdgeDetection::leadingTrailing;
 	default:
 		throw runtime_error("CaenV2718::edgeDetection unknown edgeDetection");
 	}
@@ -278,18 +302,18 @@ unsigned CaenV2718::lsb() {
 	readMicro(OpCode::getLSB, &value, 1);
 	switch(value) {
 	case 2:
-		mLsb = 98;
+		mSettings.lsb = 98;
 		break;
 	case 1:
-		mLsb = 195;
+		mSettings.lsb = 195;
 		break;
 	case 0:
-		mLsb = 781;
+		mSettings.lsb = 781;
 		break;
 	default:
 		throw runtime_error("CaenV2718::lsb unknown lsb");
 	}
-	return mLsb;
+	return mSettings.lsb;
 }
 
 void CaenV2718::setTdcMeta(bool flag) {
@@ -298,6 +322,12 @@ void CaenV2718::setTdcMeta(bool flag) {
 	} else {
 		writeMicro(OpCode::disableTdcMeta, nullptr, 0);
 	}
+}
+
+bool CaenV2718::tdcMeta() {
+	uint16_t word;
+	readMicro(OpCode::getTdcMeta, &word, 1);
+	return word != 0;
 }
 
 void CaenV2718::setCtrl(uint16_t ctrl) {
@@ -314,7 +344,6 @@ uint16_t CaenV2718::stat() {
 	return readCycle16(Reg::statusReg);
 }
 
-
 void CaenV2718::setTriggerMode() {
 	writeMicro(OpCode::setTrigMode, nullptr, 0);
 	writeMicro(OpCode::enableTrigSub, nullptr, 0);
@@ -326,7 +355,7 @@ void CaenV2718::setContinuousMode() {
 
 uint16_t CaenV2718::readCycle16(Reg addr) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::readCycle15 device is not open");
+		throw logic_error("CaenV2718::readCycle15 device is not open");
 	uint16_t word;
 	auto errCode = CAENVME_ReadCycle(
 	                   mHandle,
@@ -340,7 +369,7 @@ uint16_t CaenV2718::readCycle16(Reg addr) {
 }
 void CaenV2718::writeCycle16(Reg addr, uint16_t word) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::readCycle15 device is not open");
+		throw logic_error("CaenV2718::readCycle15 device is not open");
 	auto errCode = CAENVME_WriteCycle(
 	                   mHandle,
 	                   formAddress(addr),
@@ -353,7 +382,7 @@ void CaenV2718::writeCycle16(Reg addr, uint16_t word) {
 
 uint32_t CaenV2718::readCycle32(Reg addr) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::readCycle15 device is not open");
+		throw logic_error("CaenV2718::readCycle15 device is not open");
 	uint16_t word;
 	auto errCode = CAENVME_ReadCycle(
 	                   mHandle,
@@ -367,7 +396,7 @@ uint32_t CaenV2718::readCycle32(Reg addr) {
 }
 void CaenV2718::writeCycle32(Reg addr, uint32_t word) {
 	if(!mIsInit)
-		throw runtime_error("CaenV2718::readCycle15 device is not open");
+		throw logic_error("CaenV2718::readCycle15 device is not open");
 	auto errCode = CAENVME_WriteCycle(
 	                   mHandle,
 	                   formAddress(addr),

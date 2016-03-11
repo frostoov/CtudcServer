@@ -6,17 +6,20 @@
 
 class Tdc {
 public:
-	struct Hit {
-		unsigned channel;
-		unsigned time;
-	};
 	enum class EdgeDetection {
-		trailing = 0,
-		leading  = 1,
+		leading = 0,
+		trailing = 1,
+		leadingTrailing = 2,
 	};
 	enum class Mode {
 		trigger    = 0,
 		continuous = 1,
+	};
+	struct Hit {
+		Hit(EdgeDetection ed, unsigned c, unsigned t) : type(ed), channel(c), time(t) {}
+		EdgeDetection type;
+		unsigned channel;
+		unsigned time;
 	};
 	struct Settings {
 		unsigned      windowWidth;
