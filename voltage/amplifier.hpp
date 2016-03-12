@@ -1,6 +1,8 @@
 #pragma once
 
 #include "serialbuf.hpp"
+
+#include  <mutex>
 #include <iostream>
 #include <map>
 #include <set>
@@ -77,6 +79,7 @@ private:
 	std::iostream mStream;
 
     CellStats mCellStats;
+    std::mutex mMutex;
 };
 
 std::ostream& operator<<(std::ostream& stream, Amplifier::Stat stat);

@@ -10,6 +10,8 @@ using std::istringstream;
 using std::istream_iterator;
 using std::round;
 using std::ostream;
+using std::mutex;
+using std::lock_guard;
 
 Amplifier::Amplifier()
     : mStream(&mBuffer) {
@@ -71,7 +73,6 @@ int Amplifier::speedDn(int cell) {
     return code2speed(cell, readByte(cell, 11));
 }
 
-
 void Amplifier::turnOn(int cell) {
     writeByte(cell, 0, 4);
 }
@@ -127,6 +128,7 @@ Amplifier::CellStats Amplifier::readCellStats(const set<int>& cells) {
 }
 
 void Amplifier::writeWord(int cell, int addr, uint16_t word) {
+    lock_guard<mutex> lock(mMutex);
     mStream << 'w' << std::hex << cell << ',' << addr << ',' << word << '\r' << std::flush;
     string response;
     std::getline(mStream, response);
@@ -135,6 +137,7 @@ void Amplifier::writeWord(int cell, int addr, uint16_t word) {
 }
 
 void Amplifier::writeByte(int cell, int addr, uint8_t byte) {
+    lock_guard<mutex> lock(mMutex);
     mStream << '>' << std::hex << cell << ',' << addr << ',' << uint16_t(byte) << '\r' << std::flush;
     string response;
     std::getline(mStream, response);
@@ -143,6 +146,7 @@ void Amplifier::writeByte(int cell, int addr, uint8_t byte) {
 }
 
 uint16_t Amplifier::readWord(int cell, int addr) {
+    lock_guard<mutex> lock(mMutex);
     mStream << 'r' << std::hex << cell << ',' << addr << '\r' << std::flush;
     string response;
     std::getline(mStream, response);
@@ -152,6 +156,7 @@ uint16_t Amplifier::readWord(int cell, int addr) {
 }
 
 uint8_t Amplifier::readByte(int cell, int addr) {
+    lock_guard<mutex> lock(mMutex);
     mStream << '<' << std::hex << cell << ',' << addr << '\r' << std::flush;
     string response;
     std::getline(mStream, response);
