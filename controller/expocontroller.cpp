@@ -49,16 +49,16 @@ const Callback<void(unsigned)>& ExpoController::onNewRun() {
 
 Controller::Methods ExpoController::createMethods() {
 	return {
-		{"type",         [&](const Request & request) { return this->type(request); } },
-        {"run",          [&](const Request & request) { return this->run(request); } },
-		{"startRead",    [&](const Request & request) { return this->startRead(request); } },
-		{"stopRead",     [&](const Request & request) { return this->stopRead(request); } },
-		{"startFreq",    [&](const Request & request) { return this->startFreq(request); } },
-		{"stopFreq",     [&](const Request & request) { return this->stopFreq(request); } },
-		{"triggerCount", [&](const Request & request) { return this->triggerCount(request); } },
-		{"packageCount", [&](const Request & request) { return this->packageCount(request); } },
-		{"duration",     [&](const Request & request) { return this->duration(request); } },
-        {"freq",         [&](const Request & request) { return this->freq(request); } },
+        {"type",         [&](const Request& request) { return this->type(request); } },
+        {"run",          [&](const Request& request) { return this->run(request); } },
+        {"startRead",    [&](const Request& request) { return this->startRead(request); } },
+        {"stopRead",     [&](const Request& request) { return this->stopRead(request); } },
+        {"startFreq",    [&](const Request& request) { return this->startFreq(request); } },
+        {"stopFreq",     [&](const Request& request) { return this->stopFreq(request); } },
+        {"triggerCount", [&](const Request& request) { return this->triggerCount(request); } },
+        {"packageCount", [&](const Request& request) { return this->packageCount(request); } },
+        {"duration",     [&](const Request& request) { return this->duration(request); } },
+        {"freq",         [&](const Request& request) { return this->freq(request); } },
 	};
 }
 

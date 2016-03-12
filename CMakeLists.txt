@@ -58,12 +58,10 @@ find_package(
 		filesystem
 		REQUIRED
 )
-
-
 include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(
-		CtudcServer
+		${PROJECT_NAME}
 		CAENVME
 		ftd2xx
 		trekcommon

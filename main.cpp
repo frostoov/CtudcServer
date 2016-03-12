@@ -16,6 +16,7 @@
 
 
 using std::string;
+using std::exception;
 using std::cin;
 using std::cout;
 using std::endl;
@@ -99,17 +100,23 @@ int main() {
 		std::cout << system_clock::now() << " Send " << session.getRemoteAddress() << ": " << message << endl;
 	};
 
-	auto future = std::async(std::launch::async, [&] {server.run(); } );
+	std::atomic_bool runnig(true);
+	auto future = std::async(std::launch::async, [&]{
+		while(runnig.load()) {
+			try {
+				server.run();
+			} catch(exception& e) {
+				std::cout << system_clock::now() << "Server failed: " << e.what() << std::endl;
+				server.stop();
+			}
+		}
+	});
 	string command;
 	while(true) {
 		std::getline(cin, command);
-		if(command == "run" && !future.valid())
-			future = std::async(std::launch::async, [&] {server.run(); } );
-		else if(command == "stop" && future.valid()) {
-			server.stop();
-			future.get();
-		} else if(command == "exit") {
+		if(command == "exit") {
 			if(future.valid()) {
+				runnig.store(false);
 				server.stop();
 				future.get();
 			}

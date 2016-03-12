@@ -8,4 +8,6 @@
 *.dll
 *.dylib
 *.user
+.ycm_extra_conf.py
 .idea
+__pycache__
