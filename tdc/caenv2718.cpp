@@ -258,7 +258,7 @@ void CaenV2718::setLsb(unsigned ps) {
 		throw logic_error(CAENVME_DecodeError(cvInvalidParam));
 	}
 	writeMicro(OpCode::setLSB, &value, 1);
-	mSettings.lsb = value;
+	mSettings.lsb = ps;
 }
 
 CaenV2718::Mode CaenV2718::mode() {
