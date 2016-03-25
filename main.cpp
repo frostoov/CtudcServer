@@ -37,16 +37,21 @@ void fatal(const string& msg) {
 int main() {
 	std::ios_base::sync_with_stdio(false);
 
+	string confPath = std::getenv("HOME");
+	if(!confPath.empty()) {
+		confPath += "/.config/ctudc/";
+	}
+
 	AppSettings appSettings;
 	try {
-		appSettings.load("CtudcServer.conf");
+		appSettings.load(confPath + "CtudcServer.conf");
 	} catch(const std::exception& e) {
 		fatal(StringBuilder() << "Failed parse CtudcServer.conf: " << e.what());
 	}
 
 	ChannelsConfigParser channelParser;
 	try {
-		channelParser.load("channels.conf");
+		channelParser.load(confPath + "channels.conf");
 	} catch(std::exception& e) {
 		fatal(StringBuilder() << "Failed parse channels.conf: " << e.what());
 	}
@@ -88,16 +93,16 @@ int main() {
 		std::cout << system_clock::now() << " Server stop" << endl;
 	};
 	server.onSessionStart() = [](const trek::net::Session & session) {
-		std::cout << system_clock::now() << " Connected: " << session.getRemoteAddress() << endl;
+		std::cout << system_clock::now() << " Connected: " << session.remoteAddress() << endl;
 	};
 	server.onSessionClose() = [](const trek::net::Session & session) {
-		std::cout << system_clock::now() << " Disconnected: " << session.getRemoteAddress() << endl;
+		std::cout << system_clock::now() << " Disconnected: " << session.remoteAddress() << endl;
 	};
 	server.onRecv() = [](const auto & session, const auto & message) {
-		std::cout << system_clock::now() << " Recv " << session.getRemoteAddress() << ": " << message << endl;
+		std::cout << system_clock::now() << " Recv " << session.remoteAddress() << ": " << message << endl;
 	};
 	server.onSend() = [](const auto & session, const auto & message) {
-		std::cout << system_clock::now() << " Send " << session.getRemoteAddress() << ": " << message << endl;
+		std::cout << system_clock::now() << " Send " << session.remoteAddress() << ": " << message << endl;
 	};
 
 	std::atomic_bool runnig(true);

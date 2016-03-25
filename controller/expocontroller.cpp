@@ -36,11 +36,10 @@ ExpoController::ExpoController(const std::string& name,
 	  mConfig(settings) { }
 
 ExpoController::~ExpoController() {
-	if(mFuture.valid() || mProcess != nullptr) {
-		mProcess->stop();
-		mFuture.get();
-		mProcess.reset();
-	}
+    if(mProcess != nullptr)
+        mProcess->stop();
+    if(mFuture.valid())
+        mFuture.get();
 }
 
 const Callback<void(unsigned)>& ExpoController::onNewRun() {
@@ -49,36 +48,38 @@ const Callback<void(unsigned)>& ExpoController::onNewRun() {
 
 Controller::Methods ExpoController::createMethods() {
 	return {
-        {"type",         [&](const Request& request) { return this->type(request); } },
-        {"run",          [&](const Request& request) { return this->run(request); } },
-        {"startRead",    [&](const Request& request) { return this->startRead(request); } },
-        {"stopRead",     [&](const Request& request) { return this->stopRead(request); } },
-        {"startFreq",    [&](const Request& request) { return this->startFreq(request); } },
-        {"stopFreq",     [&](const Request& request) { return this->stopFreq(request); } },
-        {"triggerCount", [&](const Request& request) { return this->triggerCount(request); } },
-        {"packageCount", [&](const Request& request) { return this->packageCount(request); } },
-        {"duration",     [&](const Request& request) { return this->duration(request); } },
-        {"freq",         [&](const Request& request) { return this->freq(request); } },
+        {"type",         [&](auto& request, auto& send) { return this->type(request, send); } },
+        {"run",          [&](auto& request, auto& send) { return this->run(request, send); } },
+        {"startRead",    [&](auto& request, auto& send) { return this->startRead(request, send); } },
+        {"stopRead",     [&](auto& request, auto& send) { return this->stopRead(request, send); } },
+        {"startFreq",    [&](auto& request, auto& send) { return this->startFreq(request, send); } },
+        {"stopFreq",     [&](auto& request, auto& send) { return this->stopFreq(request, send); } },
+        {"triggerCount", [&](auto& request, auto& send) { return this->triggerCount(request, send); } },
+        {"packageCount", [&](auto& request, auto& send) { return this->packageCount(request, send); } },
+        {"duration",     [&](auto& request, auto& send) { return this->duration(request, send); } },
+        {"freq",         [&](auto& request, auto& send) { return this->freq(request, send); } },
 	};
 }
 
-Response ExpoController::type(const Request& request) {
-	return { name(), __func__, {getProcessType()} };
+void ExpoController::type(const Request& request, const SendCallback& send) {
+	send({ name(), __func__, {getProcessType()} });
 }
 
-Response ExpoController::run(const Request& request) {
-	return { name(), __func__, {mConfig.nRun} };
+void ExpoController::run(const Request& request, const SendCallback& send) {
+	send({ name(), __func__, {mConfig.nRun} });
 }
 
-Response ExpoController::startRead(const Request& request) {
+void ExpoController::startRead(const Request& request, const SendCallback& send) {
 	if(mFuture.valid())
 		throw logic_error("ExpoController::startRead process is active");
 	mProcess = make_unique<Exposition>(mDevice, mConfig, mChannelConfig);
 	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
-	return { name(), __func__ };
+	send({ name(), __func__ });
+    handleRequest({ name(), "type"}, mBroadcast);
+    handleRequest({ name(), "run"}, mBroadcast);
 }
 
-Response ExpoController::stopRead(const Request& request) {
+void ExpoController::stopRead(const Request& request, const SendCallback& send) {
     if(!mFuture.valid())
         throw logic_error("ExpoController::stopRead process is not active");
 	auto readManager = dynamic_cast<Exposition*>(mProcess.get());
@@ -87,14 +88,15 @@ Response ExpoController::stopRead(const Request& request) {
     readManager->stop();
     auto f = gsl::finally([&]{
         mProcess.reset();
+        handleRequest({ name(), "type"}, mBroadcast);
     });
     mFuture.get();
 	++mConfig.nRun;
 	mOnNewRun(mConfig.nRun);
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response ExpoController::startFreq(const Request& request) {
+void ExpoController::startFreq(const Request& request, const SendCallback& send) {
 	if(mFuture.valid())
 		throw logic_error("ExpoController::stopRead process is active");
 	auto delay = request.inputs.at(0).get<int>();
@@ -102,10 +104,11 @@ Response ExpoController::startFreq(const Request& request) {
 		throw logic_error("ExpoController::startFreq invalid delay value");
 	mProcess = make_unique<FreqHandler>(mDevice, mChannelConfig, microseconds(delay));
 	mFuture = std::async(std::launch::async, [&] {mProcess->run();});
-	return { name(), __func__ };
+	send({ name(), __func__ });
+    handleRequest({ name(), "type"}, mBroadcast);
 }
 
-Response ExpoController::stopFreq(const Request& request) {
+void ExpoController::stopFreq(const Request& request, const SendCallback& send) {
     if(!mFuture.valid())
         throw logic_error("ExpoController::stopFreq process is not active");
 	auto freqHandler = dynamic_cast<FreqHandler*>(mProcess.get());
@@ -115,39 +118,40 @@ Response ExpoController::stopFreq(const Request& request) {
     auto f = gsl::finally([&]{
         mFreq = createFreq(freqHandler->hitCount(), freqHandler->cleanTime());
         mProcess.reset();
+        handleRequest({ name(), "type"}, mBroadcast);
     });
     mFuture.get();
-	return { name(), __func__ };
+    send({ name(), __func__ });
 }
 
-Response ExpoController::triggerCount(const Request& request) const {
+void ExpoController::triggerCount(const Request& request, const SendCallback& send) const {
 	auto expo = dynamic_cast<Exposition*>(mProcess.get());
 	if(expo == nullptr)
 		throw runtime_error("ExpoController::stopRead process is not expo");
-	return { name(), __func__, {expo->triggerCount()} };
+	send({ name(), __func__, {expo->triggerCount()} });
 }
 
-Response ExpoController::packageCount(const Request& request) const {
+void ExpoController::packageCount(const Request& request, const SendCallback& send) const {
 	auto expo = dynamic_cast<Exposition*>(mProcess.get());
 	if(expo == nullptr)
 		throw runtime_error("ExpoController::stopRead process is not expo");
-	return { name(), __func__, {expo->packageCount()} };
+	send({ name(), __func__, {expo->packageCount()} });
 }
 
-Response ExpoController::duration(const Request& request) const {
+void ExpoController::duration(const Request& request, const SendCallback& send) const {
     if(mProcess.get() == nullptr)
         throw runtime_error("ExpoController::stopRead process is not active");
 
-	return { name(), __func__, {mProcess->duration().count()} };
+	send({ name(), __func__, {mProcess->duration().count()} });
 }
 
-Response ExpoController::freq(const Request& request) const {
+void ExpoController::freq(const Request& request, const SendCallback& send) const {
     auto freqHandler = dynamic_cast<FreqHandler*>(mProcess.get());
     if(freqHandler != nullptr) {
         assert(mFuture.valid());
         mFreq = createFreq(freqHandler->hitCount(), freqHandler->cleanTime());
     }
-	return { name(), __func__, convertFreq(mFreq) };
+	send({ name(), __func__, convertFreq(mFreq) });
 }
 
 string ExpoController::getProcessType() const {

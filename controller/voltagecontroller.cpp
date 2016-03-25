@@ -19,58 +19,57 @@ VoltageController::VoltageController(const string& name, const ModulePtr& module
 
 Controller::Methods VoltageController::createMethods() {
 	return {
-		{"open",                 [&](const Request& request) { return this->open(request); } },
-		{"close",                [&](const Request& request) { return this->close(request); } },
-		{"isOpen",               [&](const Request& request) { return this->isOpen(request); } },
+		{"open",                 [&](auto& request, auto& send) { return this->open(request, send); } },
+		{"close",                [&](auto& request, auto& send) { return this->close(request, send); } },
+		{"isOpen",               [&](auto& request, auto& send) { return this->isOpen(request, send); } },
 
-        {"turnOn",              [&](const Request& request) { return this->turnOn(request);  } },
-		{"turnOff",             [&](const Request& request) { return this->turnOff(request); } },
-		{"stat",                [&](const Request& request) { return this->stat(request); } },
-        {"setVoltage",          [&](const Request& request) { return this->setVoltage(request); } },
-		{"setSpeedUp",          [&](const Request& request) { return this->setSpeedUp(request); } },
-		{"setSpeedDn",          [&](const Request& request) { return this->setSpeedDn(request); } },
-		{"speedUp",             [&](const Request& request) { return this->speedUp(request); } },
-		{"speedDn",             [&](const Request& request) { return this->speedDn(request); } },
-		{"voltage",             [&](const Request& request) { return this->voltage(request); } },
-		{"amperage",            [&](const Request& request) { return this->amperage(request); } },
+        {"turnOn",              [&](auto& request, auto& send) { return this->turnOn(request, send);  } },
+		{"turnOff",             [&](auto& request, auto& send) { return this->turnOff(request, send); } },
+		{"stat",                [&](auto& request, auto& send) { return this->stat(request, send); } },
+        {"setVoltage",          [&](auto& request, auto& send) { return this->setVoltage(request, send); } },
+		{"setSpeedUp",          [&](auto& request, auto& send) { return this->setSpeedUp(request, send); } },
+		{"setSpeedDn",          [&](auto& request, auto& send) { return this->setSpeedDn(request, send); } },
+		{"speedUp",             [&](auto& request, auto& send) { return this->speedUp(request, send); } },
+		{"speedDn",             [&](auto& request, auto& send) { return this->speedDn(request, send); } },
+		{"voltage",             [&](auto& request, auto& send) { return this->voltage(request, send); } },
+		{"amperage",            [&](auto& request, auto& send) { return this->amperage(request, send); } },
 	};
 }
 
 
-Response VoltageController::open(const Request& request) {
+void VoltageController::open(const Request& request, const SendCallback& send) {
 	mDevice->open("/dev/my_uart");
-	return { name(), __func__};
+	send({ name(), __func__});
 }
 
-Response VoltageController::close(const Request& request) {
+void VoltageController::close(const Request& request, const SendCallback& send) {
 	mDevice->close();
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response VoltageController::isOpen(const Request& request) {
-	return { name(), __func__, {mDevice->isOpen()} };
+void VoltageController::isOpen(const Request& request, const SendCallback& send) {
+	send({ name(), __func__, {mDevice->isOpen()} });
 }
 
-
-Response VoltageController::stat(const Request& request) {
+void VoltageController::stat(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
 	auto stat = mDevice->stat(cell);
-	return { name(), __func__, {stat.value()} };
+	send({ name(), __func__, {request.inputs.at(0), stat.value()} });
 }
 
-Response VoltageController::turnOn(const Request& request) {
+void VoltageController::turnOn(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
 	mDevice->turnOn(cell);
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response VoltageController::turnOff(const Request& request) {
+void VoltageController::turnOff(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
 	mDevice->turnOff(cell);
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response VoltageController::setVoltage(const Request& request) {
+void VoltageController::setVoltage(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
 	auto val  = request.inputs.at(1).get<int>();
 	if(cell == -1) {
@@ -79,39 +78,39 @@ Response VoltageController::setVoltage(const Request& request) {
 	} else {
 		mDevice->setVoltage(cell, val);
 	}
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response VoltageController::setSpeedUp(const Request& request) {
+void VoltageController::setSpeedUp(const Request& request, const SendCallback& send) {
 	auto cell = getCell(request.inputs.at(0));
 	auto val = request.inputs.at(1).get<int>();
 	mDevice->setSpeedUp(cell, val);
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
-Response VoltageController::setSpeedDn(const Request& request) {
+void VoltageController::setSpeedDn(const Request& request, const SendCallback& send) {
 	auto cell = getCell(request.inputs.at(0));
 	auto val = request.inputs.at(1).get<int>();
 	mDevice->setSpeedDn(cell, val);
-	return { name(), __func__ };
+	send({ name(), __func__ });
 }
 
-Response VoltageController::speedUp(const Request& request) {
+void VoltageController::speedUp(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
-	return { name(), __func__, {mDevice->speedUp(cell)} };
+	send({ name(), __func__, {request.inputs.at(0), mDevice->speedUp(cell)} });
 }
-Response VoltageController::speedDn(const Request& request) {
+void VoltageController::speedDn(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
-	return { name(), __func__, {mDevice->speedDn(cell)} };
-}
-
-Response VoltageController::voltage(const Request& request) {
-	auto cell = getCell( request.inputs.at(0) );
-	return { name(), __func__, {mDevice->voltage(cell)} };
+	send({ name(), __func__, {request.inputs.at(0), mDevice->speedDn(cell)} });
 }
 
-Response VoltageController::amperage(const Request& request) {
+void VoltageController::voltage(const Request& request, const SendCallback& send) {
 	auto cell = getCell( request.inputs.at(0) );
-	return { name(), __func__, {mDevice->amperage(cell)} };
+	send({ name(), __func__, {request.inputs.at(0), mDevice->voltage(cell)} });
+}
+
+void VoltageController::amperage(const Request& request, const SendCallback& send) {
+	auto cell = getCell( request.inputs.at(0) );
+	send({ name(), __func__, {request.inputs.at(0), mDevice->amperage(cell)} });
 }
 
 int VoltageController::getCell(const std::string& name) {

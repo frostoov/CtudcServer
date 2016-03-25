@@ -52,7 +52,7 @@ add_executable(CtudcServer ${SOURCES})
 set(Boost_USE_STATIC_LIBS ON)
 find_package(
 		Boost
-		1.59.0
+		1.55.0
 		COMPONENTS
 		system
 		filesystem

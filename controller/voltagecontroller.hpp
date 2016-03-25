@@ -23,20 +23,20 @@ public:
 protected:
     Methods createMethods();
 
-    trek::net::Response open(const trek::net::Request& request);
-	trek::net::Response close(const trek::net::Request& request);
-	trek::net::Response isOpen(const trek::net::Request& request);
+    void open(const trek::net::Request& request, const SendCallback& send);
+	void close(const trek::net::Request& request, const SendCallback& send);
+	void isOpen(const trek::net::Request& request, const SendCallback& send);
 
-	trek::net::Response stat(const trek::net::Request& request);
-	trek::net::Response turnOn(const trek::net::Request& request);
-	trek::net::Response turnOff(const trek::net::Request& request);
-    trek::net::Response setVoltage(const trek::net::Request& request);
-	trek::net::Response setSpeedUp(const trek::net::Request& request);
-	trek::net::Response setSpeedDn(const trek::net::Request& request);
-	trek::net::Response speedUp(const trek::net::Request& request);
-	trek::net::Response speedDn(const trek::net::Request& request);
-	trek::net::Response voltage(const trek::net::Request& request);
-	trek::net::Response amperage(const trek::net::Request& request);
+	void stat(const trek::net::Request& request, const SendCallback& send);
+	void turnOn(const trek::net::Request& request, const SendCallback& send);
+	void turnOff(const trek::net::Request& request, const SendCallback& send);
+    void setVoltage(const trek::net::Request& request, const SendCallback& send);
+	void setSpeedUp(const trek::net::Request& request, const SendCallback& send);
+	void setSpeedDn(const trek::net::Request& request, const SendCallback& send);
+	void speedUp(const trek::net::Request& request, const SendCallback& send);
+	void speedDn(const trek::net::Request& request, const SendCallback& send);
+	void voltage(const trek::net::Request& request, const SendCallback& send);
+	void amperage(const trek::net::Request& request, const SendCallback& send);
 	int getCell(const std::string& name);
 private:
     ModulePtr mDevice;
