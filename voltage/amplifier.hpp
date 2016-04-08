@@ -2,9 +2,9 @@
 
 #include "serialbuf.hpp"
 
-#include  <mutex>
+#include <mutex>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <set>
 
 class Amplifier {
@@ -16,7 +16,7 @@ class Amplifier {
         uint16_t imesmax;
         uint16_t imax;
     };
-    using CellStats = std::map<int, CellStat>;
+    using CellStats = std::unordered_map<int, CellStat>;
 public:
     class Stat {
     public:
@@ -35,15 +35,15 @@ public:
 public:
     Amplifier();
 
-	void open(const std::string& name);
-	void close();
-	bool isOpen() const { return mBuffer.isOpen(); }
+    void open(const std::string& name);
+    void close();
+    bool isOpen() const { return mBuffer.isOpen(); }
 
     Stat stat(int cell);
     const CellStats& cellStats() const { return mCellStats; }
 
-	void setVoltage(int cell,  int volt);
-	void setAmperage(int cell, int amp);
+    void setVoltage(int cell,  int volt);
+    void setAmperage(int cell, int amp);
 
     void setSpeedUp(int cell, int speed);
     void setSpeedDn(int cell, int speed);
@@ -75,8 +75,8 @@ protected:
     uint16_t speed2code(int cell, int speed);
     int code2speed(int cell, uint16_t code);
 private:
-	serialbuf mBuffer;
-	std::iostream mStream;
+    serialbuf mBuffer;
+    std::iostream mStream;
 
     CellStats mCellStats;
     std::mutex mMutex;

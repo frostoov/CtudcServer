@@ -1,63 +1,82 @@
 #pragma once
 
-#include "tdc/caenv2718.hpp"
+#include "tdc/tdc.hpp"
 #include "net/packagereceiver.hpp"
-#include "eventwriter.hpp"
-#include "process.hpp"
 
+#include "channelconfig.hpp"
+#include "freq.hpp"
+
+#include <trek/data/eventrecord.hpp>
 #include <json.hpp>
 #include <atomic>
+#include <thread>
 
-class Exposition : public Process {
-	using ModulePtr   = std::shared_ptr<CaenV2718>;
-	using RawEvent    = Tdc::EventHits;
-	using RawEvents   = std::vector<RawEvent>;
+class Exposition {
+    using Mutex = std::mutex;
+    using Lock = std::lock_guard<Mutex>;
+    using EventBuffer = std::vector<Tdc::EventHits>;
 public:
-	struct NetInfo {
-		std::string nevodIP;
-		uint16_t    nevodPort;
-	};
-	struct Settings {
-		unsigned    nRun;
-		unsigned    eventsPerFile;
-		std::string writeDir;
-		std::string infoIp;
-		uint16_t    infoPort;
+    struct Settings {
+        unsigned    nRun;
+        unsigned    eventsPerFile;
+        std::string writeDir;
+        std::string infoIP;
+        uint16_t    infoPort;
+        std::string ctrlIP;
+        uint16_t    ctrlPort;
 
-		nlohmann::json marshal() const;
-		void unMarshal(const nlohmann::json& doc);
-	};
+        nlohmann::json marshal() const;
+        void unMarshal(const nlohmann::json& doc);
+    };
 public:
-	Exposition(ModulePtr module,
-	           const Settings& settings,
-	           const ChannelConfig& config);
-	~Exposition();
-	void run() override;
-	void stop() override;
-	bool running() override;
-	std::chrono::milliseconds duration() const override;
-	uintmax_t triggerCount() const;
-	uintmax_t packageCount() const;
+    Exposition(std::shared_ptr<Tdc> tdc,
+               const Settings& settings,
+               const ChannelConfig& config,
+               std::function<void(TrekFreq)> onMonitor);
+    ~Exposition();
+    operator bool() const { return mActive; }
+    
+    void stop() {
+        mActive = false;
+        mInfoRecv.stop();
+        mCtrlRecv.stop();
+    }
+    
+    uintmax_t triggerCount() const { return mTrgCount[0]; }
+    uintmax_t triggerDrop() const { return mTrgCount[1]; }
+    
+    uintmax_t packageCount() const { return mPkgCount[0]; }
+    uintmax_t packageDrop() const { return mPkgCount[1]; }
+    
+    TrekHitCount chambersCount() const { return mChambersCount[0]; }
+    TrekHitCount chamberDrop() const { return mChambersCount[1]; }
+protected:    
+    void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
+    void writeLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config);
+    void monitorLoop(std::shared_ptr<Tdc> tdc, const ChannelConfig& conf);
 
-protected:
-	void increasePackageCount();
-	void increaseTriggerCount(uintmax_t val);
-	void resetPackageCount();
-	void resetTriggerCount();
-	void handleNevodPackage(PackageReceiver::ByteVector& buffer, trek::data::NevodPackage& nvdPkg);
-	static std::string formDir(const Settings& settings);
-	static std::string formPrefix(const Settings& settings);
-	void outputMeta(const std::string& dirName, const Settings& settings, Tdc& module);
+    std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
 private:
-	ModulePtr                mModule;
-	EventWriter              mEventWriter;
-	PackageReceiver          mNevodReceiver;
-	trek::data::NevodPackage mNevodPackage;
-	RawEvents                mBuffer;
+    EventBuffer mBuffer;
+    PackageReceiver mInfoRecv;
+    PackageReceiver mCtrlRecv;
+    
+    std::thread mWriteThread;
+    std::thread mMonitorThread;
+    std::thread mReadThread;
+    
+    uintmax_t mTrgCount[2];
+    
+    uintmax_t mPkgCount[2];
+    
+    TrekHitCount mChambersCount[2];
+    
+    std::atomic_bool mActive;
+    std::function<void(TrekFreq)> mOnMonitor;
 
-	std::atomic<uintmax_t> mPackageCount;
-	std::atomic<uintmax_t> mTriggerCount;
-
-	std::chrono::system_clock::time_point mStartPoint;
-	std::atomic_bool mActive;
+    Mutex mBufferMutex;
+    Mutex mTdcMutex;
 };
+
+
+TrekFreq convertFreq(const ChannelFreq& freq, const ChannelConfig& conf);

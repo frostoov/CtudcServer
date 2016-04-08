@@ -5,16 +5,14 @@
 #include "controller/voltagecontroller.hpp"
 
 struct AppSettings {
-	std::string ip;
-	uint16_t     port;
-	Exposition::Settings expoConfig;
-	VoltageController::Config voltConfig;
+    std::string ip;
+    uint16_t     port;
+    Exposition::Settings expoConfig;
+    VoltageController::Config voltConfig;
 
-	void load(const std::string& fileName);
-	void save(const std::string& fileName);
+    void load(const std::string& fileName);
+    void save(const std::string& fileName);
 
-	nlohmann::json marshal() const;
-	void unMarshal(const nlohmann::json& doc);
-
-
+    nlohmann::json marshal() const;
+    void unMarshal(const nlohmann::json& doc);
 };

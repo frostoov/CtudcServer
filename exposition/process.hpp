@@ -5,11 +5,12 @@
 
 class Process {
 public:
-	virtual ~Process() { };
-	virtual void run() = 0;
-	virtual void stop() = 0;
-	virtual bool running() = 0;
-	virtual std::chrono::milliseconds duration() const = 0;
+    using Clock = std::chrono::system_clock;
+    using TimePoint = Clock::time_point;
+    virtual ~Process() { };
+    virtual void stop() = 0;
+    virtual operator bool() const = 0;
+    virtual TimePoint startPoint() const = 0;
 protected:
-	Process() = default;
+    Process() = default;
 };

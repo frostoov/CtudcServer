@@ -21,7 +21,7 @@ Amplifier::Amplifier()
 void Amplifier::open(const string& name) {
     mStream.clear();
     mCellStats.clear();
-	mBuffer.open(name, 9600);
+    mBuffer.open(name, 9600);
 
     mCellStats = readCellStats(readCellNums());
 }
@@ -82,8 +82,8 @@ void Amplifier::turnOff(int cell) {
 }
 
 int Amplifier::voltage(int cell) {
-    auto code = readWord(cell, 5)&0xfff;
-    return code2volt(cell,code);
+    auto code = readWord(cell, 5) & 0xfff;
+    return code2volt(cell, code);
 }
 
 int Amplifier::amperage(int cell) {
@@ -92,12 +92,12 @@ int Amplifier::amperage(int cell) {
 }
 
 inline bool startsWith(const string& str, const string& starting) {
-	return str.find(starting) == 0;
+    return str.find(starting) == 0;
 }
 
 inline bool endsWith(const string& str, const string& ending) {
-	if(ending.size() >= str.size()) return false;
-	return std::equal(ending.rbegin(), ending.rend(), str.rend());
+    if(ending.size() >= str.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), str.rend());
 }
 
 set<int> Amplifier::readCellNums() {
@@ -110,7 +110,7 @@ set<int> Amplifier::readCellNums() {
     set<int> cellNums;
     for(auto it = istream_iterator<string>(iss); it != istream_iterator<string>(); ++it) {
         cellNums.insert(std::stoi(*it));
-	}
+    }
     return cellNums;
 }
 
@@ -167,41 +167,41 @@ uint8_t Amplifier::readByte(int cell, int addr) {
 
 int Amplifier::code2volt(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return round( double(stat.umesmax)/4095*code );
+    return round( double(stat.umesmax) / 4095 * code );
 }
 
 int Amplifier::code2amp(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return round( double(stat.imesmax)/1023*code );
+    return round( double(stat.imesmax) / 1023 * code );
 }
 
 uint16_t Amplifier::volt2code(int cell, int volt) {
     auto& stat = mCellStats.at(cell);
-    return round( 1023*(volt-stat.umin)/(stat.umax - stat.umin) );
+    return round( 1023 * (volt - stat.umin) / (stat.umax - stat.umin) );
 }
 
 uint16_t Amplifier::amp2code(int cell, int amp) {
     auto& stat = mCellStats.at(cell);
-    return round( amp*1023/stat.imax );
+    return round( amp * 1023 / stat.imax );
 }
 
 uint16_t Amplifier::speed2code(int cell, int speed) {
     auto& stat = mCellStats.at(cell);
-    return round( double(stat.umax - stat.umin)*200/(speed*1024) );
+    return round( double(stat.umax - stat.umin) * 200 / (speed * 1024) );
 }
 
 int Amplifier::code2speed(int cell, uint16_t code) {
     auto& stat = mCellStats.at(cell);
-    return round( double(stat.umax - stat.umin)*200/(code*1024) );
+    return round( double(stat.umax - stat.umin) * 200 / (code * 1024) );
 }
 
 
 ostream& operator<<(ostream& stream, Amplifier::Stat stat) {
     return stream << "CEB:   " << stat.ceb() << '\n'
-                  << "GS:    " << stat.gs() << '\n'
-                  << "ACCEB: " << stat.acceb() << '\n'
-                  << "IOVLD: " << stat.iovld() << '\n'
-                  << "STDBY: " << stat.stdby() << '\n'
-                  << "RDACT: " << stat.rdact() << '\n'
-                  << "RUACT: " << stat.ruact() << '\n';
+           << "GS:    " << stat.gs() << '\n'
+           << "ACCEB: " << stat.acceb() << '\n'
+           << "IOVLD: " << stat.iovld() << '\n'
+           << "STDBY: " << stat.stdby() << '\n'
+           << "RDACT: " << stat.rdact() << '\n'
+           << "RUACT: " << stat.ruact() << '\n';
 }

@@ -21,6 +21,7 @@ set(
 	exposition/freq.cpp
 	ftd/ftdmodule.cpp
 	tdc/caenv2718.cpp
+        tdc/tdc.cpp
 	main.cpp
 )
 
@@ -58,6 +59,7 @@ find_package(
 		filesystem
 		REQUIRED
 )
+
 include_directories(${Boost_INCLUDE_DIRS})
 
 target_link_libraries(

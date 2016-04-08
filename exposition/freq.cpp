@@ -1,71 +1,52 @@
 #include "freq.hpp"
 
-#include <thread>
+#include <future>
+
 using std::chrono::microseconds;
-using std::chrono::milliseconds;
 using std::chrono::duration_cast;
 using std::chrono::system_clock;
-using std::chrono::duration_cast;
+
+using std::make_shared;
+using std::logic_error;
+using std::shared_ptr;
+using std::atomic_bool;
 using std::runtime_error;
 using std::vector;
 
-FreqHandler::FreqHandler(ModulePtr module,
-                         const ChannelConfig& config,
-                         microseconds delay)
-	: mDevice(module),
-	  mConfig(config),
-	  mDelay(delay),
-	  mActive(false) {
-	if(!mDevice->isOpen())
-		throw runtime_error("FreqHandler::FreqHandler device is not open");
+static void handleBuffer(const vector<Tdc::Hit>& buffer, ChannelFreq& freq) {
+    for(auto& hit : buffer) {
+        if(freq.count(hit.channel) != 0)
+            ++freq.at(hit.channel);
+        else
+            freq.emplace(hit.channel, 1);
+    }
 }
 
-void FreqHandler::run() {
-	if(mActive == true)
-		throw runtime_error("FreqHandler::run FreqHandler already running");
-    mStartPoint = SystemClock::now();
-	mTotalTime = microseconds::zero();
-	mHitCount.clear();
-	mActive = true;
-	vector<Tdc::Hit> buffer;
-	while(mActive.load()) {
-		mDevice->clear();
-		auto startPoint = system_clock::now();
-		std::this_thread::sleep_for(mDelay);
-		mDevice->readRaw(buffer);
-        auto delta = duration_cast<microseconds>(system_clock::now() - startPoint);
-		mTotalTime += delta;
-		handleBuffer(buffer);
-	}
-}
+std::function<ChannelFreq()> launchFreq(shared_ptr<Tdc> tdc, microseconds delay) {
+    using Future = std::future<ChannelFreq>;
+    if(!tdc->isOpen())
+        throw logic_error("measureFreq tdc is not open");
+    auto active = make_shared<atomic_bool>(true);
+    
+    auto future = make_shared<Future>(std::async(std::launch::async, [=] {
+        ChannelFreq freq;
+        auto duration = microseconds::zero();
+        vector<Tdc::Hit> buffer;
+        while(active->load()) {
+            tdc->clear();
+            auto s = system_clock::now();
+            std::this_thread::sleep_for(delay);
+            duration += duration_cast<microseconds>(system_clock::now() - s);
+            tdc->readHits(buffer);
+            handleBuffer(buffer, freq);
+        }
+        for(auto& countPair : freq)
+            countPair.second *= (1000000.0/duration.count());
+        return freq;
+    }));
 
-void FreqHandler::stop() {
-	mActive.store(false);
-}
-
-bool FreqHandler::running() {
-    return mActive.load();
-}
-
-milliseconds FreqHandler::duration() const {
-    return duration_cast<milliseconds>(SystemClock::now() - mStartPoint);
-}
-
-microseconds FreqHandler::cleanTime() const {
-    return mTotalTime;
-}
-
-const TrekFreq& FreqHandler::hitCount() const {
-    return mHitCount;
-}
-
-void FreqHandler::handleBuffer(const vector<Tdc::Hit>& buffer) {
-	for(auto& hit : buffer) {
-		if(mConfig.count(hit.channel) == 0)
-            continue;
-		auto& conf = mConfig.at(hit.channel);
-		if(mHitCount.count(conf.chamber) == 0)
-            mHitCount.emplace(conf.chamber, ChamberFreq{{0, 0, 0, 0}});
-		++mHitCount.at(conf.chamber).at(conf.wire);
-	}
+    return [=] {
+        active->store(false);
+        return future->get();
+    };
 }

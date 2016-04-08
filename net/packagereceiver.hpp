@@ -4,33 +4,32 @@
 #include <mutex>
 
 class PackageReceiver {
-	using UDP       = boost::asio::ip::udp;
-	using Endpoint  = UDP::endpoint;
-	using UdpSocket = boost::asio::ip::udp::socket;
-	using IoService = boost::asio::io_service;
-	using IpAddress = boost::asio::ip::address;
+    using UDP       = boost::asio::ip::udp;
+    using Endpoint  = UDP::endpoint;
+    using UdpSocket = boost::asio::ip::udp::socket;
+    using IoService = boost::asio::io_service;
+    using IpAddress = boost::asio::ip::address;
 public:
-	using ByteVector  = std::vector<char>;
-	using Callback  = std::function<void (ByteVector&) >;
+    using Callback  = std::function<void(std::vector<char>&)>;
 public:
-	PackageReceiver(const std::string& multicastAddress, uint16_t port);
-	~PackageReceiver();
-	void start();
-	void stop();
-	void onRecv(Callback&& callback);
+    PackageReceiver(const std::string& multicastAddress, uint16_t port);
+    ~PackageReceiver();
+    void start();
+    void stop();
+    void onRecv(Callback&& callback);
 protected:
-	void doReceive();
-	void joinMulticastGroup(const IpAddress& multicastAddress);
-	void leaveMulticastGroup(const IpAddress& multicastAddress);
+    void doReceive();
+    void joinMulticastGroup(const IpAddress& multicastAddress);
+    void leaveMulticastGroup(const IpAddress& multicastAddress);
 private:
-	IoService mIoService;
-	UdpSocket mSocket;
-	Endpoint  mEndpoint;
-	IpAddress mMulticastAddress;
+    IoService mIoService;
+    UdpSocket mSocket;
+    Endpoint  mEndpoint;
+    IpAddress mMulticastAddress;
 
-	std::mutex callbackMutex;
-	ByteVector mBuffer;
-	Callback   mCallback;
+    std::mutex callbackMutex;
+    std::vector<char> mBuffer;
+    Callback   mCallback;
 
-	static const size_t mBufferSize = 65527;
+    static constexpr size_t mBufferSize = 65527;
 };
