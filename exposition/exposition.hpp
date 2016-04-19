@@ -8,6 +8,8 @@
 
 #include <trek/data/eventrecord.hpp>
 #include <json.hpp>
+
+#include <condition_variable>
 #include <atomic>
 #include <thread>
 
@@ -36,11 +38,7 @@ public:
     ~Exposition();
     operator bool() const { return mActive; }
     
-    void stop() {
-        mActive = false;
-        mInfoRecv.stop();
-        mCtrlRecv.stop();
-    }
+    void stop() { mActive = false; }
     
     uintmax_t triggerCount() const { return mTrgCount[0]; }
     uintmax_t triggerDrop() const { return mTrgCount[1]; }
@@ -52,7 +50,7 @@ public:
     TrekHitCount chamberDrop() const { return mChambersCount[1]; }
 protected:    
     void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
-    void writeLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config);
+    void writeLoop(const Settings& settings, const ChannelConfig& config);
     void monitorLoop(std::shared_ptr<Tdc> tdc, const ChannelConfig& conf);
 
     std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
@@ -76,6 +74,7 @@ private:
 
     Mutex mBufferMutex;
     Mutex mTdcMutex;
+    std::condition_variable mCv;
 };
 
 

@@ -100,7 +100,7 @@ int main() {
             try {
                 server.run();
             } catch(exception& e) {
-                std::cout << system_clock::now() << "Server failed: " << e.what() << std::endl;
+                std::cout << system_clock::now() << " Server failed: " << e.what() << std::endl;
                 server.stop();
             }
         }

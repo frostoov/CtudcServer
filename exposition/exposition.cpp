@@ -153,14 +153,14 @@ Exposition::Exposition(shared_ptr<Tdc> tdc,
         throw std::logic_error("launchExpo tdc is not open");
     tdc->clear();
 
-    //mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings));
-    mWriteThread = std::thread(&Exposition::writeLoop, this, tdc, std::ref(settings), std::ref(config));
+    mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings));
+    mWriteThread = std::thread(&Exposition::writeLoop, this, std::ref(settings), std::ref(config));
     mMonitorThread =  std::thread(&Exposition::monitorLoop, this, tdc, std::ref(config));
 }
 
 Exposition::~Exposition() {
     stop();
-    //mReadThread.join();
+    mReadThread.join();
     mMonitorThread.join();
     mWriteThread.join();
 }
@@ -169,27 +169,29 @@ void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
     auto metaFilename = printStartMeta(settings, *tdc);
     vector<Tdc::EventHits> buffer;
     while(mActive) {
-        std::this_thread::sleep_for(microseconds(500));
+        std::this_thread::sleep_for(microseconds(3000));
         {
             Lock lkt(mTdcMutex);
             tdc->readEvents(buffer);
         }
-        Lock lk(mBufferMutex);
-        std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer)); 
+        {
+            Lock lk(mBufferMutex);
+            std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
+        }
     }
     mInfoRecv.stop();
     mCtrlRecv.stop();
+    mCv.notify_one();
     printEndMeta(metaFilename);
 }
 
-void Exposition::writeLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config) {
+void Exposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
     unique_ptr<EventID> nvdID;
     EventWriter eventWriter(formatDir(settings), formatPrefix(settings), settings.eventsPerFile);
 
-    mInfoRecv.onRecv([this, &tdc, &eventWriter, &nvdID, &config](vector<char>& nvdMsg) {
+    mInfoRecv.onRecv([this, &eventWriter, &nvdID, &config](vector<char>& nvdMsg) {
         Lock lk(mBufferMutex);
         try {
-            tdc->readEvents(mBuffer);
             auto nvdPkg = handleNvdPkg(nvdMsg);
             if(nvdID) {
                 auto drop = !(nvdID && nvdID->nRun == nvdPkg.numberOfRun && nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
@@ -202,7 +204,7 @@ void Exposition::writeLoop(shared_ptr<Tdc> tdc, const Settings& settings, const 
                 auto events = handleEvents(mBuffer, config, drop);
                 std::for_each(events.begin(), events.end(), writer);
             }
-            //mBuffer.clear();
+            mBuffer.clear();
             nvdID = make_unique<EventID>(nvdPkg.numberOfRun, nvdPkg.numberOfRecord);
         } catch(std::exception& e) {
             std::cerr << "Expo write loop " << e.what() << std::endl;
@@ -213,15 +215,20 @@ void Exposition::writeLoop(shared_ptr<Tdc> tdc, const Settings& settings, const 
 
 void Exposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
     mCtrlRecv.onRecv([this, tdc, conf](vector<char>& msg) {
+        
         try {
             auto command = handleCtrlPkg(msg);
             if(command == 6) {
-                //Lock lkt(mTdcMutex);
+                std::cerr << std::chrono::system_clock::now() << "Monitoring" << std::endl;
+                Lock lkt(mTdcMutex);
                 Lock lk(mBufferMutex);
                 auto prevMode = tdc->mode();
                 tdc->setMode(Tdc::Mode::continuous);
+                //For conditional variable
+                std::mutex m;
+                std::unique_lock<std::mutex> l(m);
                 auto stop = launchFreq(tdc, microseconds(100));
-                std::this_thread::sleep_for(seconds(50));
+                mCv.wait_for(l, seconds(50));
                 auto freq = stop();
                 tdc->setMode(prevMode);
                 mOnMonitor(convertFreq(freq, conf));

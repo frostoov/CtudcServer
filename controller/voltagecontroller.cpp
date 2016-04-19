@@ -40,11 +40,13 @@ Controller::Methods VoltageController::createMethods() {
 void VoltageController::open(const Request& request, const SendCallback& send) {
     mDevice->open("/dev/my_uart");
     send({ name(), __func__});
+	handleRequest({ name(), "isOpen"}, mBroadcast);
 }
 
 void VoltageController::close(const Request& request, const SendCallback& send) {
     mDevice->close();
     send({ name(), __func__ });
+	handleRequest({ name(), "isOpen"}, mBroadcast);
 }
 
 void VoltageController::isOpen(const Request& request, const SendCallback& send) {
