@@ -1,14 +1,14 @@
 #pragma once
 
-#include "tdc/caenv2718.hpp"
+#include "tdc/emisstdc.hpp"
 
 #include <trek/net/controller.hpp>
 
-class Caen2718Contr : public trek::net::Controller {
-    using Module = CaenV2718;
+class EmissContr : public trek::net::Controller {
+    using Module = EmissTdc;
     using ModulePtr = std::shared_ptr<Module>;
 public:
-    Caen2718Contr(const std::string& name, const ModulePtr& module);
+    EmissContr(const std::string& name, const ModulePtr& module);
 protected:
     Methods createMethods();
 

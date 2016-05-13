@@ -1,10 +1,12 @@
 #include "appsettings.hpp"
 
+#include "controller/emisscontr.hpp"
 #include "controller/tdccontroller.hpp"
 #include "controller/expocontroller.hpp"
 #include "controller/voltagecontroller.hpp"
 
 #include "configparser/channelsconfigparser.hpp"
+
 
 #include <trek/net/server.hpp>
 #include <trek/common/timeprint.hpp>
@@ -54,7 +56,8 @@ int main() {
         fatal(StringBuilder() << "Failed parse channels.conf: " << e.what());
     }
 
-    auto tdc = make_shared<CaenV2718>(0xEE00);
+    auto caentdc = make_shared<CaenV2718>(0xEE00);
+    auto emisstdc = make_shared<EmissTdc>();
     auto ftd = make_shared<ftdi::Module>(0x28);
     auto vlt = make_shared<Amplifier>();
     vlt->setTimeout(5000);
@@ -65,16 +68,17 @@ int main() {
         std::cerr << "FTD: " << e.what() << std::endl;
     }
 
-    auto tdcController  = make_shared<TdcController>("tdc", tdc);
-    auto vltController  = make_shared<VoltageController>("vlt", vlt, ftd, appSettings.voltConfig);
-    auto expoController = make_shared<ExpoController>("expo", tdc, appSettings.expoConfig, channelParser.getConfig());
+    auto tdcController  = make_shared<Caen2718Contr>("tdc", caentdc);
+    auto emissController= make_shared<EmissContr>("emiss", emisstdc);
+    auto vltController  = make_shared<VoltageContr>("vlt", vlt, ftd, appSettings.voltConfig);
+    auto expoController = make_shared<ExpoContr>("expo", emisstdc, appSettings.expoConfig, channelParser.getConfig());
     expoController->onNewRun() = [&](unsigned nRun) {
         appSettings.expoConfig.nRun = nRun;
         appSettings.save(confPath + "CtudcServer.conf");
     };
     
 
-    trek::net::Server server({tdcController, expoController, vltController}, appSettings.ip, appSettings.port);
+    trek::net::Server server({emissController, expoController, vltController}, appSettings.ip, appSettings.port);
     server.onStart() = [](const auto&) {
         std::cout << system_clock::now() << " Server start" << endl;
     };

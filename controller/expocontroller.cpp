@@ -48,24 +48,24 @@ static auto convertHitCount(const TrekHitCount& count) {
     return convert(count, "count");
 }
 
-ExpoController::ExpoController(const std::string& name,
-                               const ModulePtr& module,
-                               const Exposition::Settings& settings,
-                               const ChannelConfig& config)
+ExpoContr::ExpoContr(const std::string& name,
+                     const ModulePtr& module,
+                     const Exposition::Settings& settings,
+                     const ChannelConfig& config)
     : Controller(name, createMethods()),
       mDevice(module),
       mChannelConfig(config),
       mConfig(settings) { }
 
-ExpoController::~ExpoController() {
+ExpoContr::~ExpoContr() {
     
 }
 
-const Callback<void(unsigned)>& ExpoController::onNewRun() {
+const Callback<void(unsigned)>& ExpoContr::onNewRun() {
     return mOnNewRun;
 }
 
-Controller::Methods ExpoController::createMethods() {
+Controller::Methods ExpoContr::createMethods() {
     return {
         {"type",         [&](auto & request, auto & send) { return this->type(request, send); } },
         {"run",          [&](auto & request, auto & send) { return this->run(request, send); } },
@@ -80,29 +80,33 @@ Controller::Methods ExpoController::createMethods() {
     };
 }
 
-void ExpoController::type(const Request& request, const SendCallback& send) {
+void ExpoContr::type(const Request& request, const SendCallback& send) {
     send({ name(), __func__, {getProcessType()} });
 }
 
-void ExpoController::run(const Request& request, const SendCallback& send) {
+void ExpoContr::run(const Request& request, const SendCallback& send) {
     send({ name(), __func__, {mConfig.nRun} });
 }
 
-void ExpoController::launchRead(const Request& request, const SendCallback& send) {
+void ExpoContr::launchRead(const Request& request, const SendCallback& send) {
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     if(mFreqFuture || mExposition)
-        throw logic_error("ExpoController::launchRead process is active");
-    assert(!*mExposition);
+        throw logic_error("ExpoContr::launchRead process is active");
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
+    assert(!mExposition);
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     mExposition = make_unique<Exposition>(mDevice, mConfig, mChannelConfig, [this](TrekFreq freq) {
         mBroadcast({name(), "freq", {convertFreq(freq)}});
     });
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     send({ name(), __func__ });
     handleRequest({ name(), "type"}, mBroadcast);
     handleRequest({ name(), "run"}, mBroadcast);
 }
 
-void ExpoController::stopRead(const Request& request, const SendCallback& send) {
+void ExpoContr::stopRead(const Request& request, const SendCallback& send) {
     if(!mExposition)
-        throw logic_error("ExpoController::stopRead process is not active");
+        throw logic_error("ExpoContr::stopRead process is not active");
     assert(*mExposition);
     mExposition.reset();
     handleRequest({ name(), "type"}, mBroadcast);
@@ -111,21 +115,21 @@ void ExpoController::stopRead(const Request& request, const SendCallback& send) 
     send({ name(), __func__ });
 }
 
-void ExpoController::launchFreq(const Request& request, const SendCallback& send) {
+void ExpoContr::launchFreq(const Request& request, const SendCallback& send) {
     if(mFreqFuture || mExposition)
-        throw logic_error("ExpoController::stopRead process is active");
+        throw logic_error("ExpoContr::stopRead process is active");
     assert(!*mExposition);
     auto delay = request.inputs.at(0).get<int>();
     if(delay <= 0)
-        throw logic_error("ExpoController::launchFreq invalid delay value");
+        throw logic_error("ExpoContr::launchFreq invalid delay value");
     mFreqFuture = ::launchFreq(mDevice, microseconds(delay));
     send({ name(), __func__ });
     handleRequest({ name(), "type"}, mBroadcast);
 }
 
-void ExpoController::stopFreq(const Request& request, const SendCallback& send) {
+void ExpoContr::stopFreq(const Request& request, const SendCallback& send) {
     if(!mFreqFuture)
-        throw logic_error("ExpoController::stopFreq process is not active");
+        throw logic_error("ExpoContr::stopFreq process is not active");
     mFreq = ::convertFreq(mFreqFuture(), mChannelConfig);
     mFreqFuture = nullptr;
 
@@ -133,34 +137,34 @@ void ExpoController::stopFreq(const Request& request, const SendCallback& send) 
     send({ name(), __func__ });
 }
 
-void ExpoController::triggerCount(const Request& request, const SendCallback& send) const {
+void ExpoContr::triggerCount(const Request& request, const SendCallback& send) const {
     if(!mExposition)
-        throw runtime_error("ExpoController::triggerCount process is not expo");
+        throw runtime_error("ExpoContr::triggerCount process is not expo");
     assert(*mExposition);
     send({ name(), __func__, {mExposition->triggerCount(), mExposition->triggerDrop()} });
 }
 
-void ExpoController::packageCount(const Request& request, const SendCallback& send) const {
+void ExpoContr::packageCount(const Request& request, const SendCallback& send) const {
     if(!mExposition)
-        throw runtime_error("ExpoController::packageCount process is not expo");
+        throw runtime_error("ExpoContr::packageCount process is not expo");
     assert(*mExposition);
     send({ name(), __func__, {mExposition->packageCount(), mExposition->packageDrop()} });
 }
 
-void ExpoController::chambersCount(const Request& request, const SendCallback& send) const {
+void ExpoContr::chambersCount(const Request& request, const SendCallback& send) const {
     if(!mExposition)
-        throw runtime_error("ExpoController::packageCount process is not expo");
+        throw runtime_error("ExpoContr::packageCount process is not expo");
     assert(*mExposition);
     auto count = convertHitCount(mExposition->chambersCount());
     auto drop  = convertHitCount(mExposition->chamberDrop());
     send({ name(), __func__, {count, drop} });
 }
 
-void ExpoController::freq(const Request& request, const SendCallback& send) const {
+void ExpoContr::freq(const Request& request, const SendCallback& send) const {
     send({ name(), __func__, convertFreq(mFreq) });
 }
 
-string ExpoController::getProcessType() const {
+string ExpoContr::getProcessType() const {
     if(mExposition) {
         assert(*mExposition);
         return "expo";

@@ -149,9 +149,12 @@ Exposition::Exposition(shared_ptr<Tdc> tdc,
       mPkgCount{0, 0},
       mActive(true),
       mOnMonitor(onMonitor) {
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     if(!tdc->isOpen())
         throw std::logic_error("launchExpo tdc is not open");
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     tdc->clear();
+    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
 
     mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings));
     mWriteThread = std::thread(&Exposition::writeLoop, this, std::ref(settings), std::ref(config));

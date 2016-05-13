@@ -6,7 +6,7 @@
 #include <trek/net/controller.hpp>
 #include <json.hpp>
 
-class VoltageController : public trek::net::Controller {
+class VoltageContr : public trek::net::Controller {
     using Module = Amplifier;
     using ModulePtr = std::shared_ptr<Module>;
     using FtdPtr = std::shared_ptr<ftdi::Module>;
@@ -19,7 +19,7 @@ public:
         void unMarhsal(const nlohmann::json& json);
     };
 public:
-    VoltageController(const std::string& name, const ModulePtr& module, const FtdPtr& ftd, const Config& config);
+    VoltageContr(const std::string& name, const ModulePtr& module, const FtdPtr& ftd, const Config& config);
 protected:
     Methods createMethods();
 

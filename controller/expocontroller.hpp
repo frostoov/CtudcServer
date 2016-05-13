@@ -4,22 +4,22 @@
 #include <trek/common/callback.hpp>
 #include <future>
 
-#include "tdc/caenv2718.hpp"
+#include "tdc/tdc.hpp"
 #include "exposition/channelconfig.hpp"
 #include "exposition/process.hpp"
 #include "exposition/exposition.hpp"
 #include "exposition/freq.hpp"
 
-class ExpoController : public trek::net::Controller {
+class ExpoContr : public trek::net::Controller {
     using FreqFuture = std::function<ChannelFreq()>;
     using ProcessPtr = std::unique_ptr<Process>;
-    using ModulePtr  = std::shared_ptr<CaenV2718>;
+    using ModulePtr  = std::shared_ptr<Tdc>;
 public:
-    ExpoController(const std::string& name,
+    ExpoContr(const std::string& name,
                    const ModulePtr& module,
                    const Exposition::Settings& settings,
                    const ChannelConfig& config);
-    ~ExpoController();
+    ~ExpoContr();
     const trek::Callback<void(unsigned)>& onNewRun();
 protected:
     Methods createMethods();
