@@ -89,16 +89,12 @@ void ExpoContr::run(const Request& request, const SendCallback& send) {
 }
 
 void ExpoContr::launchRead(const Request& request, const SendCallback& send) {
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     if(mFreqFuture || mExposition)
         throw logic_error("ExpoContr::launchRead process is active");
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     assert(!mExposition);
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     mExposition = make_unique<Exposition>(mDevice, mConfig, mChannelConfig, [this](TrekFreq freq) {
         mBroadcast({name(), "freq", {convertFreq(freq)}});
     });
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     send({ name(), __func__ });
     handleRequest({ name(), "type"}, mBroadcast);
     handleRequest({ name(), "run"}, mBroadcast);

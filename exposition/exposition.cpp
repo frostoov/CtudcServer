@@ -149,12 +149,11 @@ Exposition::Exposition(shared_ptr<Tdc> tdc,
       mPkgCount{0, 0},
       mActive(true),
       mOnMonitor(onMonitor) {
-    if(!tdc->isOpen())
-        throw std::logic_error("launchExpo tdc is not open");
-    tdc->clear();
-
-    mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings), std::ref(config));
-}
+          if(!tdc->isOpen())
+              throw std::logic_error("launchExpo tdc is not open");
+          tdc->clear();
+          mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings), std::ref(config));
+      }
 
 Exposition::~Exposition() {
     stop();
@@ -163,17 +162,26 @@ Exposition::~Exposition() {
 
 void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config) {
     auto metaFilename = printStartMeta(settings, *tdc);
+    
     vector<Tdc::EventHits> buffer;
-	unsigned num = 0;
+    unsigned num = 0;
+    
     EventWriter eventWriter(formatDir(settings), formatPrefix(settings), settings.eventsPerFile);
+    
     std::function<void(EventHits&)> writer = [&](EventHits& event) {
-		eventWriter.writeEvent({settings.nRun, num++, event});
-	};
-	while(mActive) {
-        std::this_thread::sleep_for(seconds(1));
-        tdc->readEvents(buffer);
-		auto events = handleEvents(buffer, config, false);
-		std::for_each(events.begin(), events.end(), writer);
+        eventWriter.writeEvent({settings.nRun, num++, event});
+    };
+    
+    while(mActive) {
+        try {            
+            std::this_thread::sleep_for(seconds(1));
+            tdc->readEvents(buffer);
+            std::cout << "triggers: " << buffer.size() << std::endl;           
+            auto events = handleEvents(buffer, config, false);
+            std::for_each(events.begin(), events.end(), writer);
+        } catch(std::exception& e) {
+            std::cerr << "readLoop: " << e.what() << std::endl;
+        }
     }
     printEndMeta(metaFilename);
 }
@@ -241,7 +249,7 @@ vector<EventHits> Exposition::handleEvents(const EventBuffer& buffer, const Chan
     for(auto& event : events) {
         for(auto& hit : event) {
             if(mChambersCount[i].count(hit.chamber()) == 0)
-               mChambersCount[i].emplace(hit.chamber(), ChamberHitCount{{0, 0, 0, 0}});
+                mChambersCount[i].emplace(hit.chamber(), ChamberHitCount{{0, 0, 0, 0}});
             ++mChambersCount[i].at(hit.chamber()).at(hit.wire());
         }
     }

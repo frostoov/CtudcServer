@@ -17,6 +17,7 @@ Controller::Methods EmissContr::createMethods() {
         {"open",                  [&](auto & request, auto & send) { return this->open(request, send); } },
         {"close",                 [&](auto & request, auto & send) { return this->close(request, send); } },
         {"isOpen",                [&](auto & request, auto & send) { return this->isOpen(request, send); } },
+        {"stat",                  [&](auto& request, auto& send)   { return this->stat(request, send); } },
         {"clear",                 [&](auto & request, auto & send) { return this->clear(request, send); } },
     };
 }
@@ -40,6 +41,10 @@ void EmissContr::isOpen(const Request&, const SendCallback& send) {
 void EmissContr::clear(const Request&, const SendCallback& send) {
     mDevice->clear();
     send({ name(), __func__ });
+}
+
+void EmissContr::stat(const Request&, const SendCallback& send) {
+    send({name(), __func__, {mDevice->stat()}});
 }
 
 void EmissContr::settings(const Request& request, const SendCallback& send) {

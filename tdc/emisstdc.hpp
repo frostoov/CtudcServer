@@ -18,6 +18,7 @@ public:
     bool isOpen() const override;
     void clear() override;
     Mode mode() override;
+    uint16_t stat();
     void setMode(Mode mode) override;
 private:
     ContrEM1 mEM1;

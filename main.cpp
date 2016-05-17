@@ -16,7 +16,6 @@
 #include <string>
 #include <future>
 
-
 using std::string;
 using std::exception;
 using std::cin;

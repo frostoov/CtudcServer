@@ -45,7 +45,7 @@ void PackageReceiver::doReceive() {
             mBuffer.resize(size);
             mCallback(mBuffer);
         }
-        doReceive();
+        this->doReceive();
     });
 }
 
