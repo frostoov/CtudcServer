@@ -49,7 +49,7 @@ public:
     TrekHitCount chambersCount() const { return mChambersCount[0]; }
     TrekHitCount chamberDrop() const { return mChambersCount[1]; }
 protected:    
-    void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
+    void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config);
     void writeLoop(const Settings& settings, const ChannelConfig& config);
     void monitorLoop(std::shared_ptr<Tdc> tdc, const ChannelConfig& conf);
 
@@ -58,11 +58,11 @@ private:
     EventBuffer mBuffer;
     PackageReceiver mInfoRecv;
     PackageReceiver mCtrlRecv;
-    
+
     std::thread mWriteThread;
     std::thread mMonitorThread;
     std::thread mReadThread;
-    
+	    
     uintmax_t mTrgCount[2];
     
     uintmax_t mPkgCount[2];

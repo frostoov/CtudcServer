@@ -149,42 +149,32 @@ Exposition::Exposition(shared_ptr<Tdc> tdc,
       mPkgCount{0, 0},
       mActive(true),
       mOnMonitor(onMonitor) {
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     if(!tdc->isOpen())
         throw std::logic_error("launchExpo tdc is not open");
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
     tdc->clear();
-    std::cout << __FILE__ << ":" << __LINE__ << std::endl; 
 
-    mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings));
-    mWriteThread = std::thread(&Exposition::writeLoop, this, std::ref(settings), std::ref(config));
-    mMonitorThread =  std::thread(&Exposition::monitorLoop, this, tdc, std::ref(config));
+    mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings), std::ref(config));
 }
 
 Exposition::~Exposition() {
     stop();
     mReadThread.join();
-    mMonitorThread.join();
-    mWriteThread.join();
 }
 
-void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
+void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config) {
     auto metaFilename = printStartMeta(settings, *tdc);
     vector<Tdc::EventHits> buffer;
-    while(mActive) {
-        std::this_thread::sleep_for(microseconds(3000));
-        {
-            Lock lkt(mTdcMutex);
-            tdc->readEvents(buffer);
-        }
-        {
-            Lock lk(mBufferMutex);
-            std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
-        }
+	unsigned num = 0;
+    EventWriter eventWriter(formatDir(settings), formatPrefix(settings), settings.eventsPerFile);
+    std::function<void(EventHits&)> writer = [&](EventHits& event) {
+		eventWriter.writeEvent({settings.nRun, num++, event});
+	};
+	while(mActive) {
+        std::this_thread::sleep_for(seconds(1));
+        tdc->readEvents(buffer);
+		auto events = handleEvents(buffer, config, false);
+		std::for_each(events.begin(), events.end(), writer);
     }
-    mInfoRecv.stop();
-    mCtrlRecv.stop();
-    mCv.notify_one();
     printEndMeta(metaFilename);
 }
 

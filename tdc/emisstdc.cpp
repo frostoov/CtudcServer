@@ -72,8 +72,8 @@ void EmissTdc::readEvents(vector<EventHits>& buffer)  {
                 --i;
                 break;
             }
-            word = uint16_t(mBuffer.at(i)&0xFFFF);
-	    module = uint16_t((mBuffer.at(i)>>16)&0x3F);
+        	word = uint16_t(mBuffer.at(i)&0xFFFF);
+        	module = uint16_t((mBuffer.at(i)>>16)&0x3F);
             if((word >> 15) == 0) {
                 auto chan = (word >> 10) + 32*module;
                 auto time = word & 0x3FF;
