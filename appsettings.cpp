@@ -18,6 +18,8 @@ nlohmann::json AppSettings::marshal() const {
     return {
         {"address", ip },
         {"port", port },
+        {"multicast_address", multicastIp},
+        {"multicast_port", multicastPort},
         {"expo", expoConfig.marshal()},
         {"voltage", voltConfig.marshal()},
     };
@@ -26,6 +28,8 @@ nlohmann::json AppSettings::marshal() const {
 void AppSettings::unMarshal(const nlohmann::json& doc) {
     ip   = doc.at("address").get<string>();
     port = doc.at("port");
+    multicastIp = doc.at("multicast_address").get<string>();
+    multicastPort = doc.at("multicast_port");
     expoConfig.unMarshal(doc.at("expo"));
     voltConfig.unMarhsal(doc.at("voltage"));
 }

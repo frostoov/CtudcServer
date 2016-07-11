@@ -1,12 +1,12 @@
 #pragma once
 
 #include "tdc/tdc.hpp"
-#include "net/packagereceiver.hpp"
 
 #include "channelconfig.hpp"
 #include "freq.hpp"
 
 #include <trek/data/eventrecord.hpp>
+#include <trek/net/multicastreceiver.hpp>
 #include <json.hpp>
 
 #include <condition_variable>
@@ -56,8 +56,8 @@ protected:
     std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
 private:
     EventBuffer mBuffer;
-    PackageReceiver mInfoRecv;
-    PackageReceiver mCtrlRecv;
+    trek::net::MulticastReceiver mInfoRecv;
+    trek::net::MulticastReceiver mCtrlRecv;
     
     std::thread mWriteThread;
     std::thread mMonitorThread;

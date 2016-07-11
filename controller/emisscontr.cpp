@@ -14,37 +14,37 @@ EmissContr::EmissContr(const std::string& name, const ModulePtr& module)
 
 Controller::Methods EmissContr::createMethods() {
     return {
-        {"open",                  [&](auto & request, auto & send) { return this->open(request, send); } },
-        {"close",                 [&](auto & request, auto & send) { return this->close(request, send); } },
-        {"isOpen",                [&](auto & request, auto & send) { return this->isOpen(request, send); } },
-        {"clear",                 [&](auto & request, auto & send) { return this->clear(request, send); } },
+        {"open",    [&](auto & request) { return this->open(request); } },
+        {"close",   [&](auto & request) { return this->close(request); } },
+        {"isOpen",  [&](auto & request) { return this->isOpen(request); } },
+        {"clear",   [&](auto & request) { return this->clear(request); } },
     };
 }
 
-void EmissContr::open(const Request&, const SendCallback& send) {
+Response EmissContr::open(const Request&) {
     mDevice->open();
-    send({ name(), __func__ });
-    handleRequest({name(), "isOpen"}, mBroadcast);
+    broadcast(isOpen({}));
+    return {name(), __func__};
 }
 
-void EmissContr::close(const Request&, const SendCallback& send) {
+Response EmissContr::close(const Request&) {
     mDevice->close();
-    broadcast({ name(), __func__ });
-    handleRequest({name(), "isOpen"}, mBroadcast);
+    broadcast(isOpen({}));
+    return {name(), __func__};
 }
 
-void EmissContr::isOpen(const Request&, const SendCallback& send) {
-    send({ name(), __func__, {mDevice->isOpen()} });
+Response EmissContr::isOpen(const Request&) {
+    return {name(), __func__, {mDevice->isOpen()}};
 }
 
-void EmissContr::clear(const Request&, const SendCallback& send) {
+Response EmissContr::clear(const Request&) {
     mDevice->clear();
-    send({ name(), __func__ });
+    return { name(), __func__ };
 }
 
-void EmissContr::settings(const Request& request, const SendCallback& send) {
+Response EmissContr::settings(const Request& request) {
     auto settings = mDevice->settings();
-    send({
+    return {
         name(), __func__,
         json::array({
             settings.windowWidth,
@@ -52,5 +52,5 @@ void EmissContr::settings(const Request& request, const SendCallback& send) {
             int(settings.edgeDetection),
             settings.lsb,
         })
-    });
+    };
 }

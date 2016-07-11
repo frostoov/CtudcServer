@@ -1,8 +1,13 @@
 #include "amplifier.hpp"
 
+#include <boost/asio.hpp>
+
 #include <sstream>
 #include <iterator>
 #include <cmath>
+#include <thread>
+
+namespace asio = boost::asio;
 
 using std::set;
 using std::string;
@@ -13,22 +18,22 @@ using std::ostream;
 using std::mutex;
 using std::lock_guard;
 
-Amplifier::Amplifier()
-    : mStream(&mBuffer) {
-    mStream.exceptions(mStream.badbit | mStream.failbit);
-}
+static constexpr int baudRate = 9600;
+
+Amplifier::Amplifier() : mPort(mIoService) {}
 
 void Amplifier::open(const string& name) {
-    mStream.clear();
+    mPort.open(name);
+    mPort.set_option(boost::asio::serial_port::baud_rate(baudRate));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     mCellStats.clear();
-    mBuffer.open(name, 9600);
 
     mCellStats = readCellStats(readCellNums());
 }
 
 void Amplifier::close() {
     mCellStats.clear();
-    mBuffer.close();
+    mPort.close();
 }
 
 Amplifier::Stat Amplifier::stat(int cell) {
@@ -101,9 +106,15 @@ inline bool endsWith(const string& str, const string& ending) {
 }
 
 set<int> Amplifier::readCellNums() {
-    mStream << 'l' << std::flush;
+    asio::streambuf buffer;
+    {
+        lock_guard<mutex> lk(mMutex);
+        asio::write(mPort, asio::buffer("l"));
+        asio::read_until(mPort, buffer, '\n');
+    }
+    std::istream istr(&buffer);
     string response;
-    std::getline(mStream, response);
+    std::getline(istr, response);
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readCellNums failed: " + response);
     istringstream iss(response);
@@ -111,11 +122,15 @@ set<int> Amplifier::readCellNums() {
     for(auto it = istream_iterator<string>(iss); it != istream_iterator<string>(); ++it) {
         cellNums.insert(std::stoi(*it));
     }
+    std::cout << "cellNums:";
+    for(auto c : cellNums)
+        std::cout << c << std::endl;
     return cellNums;
 }
 
 Amplifier::CellStats Amplifier::readCellStats(const set<int>& cells) {
     CellStats cellStats;
+    std::cout << __FILE__ << ':' << __LINE__ << std::endl;
     for(auto cell : cells) {
         auto uMesmax = readWord(cell, 22);
         auto uMax    = readWord(cell, 18);
@@ -128,38 +143,68 @@ Amplifier::CellStats Amplifier::readCellStats(const set<int>& cells) {
 }
 
 void Amplifier::writeWord(int cell, int addr, uint16_t word) {
-    lock_guard<mutex> lock(mMutex);
-    mStream << 'w' << std::hex << cell << ',' << addr << ',' << word << '\r' << std::flush;
+    std::ostringstream ostr;
+    ostr << 'w' << std::hex << cell << ',' << addr << ',' << word << '\r';
+    asio::streambuf buffer;
+    {
+        lock_guard<mutex> lock(mMutex);
+        asio::write(mPort, asio::buffer(ostr.str()));
+        asio::read_until(mPort, buffer, '\n');
+    }
+    std::istream istr(&buffer);
     string response;
-    std::getline(mStream, response);
+    std::getline(istr, response);
     if(std::stoul(response, nullptr, 16) != word)
         throw std::runtime_error("Amplifier::writeWord failed: " + response);
 }
 
 void Amplifier::writeByte(int cell, int addr, uint8_t byte) {
-    lock_guard<mutex> lock(mMutex);
-    mStream << '>' << std::hex << cell << ',' << addr << ',' << uint16_t(byte) << '\r' << std::flush;
+    std::ostringstream ostr;
+    ostr << '>' << std::hex << cell << ',' << addr << ',' << uint16_t(byte) << '\r';
+    asio::streambuf buffer;
+    {
+        lock_guard<mutex> lock(mMutex);
+        asio::write(mPort, asio::buffer(ostr.str()));
+        asio::read_until(mPort, buffer, '\n');
+    }
+    std::istream istr(&buffer);
     string response;
-    std::getline(mStream, response);
+    std::getline(istr, response);
     if(std::stoul(response, nullptr, 16) != byte)
         throw std::runtime_error("Amplifier::writeWord failed: " + response);
 }
 
 uint16_t Amplifier::readWord(int cell, int addr) {
-    lock_guard<mutex> lock(mMutex);
-    mStream << 'r' << std::hex << cell << ',' << addr << '\r' << std::flush;
+    std::ostringstream ostr;
+    ostr << 'r' << std::hex << cell << ',' << addr << '\r';
+    std::cout << "send: " << ostr.str() << std::endl;
+    asio::streambuf buffer;
+    {
+        lock_guard<mutex> lock(mMutex);
+        asio::write(mPort, asio::buffer(ostr.str()));
+        asio::read_until(mPort, buffer, '\n');
+    }
+    std::istream istr(&buffer);
     string response;
-    std::getline(mStream, response);
+    std::getline(istr, response);
+    std::cout << "recv: " << response << std::endl;
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readWord failed: " + response);
     return uint16_t( std::stoi(response, nullptr, 16) );
 }
 
 uint8_t Amplifier::readByte(int cell, int addr) {
-    lock_guard<mutex> lock(mMutex);
-    mStream << '<' << std::hex << cell << ',' << addr << '\r' << std::flush;
+    std::ostringstream ostr;
+    ostr << '<' << std::hex << cell << ',' << addr << '\r';
+    asio::streambuf buffer;
+    {
+        lock_guard<mutex> lock(mMutex);
+        asio::write(mPort, asio::buffer(ostr.str()));
+        asio::read_until(mPort, buffer, '\n');
+    }
+    std::istream istr(&buffer);
     string response;
-    std::getline(mStream, response);
+    std::getline(istr, response);
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readByte failed: " + response);
     return uint8_t( std::stoi(response, nullptr, 16) );
@@ -195,13 +240,12 @@ int Amplifier::code2speed(int cell, uint16_t code) {
     return round( double(stat.umax - stat.umin) * 200 / (code * 1024) );
 }
 
-
 ostream& operator<<(ostream& stream, Amplifier::Stat stat) {
     return stream << "CEB:   " << stat.ceb() << '\n'
-           << "GS:    " << stat.gs() << '\n'
-           << "ACCEB: " << stat.acceb() << '\n'
-           << "IOVLD: " << stat.iovld() << '\n'
-           << "STDBY: " << stat.stdby() << '\n'
-           << "RDACT: " << stat.rdact() << '\n'
-           << "RUACT: " << stat.ruact() << '\n';
+                  << "GS:    " << stat.gs() << '\n'
+                  << "ACCEB: " << stat.acceb() << '\n'
+                  << "IOVLD: " << stat.iovld() << '\n'
+                  << "STDBY: " << stat.stdby() << '\n'
+                  << "RDACT: " << stat.rdact() << '\n'
+                  << "RUACT: " << stat.ruact() << '\n';
 }

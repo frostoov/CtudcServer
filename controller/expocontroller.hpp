@@ -23,17 +23,17 @@ public:
     const trek::Callback<void(unsigned)>& onNewRun();
 protected:
     Methods createMethods();
-    void type(const trek::net::Request& request, const SendCallback& send);
-    void run(const trek::net::Request& request, const SendCallback& send);
-    void launchRead(const trek::net::Request& request, const SendCallback& send);
-    void stopRead(const trek::net::Request& request, const SendCallback& send);
-    void launchFreq(const trek::net::Request& request, const SendCallback& send);
-    void stopFreq(const trek::net::Request& request, const SendCallback& send);
-    void triggerCount(const trek::net::Request& request, const SendCallback& send) const;
-    void packageCount(const trek::net::Request& request, const SendCallback& send) const;
-    void droppedCount(const trek::net::Request& request, const SendCallback& send) const;
-    void chambersCount(const trek::net::Request& request, const SendCallback& send) const;
-    void freq(const trek::net::Request& request, const SendCallback& send) const;
+    trek::net::Response type(const trek::net::Request& request);
+    trek::net::Response run(const trek::net::Request& request);
+    trek::net::Response launchRead(const trek::net::Request& request);
+    trek::net::Response stopRead(const trek::net::Request& request);
+    trek::net::Response launchFreq(const trek::net::Request& request);
+    trek::net::Response stopFreq(const trek::net::Request& request);
+    trek::net::Response triggerCount(const trek::net::Request& request) const;
+    trek::net::Response packageCount(const trek::net::Request& request) const;
+    trek::net::Response droppedCount(const trek::net::Request& request) const;
+    trek::net::Response chambersCount(const trek::net::Request& request) const;
+    trek::net::Response freq(const trek::net::Request& request) const;
 
     std::string getProcessType() const;
     static TrekFreq createFreq(TrekFreq hitCount, std::chrono::microseconds dur);

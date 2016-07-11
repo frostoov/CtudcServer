@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(
         Boost
-        1.55.0
+        1.60.0
 	COMPONENTS
 	system
 	filesystem
@@ -29,10 +29,8 @@ set(
 	controller/expocontroller.cpp
 	controller/voltagecontroller.cpp
         controller/emisscontr.cpp
-	net/packagereceiver.cpp
 	appsettings.cpp
 	voltage/amplifier.cpp
-	voltage/serialbuf.cpp
 	exposition/exposition.cpp
 	exposition/eventwriter.cpp
 	exposition/freq.cpp
@@ -55,9 +53,7 @@ set(
 	controller/expocontroller.hpp
 	controller/voltagecontroller.hpp
         controller/emisscontr.cpp
-	net/packagereceiver.hpp
 	voltage/amplifier.hpp
-	voltage/serialbuf.hpp
 	exposition/channelconfig.hpp
 	exposition/process.hpp
 	exposition/eventwriter.hpp
@@ -82,7 +78,6 @@ target_link_libraries(
         ${PROJECT_NAME}
         CAENVME
         ftd2xx
-        trekcommon
         trekdata
         treknet
         pthread

@@ -59,17 +59,27 @@ int main() {
     auto caentdc = make_shared<CaenV2718>(0xEE00);
     auto emisstdc = make_shared<EmissTdc>();
     auto ftd = make_shared<ftdi::Module>(0x28);
+    std::cout << '0' << std::endl;
     auto vlt = make_shared<Amplifier>();
-    vlt->setTimeout(5000);
     try {
         ftd->open("C232HM-EDHSL-0");
         ftd->initialize({ftdi::I2C_CLOCK_STANDARD_MODE, 1, 0});
     } catch(std::exception& e) {
-        std::cerr << "FTD: " << e.what() << std::endl;
+        std::cerr << "Failed open ftd: " << e.what() << std::endl;
+    }
+    try {
+        vlt->open("/dev/ttyUSB0");
+    } catch(exception& e) {
+        std::cerr << "Failed open voltage: " << e.what() << std::endl;
+    }
+    try {
+        caentdc->open();
+    } catch(exception& e) {
+        std::cerr << "Failed open caentdc: " << e.what() << std::endl;
     }
 
     auto tdcController  = make_shared<Caen2718Contr>("tdc", caentdc);
-    auto emissController= make_shared<EmissContr>("emiss", emisstdc);
+    //auto emissController= make_shared<EmissContr>("emiss", emisstdc);
     auto vltController  = make_shared<VoltageContr>("vlt", vlt, ftd, appSettings.voltConfig);
     auto expoController = make_shared<ExpoContr>("expo", emisstdc, appSettings.expoConfig, channelParser.getConfig());
     expoController->onNewRun() = [&](unsigned nRun) {
@@ -78,7 +88,12 @@ int main() {
     };
     
 
-    trek::net::Server server({emissController, expoController, vltController}, appSettings.ip, appSettings.port);
+    trek::net::Server server({tdcController, expoController, vltController}, {
+        appSettings.ip,
+        appSettings.port,
+        appSettings.multicastIp,
+        appSettings.multicastPort,
+    });
     server.onStart() = [](const auto&) {
         std::cout << system_clock::now() << " Server start" << endl;
     };

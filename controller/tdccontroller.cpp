@@ -14,117 +14,117 @@ Caen2718Contr::Caen2718Contr(const std::string& name, const ModulePtr& module)
 
 Controller::Methods Caen2718Contr::createMethods() {
     return {
-        {"open",                  [&](auto & request, auto & send) { return this->open(request, send); } },
-        {"close",                 [&](auto & request, auto & send) { return this->close(request, send); } },
-        {"isOpen",                [&](auto & request, auto & send) { return this->isOpen(request, send); } },
-        {"clear",                 [&](auto & request, auto & send) { return this->clear(request, send); } },
-        {"reset",                 [&](auto & request, auto & send) { return this->reset(request, send); } },
-        {"stat",                  [&](auto & request, auto & send) { return this->stat(request, send); } },
-        {"ctrl",                  [&](auto & request, auto & send) { return this->ctrl(request, send); } },
-        {"tdcMeta",               [&](auto & request, auto & send) { return this->tdcMeta(request, send); } },
-        {"setMode",	              [&](auto & request, auto & send) { return this->setMode(request, send); } },
-        {"mode",                  [&](auto & request, auto & send) { return this->mode(request, send); } },
-        {"setWindowWidth",        [&](auto & request, auto & send) { return this->setWindowWidth(request, send); } },
-        {"setWindowOffset",       [&](auto & request, auto & send) { return this->setWindowOffset(request, send); } },
-        {"setEdgeDetection",      [&](auto & request, auto & send) { return this->setEdgeDetection(request, send); } },
-        {"setLsb",                [&](auto & request, auto & send) { return this->setLsb(request, send);  } },
-        {"setCtrl",               [&](auto & request, auto & send) { return this->setCtrl(request, send); } },
-        {"setTdcMeta",            [&](auto & request, auto & send) { return this->setTdcMeta(request, send); } },
-        {"settings",              [&](auto & request, auto & send) { return this->settings(request, send); } },
-        {"updateSettings",        [&](auto & request, auto & send) { return this->updateSettings(request, send); } },
+        {"open",                  [&](auto& request) { return this->open(request); } },
+        {"close",                 [&](auto& request) { return this->close(request); } },
+        {"isOpen",                [&](auto& request) { return this->isOpen(request); } },
+        {"clear",                 [&](auto& request) { return this->clear(request); } },
+        {"reset",                 [&](auto& request) { return this->reset(request); } },
+        {"stat",                  [&](auto& request) { return this->stat(request); } },
+        {"ctrl",                  [&](auto& request) { return this->ctrl(request); } },
+        {"tdcMeta",               [&](auto& request) { return this->tdcMeta(request); } },
+        {"setMode",	          [&](auto& request) { return this->setMode(request); } },
+        {"mode",                  [&](auto& request) { return this->mode(request); } },
+        {"setWindowWidth",        [&](auto& request) { return this->setWindowWidth(request); } },
+        {"setWindowOffset",       [&](auto& request) { return this->setWindowOffset(request); } },
+        {"setEdgeDetection",      [&](auto& request) { return this->setEdgeDetection(request); } },
+        {"setLsb",                [&](auto& request) { return this->setLsb(request);  } },
+        {"setCtrl",               [&](auto& request) { return this->setCtrl(request); } },
+        {"setTdcMeta",            [&](auto& request) { return this->setTdcMeta(request); } },
+        {"settings",              [&](auto& request) { return this->settings(request); } },
+        {"updateSettings",        [&](auto& request) { return this->updateSettings(request); } },
     };
 }
 
-void Caen2718Contr::open(const Request&, const SendCallback& send) {
+Response Caen2718Contr::open(const Request&) {
     mDevice->open();
-    send({ name(), __func__ });
-    handleRequest({name(), "isOpen"}, mBroadcast);
+    broadcast(isOpen({}));
+    return { name(), __func__ };
 }
 
-void Caen2718Contr::close(const Request&, const SendCallback& send) {
+Response Caen2718Contr::close(const Request&) {
     mDevice->close();
-    broadcast({ name(), __func__ });
-    handleRequest({name(), "isOpen"}, mBroadcast);
+    broadcast(isOpen({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::isOpen(const Request&, const SendCallback& send) {
-    send({ name(), __func__, {mDevice->isOpen()} });
+Response Caen2718Contr::isOpen(const Request&) {
+    return {name(), __func__, {mDevice->isOpen()}};
 }
 
-void Caen2718Contr::clear(const Request&, const SendCallback& send) {
+Response Caen2718Contr::clear(const Request&) {
     mDevice->clear();
-    send({ name(), __func__ });
+    return {name(), __func__};
 }
 
-void Caen2718Contr::reset(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::reset(const Request& request) {
     mDevice->reset();
-    send({ name(), __func__ });
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setMode(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setMode(const Request& request) {
     auto mode = request.inputs.at(0).get<int>();
     mDevice->setMode(Tdc::Mode(mode));
-    send({ name(), __func__ });
-    handleRequest({name(), "mode"}, mBroadcast);
+    broadcast(this->mode({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setWindowWidth(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setWindowWidth(const Request& request) {
     mDevice->setWindowWidth(request.inputs.at(0));
-    send({ name(), __func__ });
-    handleRequest({name(), "settings"}, mBroadcast);
+    broadcast(settings({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setWindowOffset(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setWindowOffset(const Request& request) {
     mDevice->setWindowOffset(request.inputs.at(0));
-    send({ name(), __func__ });
-    handleRequest({name(), "settings"}, mBroadcast);
+    broadcast(settings({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setEdgeDetection(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setEdgeDetection(const Request& request) {
     auto ed = request.inputs.at(0).get<int>();
     mDevice->setEdgeDetection(Tdc::EdgeDetection(ed));
-    send({ name(), __func__ });
-    handleRequest({name(), "settings"}, mBroadcast);
+    broadcast(settings({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setLsb(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setLsb(const Request& request) {
     mDevice->setLsb(request.inputs.at(0));
-    send({ name(), __func__ });
-    handleRequest({name(), "settings"}, mBroadcast);
+    broadcast(settings({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setCtrl(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setCtrl(const Request& request) {
     mDevice->setCtrl(request.inputs.at(0));
-    send({ name(), __func__ });
-    handleRequest({ name(), "ctrl"}, mBroadcast);
+    broadcast(ctrl({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::setTdcMeta(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::setTdcMeta(const Request& request) {
     mDevice->setTdcMeta(request.inputs.at(0));
-    send({ name(), __func__ });
-    handleRequest({name(), "tdcMeta"}, mBroadcast);
+    broadcast(tdcMeta({}));
+    return {name(), __func__};
 }
 
-void Caen2718Contr::stat(const Request& request, const SendCallback& send) {
-    send({ name(), __func__, {mDevice->stat()} });
+Response Caen2718Contr::stat(const Request& request) {
+    return {name(), __func__, {mDevice->stat()}};
 }
 
-void Caen2718Contr::ctrl(const Request& request, const SendCallback& send) {
-    send({ name(), __func__, {mDevice->ctrl()} });
+Response Caen2718Contr::ctrl(const Request& request) {
+    return {name(), __func__, {mDevice->ctrl()}};
 }
 
-void Caen2718Contr::tdcMeta(const Request& request, const SendCallback& send) {
-    send({ name(), __func__, {mDevice->tdcMeta()} });
+Response Caen2718Contr::tdcMeta(const Request& request) {
+    return {name(), __func__, {mDevice->tdcMeta()}};
 }
 
-void Caen2718Contr::mode(const Request& request, const SendCallback& send) {
-    send({ name(), __func__, {int(mDevice->mode())} });
+Response Caen2718Contr::mode(const Request& request) {
+    return {name(), __func__, {int(mDevice->mode())}};
 }
 
-void Caen2718Contr::updateSettings(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::updateSettings(const Request& request) {
     mDevice->updateSettings();
     auto settings = mDevice->settings();
-    send({
+    return {
         name(), __func__,
         json::array({
             settings.windowWidth,
@@ -132,12 +132,12 @@ void Caen2718Contr::updateSettings(const Request& request, const SendCallback& s
             int(settings.edgeDetection),
             settings.lsb,
         })
-    });
+    };
 }
 
-void Caen2718Contr::settings(const Request& request, const SendCallback& send) {
+Response Caen2718Contr::settings(const Request& request) {
     auto settings = mDevice->settings();
-    send({
+    return {
         name(), __func__,
         json::array({
             settings.windowWidth,
@@ -145,5 +145,5 @@ void Caen2718Contr::settings(const Request& request, const SendCallback& send) {
             int(settings.edgeDetection),
             settings.lsb,
         })
-    });
+    };
 }

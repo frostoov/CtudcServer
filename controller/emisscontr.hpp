@@ -12,25 +12,25 @@ public:
 protected:
     Methods createMethods();
 
-    void open(const trek::net::Request& request, const SendCallback& send);
-    void close(const trek::net::Request& request, const SendCallback& send);
-    void isOpen(const trek::net::Request& request, const SendCallback& send);
+    trek::net::Response open(const trek::net::Request& request);
+    trek::net::Response close(const trek::net::Request& request);
+    trek::net::Response isOpen(const trek::net::Request& request);
 
-    void clear(const trek::net::Request& request, const SendCallback& send);
-    void reset(const trek::net::Request& request, const SendCallback& send);
-    void stat(const trek::net::Request& request, const SendCallback& send);
-    void ctrl(const trek::net::Request& request, const SendCallback& send);
-    void mode(const trek::net::Request& request, const SendCallback& send);
-    void tdcMeta(const trek::net::Request& request, const SendCallback& send);
-    void setMode(const trek::net::Request& request, const SendCallback& send);
-    void setWindowWidth(const trek::net::Request& request, const SendCallback& send);
-    void setWindowOffset(const trek::net::Request& request, const SendCallback& send);
-    void setEdgeDetection(const trek::net::Request& request, const SendCallback& send);
-    void setLsb(const trek::net::Request& request, const SendCallback& send);
-    void setCtrl(const trek::net::Request& request, const SendCallback& send);
-    void setTdcMeta(const trek::net::Request& request, const SendCallback& send);
-    void updateSettings(const trek::net::Request& request, const SendCallback& send);
-    void settings(const trek::net::Request& request, const SendCallback& send);
+    trek::net::Response clear(const trek::net::Request& request);
+    trek::net::Response reset(const trek::net::Request& request);
+    trek::net::Response stat(const trek::net::Request& request);
+    trek::net::Response ctrl(const trek::net::Request& request);
+    trek::net::Response mode(const trek::net::Request& request);
+    trek::net::Response tdcMeta(const trek::net::Request& request);
+    trek::net::Response setMode(const trek::net::Request& request);
+    trek::net::Response setWindowWidth(const trek::net::Request& request);
+    trek::net::Response setWindowOffset(const trek::net::Request& request);
+    trek::net::Response setEdgeDetection(const trek::net::Request& request);
+    trek::net::Response setLsb(const trek::net::Request& request);
+    trek::net::Response setCtrl(const trek::net::Request& request);
+    trek::net::Response setTdcMeta(const trek::net::Request& request);
+    trek::net::Response updateSettings(const trek::net::Request& request);
+    trek::net::Response settings(const trek::net::Request& request);
 private:
     ModulePtr mDevice;
 };

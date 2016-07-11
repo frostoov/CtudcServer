@@ -1,6 +1,7 @@
 #pragma once
 
-#include "serialbuf.hpp"
+#include <boost/asio/serial_port.hpp>
+#include <boost/asio/streambuf.hpp>
 
 #include <mutex>
 #include <iostream>
@@ -37,7 +38,7 @@ public:
 
     void open(const std::string& name);
     void close();
-    bool isOpen() const { return mBuffer.isOpen(); }
+    bool isOpen() const { return mPort.is_open(); }
 
     Stat stat(int cell);
     const CellStats& cellStats() const { return mCellStats; }
@@ -57,7 +58,9 @@ public:
     void turnOn(int cell);
     void turnOff(int cell);
 
-    void setTimeout(int millis) {mBuffer.setTimeout(millis);}
+    void setTimeout(int millis) {
+        throw std::logic_error("unimplemented feature");
+    }
 protected:
     std::set<int> readCellNums();
     CellStats readCellStats(const std::set<int>& cellNums);
@@ -75,8 +78,8 @@ protected:
     uint16_t speed2code(int cell, int speed);
     int code2speed(int cell, uint16_t code);
 private:
-    serialbuf mBuffer;
-    std::iostream mStream;
+    boost::asio::io_service  mIoService;
+    boost::asio::serial_port mPort;
 
     CellStats mCellStats;
     std::mutex mMutex;

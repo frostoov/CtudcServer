@@ -6,7 +6,9 @@
 
 struct AppSettings {
     std::string ip;
-    uint16_t     port;
+    uint16_t    port;
+    std::string multicastIp;
+    uint16_t    multicastPort;
     Exposition::Settings expoConfig;
     VoltageContr::Config voltConfig;
 
