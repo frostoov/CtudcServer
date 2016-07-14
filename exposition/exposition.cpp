@@ -208,7 +208,7 @@ void Exposition::writeLoop(const Settings& settings, const ChannelConfig& config
             std::cerr << "Expo write loop " << e.what() << std::endl;
         }
     });
-    mInfoRecv.start();
+    mInfoRecv.run();
 }
 
 void Exposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
@@ -235,7 +235,7 @@ void Exposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
             std::cerr << "Expo monitor loop " << e.what() << std::endl;
         }
     });
-    mCtrlRecv.start();
+    mCtrlRecv.run();
 }
 
 vector<EventHits> Exposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop) {
