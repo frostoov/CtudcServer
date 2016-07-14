@@ -61,6 +61,7 @@ public:
     void setTimeout(int millis) {
         throw std::logic_error("unimplemented feature");
     }
+    std::string send(boost::asio::serial_port& port, const std::string& msg);
 protected:
     std::set<int> readCellNums();
     CellStats readCellStats(const std::set<int>& cellNums);

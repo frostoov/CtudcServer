@@ -105,16 +105,40 @@ inline bool endsWith(const string& str, const string& ending) {
     return std::equal(ending.rbegin(), ending.rend(), str.rend());
 }
 
-set<int> Amplifier::readCellNums() {
+static string& replace(string& str, const string& s, const string& t) {
+    string::size_type pos = 0;
+    while((pos = str.find(s, pos)) != str.npos) {
+        str.replace(pos, s.size(), t);
+        pos += t.size();
+    }
+    return str;
+}
+
+static std::string unescape(const std::string& s) {
+    auto t = s;
+    replace(t, "\t", "\\t");
+    replace(t, "\n", "\\n");
+    replace(t, "\r", "\\r");
+    return t;
+}
+
+std::string Amplifier::send(asio::serial_port& port, const std::string& msg) {
+    //std::cout << "port_send: " << unescape(msg) << std::endl;
     asio::streambuf buffer;
     {
         lock_guard<mutex> lk(mMutex);
-        asio::write(mPort, asio::buffer("l"));
+        asio::write(mPort, asio::buffer(msg));
         asio::read_until(mPort, buffer, '\n');
     }
     std::istream istr(&buffer);
     string response;
     std::getline(istr, response);
+    //std::cout << "port_recv: " << unescape(response) << std::endl;
+    return response;
+}
+
+set<int> Amplifier::readCellNums() {
+    auto response = send(mPort, "l");
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readCellNums failed: " + response);
     istringstream iss(response);
@@ -122,9 +146,6 @@ set<int> Amplifier::readCellNums() {
     for(auto it = istream_iterator<string>(iss); it != istream_iterator<string>(); ++it) {
         cellNums.insert(std::stoi(*it));
     }
-    std::cout << "cellNums:";
-    for(auto c : cellNums)
-        std::cout << c << std::endl;
     return cellNums;
 }
 
@@ -145,15 +166,7 @@ Amplifier::CellStats Amplifier::readCellStats(const set<int>& cells) {
 void Amplifier::writeWord(int cell, int addr, uint16_t word) {
     std::ostringstream ostr;
     ostr << 'w' << std::hex << cell << ',' << addr << ',' << word << '\r';
-    asio::streambuf buffer;
-    {
-        lock_guard<mutex> lock(mMutex);
-        asio::write(mPort, asio::buffer(ostr.str()));
-        asio::read_until(mPort, buffer, '\n');
-    }
-    std::istream istr(&buffer);
-    string response;
-    std::getline(istr, response);
+    auto response = send(mPort, ostr.str());
     if(std::stoul(response, nullptr, 16) != word)
         throw std::runtime_error("Amplifier::writeWord failed: " + response);
 }
@@ -161,15 +174,7 @@ void Amplifier::writeWord(int cell, int addr, uint16_t word) {
 void Amplifier::writeByte(int cell, int addr, uint8_t byte) {
     std::ostringstream ostr;
     ostr << '>' << std::hex << cell << ',' << addr << ',' << uint16_t(byte) << '\r';
-    asio::streambuf buffer;
-    {
-        lock_guard<mutex> lock(mMutex);
-        asio::write(mPort, asio::buffer(ostr.str()));
-        asio::read_until(mPort, buffer, '\n');
-    }
-    std::istream istr(&buffer);
-    string response;
-    std::getline(istr, response);
+    auto response = send(mPort, ostr.str());
     if(std::stoul(response, nullptr, 16) != byte)
         throw std::runtime_error("Amplifier::writeWord failed: " + response);
 }
@@ -177,17 +182,7 @@ void Amplifier::writeByte(int cell, int addr, uint8_t byte) {
 uint16_t Amplifier::readWord(int cell, int addr) {
     std::ostringstream ostr;
     ostr << 'r' << std::hex << cell << ',' << addr << '\r';
-    std::cout << "send: " << ostr.str() << std::endl;
-    asio::streambuf buffer;
-    {
-        lock_guard<mutex> lock(mMutex);
-        asio::write(mPort, asio::buffer(ostr.str()));
-        asio::read_until(mPort, buffer, '\n');
-    }
-    std::istream istr(&buffer);
-    string response;
-    std::getline(istr, response);
-    std::cout << "recv: " << response << std::endl;
+    auto response = send(mPort, ostr.str());
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readWord failed: " + response);
     return uint16_t( std::stoi(response, nullptr, 16) );
@@ -196,15 +191,7 @@ uint16_t Amplifier::readWord(int cell, int addr) {
 uint8_t Amplifier::readByte(int cell, int addr) {
     std::ostringstream ostr;
     ostr << '<' << std::hex << cell << ',' << addr << '\r';
-    asio::streambuf buffer;
-    {
-        lock_guard<mutex> lock(mMutex);
-        asio::write(mPort, asio::buffer(ostr.str()));
-        asio::read_until(mPort, buffer, '\n');
-    }
-    std::istream istr(&buffer);
-    string response;
-    std::getline(istr, response);
+    auto response = send(mPort, ostr.str());
     if(startsWith(response, "Er"))
         throw std::runtime_error("Amplifier::readByte failed: " + response);
     return uint8_t( std::stoi(response, nullptr, 16) );

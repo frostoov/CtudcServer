@@ -61,12 +61,14 @@ Response VoltageContr::stat(const Request& request) {
 Response VoltageContr::turnOn(const Request& request) {
     auto cell = getCell( request.inputs.at(0) );
     mDevice->turnOn(cell);
+	broadcast(stat(request));
     return {name(), __func__};
 }
 
 Response VoltageContr::turnOff(const Request& request) {
     auto cell = getCell( request.inputs.at(0) );
     mDevice->turnOff(cell);
+	broadcast(stat(request));
     return {name(), __func__};
 }
 
@@ -79,6 +81,7 @@ Response VoltageContr::setVoltage(const Request& request) {
     } else {
         mDevice->setVoltage(cell, val);
     }
+	broadcast(voltage(request));
     return {name(), __func__};
 }
 
@@ -86,12 +89,14 @@ Response VoltageContr::setSpeedUp(const Request& request) {
     auto cell = getCell(request.inputs.at(0));
     auto val = request.inputs.at(1).get<int>();
     mDevice->setSpeedUp(cell, val);
+	broadcast(speedUp(request));
     return {name(), __func__};
 }
 Response VoltageContr::setSpeedDn(const Request& request) {
     auto cell = getCell(request.inputs.at(0));
     auto val = request.inputs.at(1).get<int>();
     mDevice->setSpeedDn(cell, val);
+	broadcast(speedDn(request));
     return {name(), __func__};
 }
 
@@ -105,9 +110,7 @@ Response VoltageContr::speedDn(const Request& request) {
 }
 
 Response VoltageContr::voltage(const Request& request) {
-    std::cout << __FILE__ << ':' << __LINE__ << std::endl;
     auto cell = getCell( request.inputs.at(0) );
-    std::cout << __FILE__ << ':' << __LINE__ << std::endl;
     return {name(), __func__, {request.inputs.at(0), mDevice->voltage(cell)}};
 }
 

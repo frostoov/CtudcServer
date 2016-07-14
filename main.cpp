@@ -57,9 +57,8 @@ int main() {
     }
 
     auto caentdc = make_shared<CaenV2718>(0xEE00);
-    auto emisstdc = make_shared<EmissTdc>();
+    //auto emisstdc = make_shared<EmissTdc>();
     auto ftd = make_shared<ftdi::Module>(0x28);
-    std::cout << '0' << std::endl;
     auto vlt = make_shared<Amplifier>();
     try {
         ftd->open("C232HM-EDHSL-0");
@@ -68,7 +67,7 @@ int main() {
         std::cerr << "Failed open ftd: " << e.what() << std::endl;
     }
     try {
-        vlt->open("/dev/ttyUSB0");
+        vlt->open("/dev/my_uart");
     } catch(exception& e) {
         std::cerr << "Failed open voltage: " << e.what() << std::endl;
     }
@@ -81,7 +80,7 @@ int main() {
     auto tdcController  = make_shared<Caen2718Contr>("tdc", caentdc);
     //auto emissController= make_shared<EmissContr>("emiss", emisstdc);
     auto vltController  = make_shared<VoltageContr>("vlt", vlt, ftd, appSettings.voltConfig);
-    auto expoController = make_shared<ExpoContr>("expo", emisstdc, appSettings.expoConfig, channelParser.getConfig());
+    auto expoController = make_shared<ExpoContr>("expo", caentdc, appSettings.expoConfig, channelParser.getConfig());
     expoController->onNewRun() = [&](unsigned nRun) {
         appSettings.expoConfig.nRun = nRun;
         appSettings.save(confPath + "CtudcServer.conf");

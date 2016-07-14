@@ -57,9 +57,7 @@ ExpoContr::ExpoContr(const std::string& name,
       mChannelConfig(config),
       mConfig(settings) { }
 
-ExpoContr::~ExpoContr() {
-    
-}
+ExpoContr::~ExpoContr() { }
 
 const Callback<void(unsigned)>& ExpoContr::onNewRun() {
     return mOnNewRun;
@@ -93,8 +91,9 @@ Response ExpoContr::launchRead(const Request&) {
         throw logic_error("ExpoContr::launchRead process is active");
     assert(!mExposition);
     mExposition = make_unique<Exposition>(mDevice, mConfig, mChannelConfig, [this](TrekFreq freq) {
-        broadcast({name(), "freq", {convertFreq(freq)}});
+        broadcast({name(), "monitoring", {convertFreq(freq)}});
     });
+    mOnNewRun(mConfig.nRun + 1);
     broadcast(type({}));
     broadcast(run({}));
     return {name(), __func__};
@@ -107,7 +106,6 @@ Response ExpoContr::stopRead(const Request&) {
     mExposition.reset();
     broadcast(type({}));
     ++mConfig.nRun;
-    mOnNewRun(mConfig.nRun);
     return { name(), __func__ };
 }
 
