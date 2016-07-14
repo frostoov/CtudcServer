@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 set(Boost_USE_STATIC_LIBS ON)
 find_package(
         Boost
-        1.60.0
+        1.55.0
 	COMPONENTS
 	system
 	filesystem
