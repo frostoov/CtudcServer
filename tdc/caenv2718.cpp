@@ -88,9 +88,10 @@ void decodeHits(unsigned lsb, uint32_t* data, size_t size, vector<Tdc::Hit>& buf
             buffer.emplace_back(edgeDetection(data[i]), chan(data[i]), lsb * time(data[i]));
 }
 
-CaenV2718::CaenV2718(unsigned baseAddress)
+CaenV2718::CaenV2718(const string& name, unsigned baseAddress)
     : mBaseAddress(baseAddress),
-      mIsInit(false) { }
+      mIsInit(false),
+      mName(name) { }
 
 CaenV2718::~CaenV2718() {
     close();
@@ -143,6 +144,7 @@ void CaenV2718::readHits(vector<Hit>& buffer) {
 
 const string& CaenV2718::name() const {
     static string n("CaenV2718");
+    return mName;
     return n;
 }
 

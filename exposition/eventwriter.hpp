@@ -8,7 +8,7 @@ class EventWriter {
 public:
     EventWriter(const std::string& path,
                 const std::string& prefix,
-                unsigned eventsPerFile);
+                uintmax_t eventsPerFile);
     void writeEvent(const trek::data::EventRecord& record);
     void writeDrop(const trek::data::EventRecord& record);
 protected:
@@ -18,10 +18,10 @@ protected:
 private:
     std::ofstream mStream;
     std::ofstream mDropStream;
-    unsigned      mFileCount;
-    unsigned      mEventCount;
+    uintmax_t mFileCount;
+    uintmax_t mEventCount;
 
     const std::string   mPath;
     const std::string   mPrefix;
-    const unsigned      mEventsPerFile;
+    const uintmax_t mEventsPerFile;
 };

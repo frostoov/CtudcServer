@@ -14,13 +14,27 @@
 #include <thread>
 
 class Exposition {
+public:
+    ~Exposition() { }
+    virtual operator bool() const = 0;
+    virtual void stop() = 0;
+    virtual uintmax_t triggerCount() const = 0;
+    virtual uintmax_t triggerDrop() const = 0;
+    virtual uintmax_t packageCount() const = 0;
+    virtual uintmax_t packageDrop() const = 0;
+
+    virtual TrekHitCount chambersCount() const = 0;
+    virtual TrekHitCount chambersDrop() const = 0;
+};
+
+class NevodExposition : public Exposition {
     using Mutex = std::mutex;
     using Lock = std::lock_guard<Mutex>;
     using EventBuffer = std::vector<Tdc::EventHits>;
 public:
     struct Settings {
-        unsigned    nRun;
-        unsigned    eventsPerFile;
+        uintmax_t nRun;
+        uintmax_t eventsPerFile;
         std::string writeDir;
         std::string infoIP;
         uint16_t    infoPort;
@@ -31,23 +45,23 @@ public:
         void unMarshal(const nlohmann::json& doc);
     };
 public:
-    Exposition(std::shared_ptr<Tdc> tdc,
-               const Settings& settings,
-               const ChannelConfig& config,
-               std::function<void(TrekFreq)> onMonitor);
-    ~Exposition();
-    operator bool() const { return mActive; }
+    NevodExposition(std::shared_ptr<Tdc> tdc,
+                    const Settings& settings,
+                    const ChannelConfig& config,
+                    std::function<void(TrekFreq)> onMonitor = [](auto){});
+    ~NevodExposition();
+    operator bool() const override { return mActive; }
     
-    void stop() { mActive = false; }
+    void stop() override { mActive = false; }
     
-    uintmax_t triggerCount() const { return mTrgCount[0]; }
-    uintmax_t triggerDrop() const { return mTrgCount[1]; }
+    uintmax_t triggerCount() const override { return mTrgCount[0]; }
+    uintmax_t triggerDrop() const override { return mTrgCount[1]; }
     
-    uintmax_t packageCount() const { return mPkgCount[0]; }
-    uintmax_t packageDrop() const { return mPkgCount[1]; }
+    uintmax_t packageCount() const override { return mPkgCount[0]; }
+    uintmax_t packageDrop() const override { return mPkgCount[1]; }
     
-    TrekHitCount chambersCount() const { return mChambersCount[0]; }
-    TrekHitCount chamberDrop() const { return mChambersCount[1]; }
+    TrekHitCount chambersCount() const override { return mChambersCount[0]; }
+    TrekHitCount chambersDrop() const override { return mChambersCount[1]; }
 protected:    
     void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
     void writeLoop(const Settings& settings, const ChannelConfig& config);
@@ -75,6 +89,45 @@ private:
     Mutex mBufferMutex;
     Mutex mTdcMutex;
     std::condition_variable mCv;
+};
+
+class IHEPExposition : public Exposition {
+    using EventBuffer = std::vector<Tdc::EventHits>;
+public:
+    struct Settings {
+        uintmax_t nRun;
+        uintmax_t eventsPerFile;
+        std::string writeDir;
+
+        uintmax_t readFreq;
+    };
+public:
+    IHEPExposition(std::shared_ptr<Tdc> tdc,
+                   const Settings& settings,
+                   const ChannelConfig& config);
+    ~IHEPExposition();
+    operator bool() const override { return mActive; }
+    
+    void stop() override { mActive = false; }
+    
+    uintmax_t triggerCount() const override { return mTrgCount; }
+    uintmax_t triggerDrop() const override { return 0; }
+    
+    uintmax_t packageCount() const override { return 0; }
+    uintmax_t packageDrop() const override { return 0; }
+    
+    TrekHitCount chambersCount() const override { return mChambersCount; }
+    TrekHitCount chambersDrop() const override { return TrekHitCount(); }
+protected:
+    void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf);
+    std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf);
+private:
+    std::thread mReadThread;
+    
+    uintmax_t mTrgCount;
+    TrekHitCount mChambersCount;
+    
+    std::atomic_bool mActive;
 };
 
 

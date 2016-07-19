@@ -12,7 +12,7 @@ class CaenV2718 : public Tdc {
     using Lock = std::lock_guard<Mutex>;
     using TriggerConf = std::array<uint16_t, 5>;
 public:
-    CaenV2718(unsigned vmeAddress);
+    CaenV2718(const std::string& name, unsigned vmeAddress);
     ~CaenV2718();
 
     void readEvents(std::vector<EventHits>& buffer) override;
@@ -79,4 +79,6 @@ private:
 
     mutable Settings mSettings;
     mutable uint16_t mCtrl;
+
+    std::string mName;
 };

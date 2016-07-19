@@ -25,6 +25,7 @@ using std::endl;
 using std::string;
 using std::istreambuf_iterator;
 using std::make_shared;
+using std::shared_ptr;
 using std::chrono::system_clock;
 using trek::StringBuilder;
 
@@ -56,8 +57,8 @@ int main() {
         fatal(StringBuilder() << "Failed parse channels.conf: " << e.what());
     }
 
-    auto caentdc = make_shared<CaenV2718>(0xEE00);
-    //auto emisstdc = make_shared<EmissTdc>();
+    auto caentdc = make_shared<CaenV2718>("CaenV2718", 0xEE00);
+    auto emisstdc = make_shared<EmissTdc>("EMiss");
     auto ftd = make_shared<ftdi::Module>(0x28);
     auto vlt = make_shared<Amplifier>();
     try {
@@ -76,18 +77,25 @@ int main() {
     } catch(exception& e) {
         std::cerr << "Failed open caentdc: " << e.what() << std::endl;
     }
+    try {
+        emisstdc->open();
+    } catch(exception& e) {
+        std::cerr << "Failed open emisstdc: " << e.what() << std::endl;
+    }
 
-    auto tdcController  = make_shared<Caen2718Contr>("tdc", caentdc);
-    //auto emissController= make_shared<EmissContr>("emiss", emisstdc);
-    auto vltController  = make_shared<VoltageContr>("vlt", vlt, ftd, appSettings.voltConfig);
-    auto expoController = make_shared<ExpoContr>("expo", caentdc, appSettings.expoConfig, channelParser.getConfig());
+    auto caenController  = make_shared<Caen2718Contr>("caen", caentdc);
+    auto emissController = make_shared<EmissContr>("emiss", emisstdc);
+    auto vltController   = make_shared<VoltageContr>("vlt", vlt, ftd, appSettings.voltConfig);
+    auto expoController  = shared_ptr<ExpoContr>(new ExpoContr("expo",
+                                                               {caentdc, emisstdc},
+                                                               appSettings.expoConfig,
+                                                               channelParser.getConfig()));
     expoController->onNewRun() = [&](unsigned nRun) {
         appSettings.expoConfig.nRun = nRun;
         appSettings.save(confPath + "CtudcServer.conf");
     };
-    
 
-    trek::net::Server server({tdcController, expoController, vltController}, {
+    trek::net::Server server({expoController, emissController, caenController, vltController}, {
         appSettings.ip,
         appSettings.port,
         appSettings.multicastIp,
@@ -129,6 +137,7 @@ int main() {
         if(command == "exit") {
             if(future.valid()) {
                 runnig.store(false);
+                std::cout << "trying to stop server" << std::endl;
                 server.stop();
                 future.get();
             }

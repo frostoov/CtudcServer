@@ -20,7 +20,7 @@ using std::logic_error;
 
 EventWriter::EventWriter(const string& path,
                          const string& prefix,
-                         unsigned eventsPerFile)
+                         uintmax_t eventsPerFile)
     : mFileCount(0),
       mEventCount(0),
       mPath(path),
@@ -43,7 +43,8 @@ void EventWriter::writeEvent(const EventRecord& record) {
 void EventWriter::writeDrop(const EventRecord &record) {
     try {
         if(!mDropStream.is_open()) {
-            mDropStream.open(StringBuilder() << mPath << '/' << mPrefix << "_drop.tds", mDropStream.binary | mDropStream.trunc);
+            auto name = string(StringBuilder() << mPath << '/' << mPrefix << "_drop.tds");
+            mDropStream.open(name, mDropStream.binary | mDropStream.trunc);
             mDropStream << "TDSdrop\n";
         }
         trek::serialize(mDropStream, record);

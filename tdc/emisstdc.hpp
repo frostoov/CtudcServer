@@ -7,7 +7,7 @@
 //base - 0170000
 class EmissTdc : public Tdc {
 public:
-    EmissTdc();
+    EmissTdc(const std::string& name);
     void open();
     void close();
     
@@ -23,4 +23,5 @@ private:
     ContrEM1 mEM1;
     ContrEM8 mEM8;
     std::vector<uint32_t> mBuffer;
+    std::string mName;
 };

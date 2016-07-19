@@ -1,15 +1,15 @@
 #pragma once
 
 #include "configparser/appconfigparser.hpp"
-#include "exposition/exposition.hpp"
 #include "controller/voltagecontroller.hpp"
+#include "controller/expocontroller.hpp"
 
 struct AppSettings {
     std::string ip;
     uint16_t    port;
     std::string multicastIp;
     uint16_t    multicastPort;
-    Exposition::Settings expoConfig;
+    ExpoContr::Settings expoConfig;
     VoltageContr::Config voltConfig;
 
     void load(const std::string& fileName);

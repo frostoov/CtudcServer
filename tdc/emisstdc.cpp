@@ -5,9 +5,10 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 
-EmissTdc::EmissTdc()
+EmissTdc::EmissTdc(const string& name)
     : mEM1(0170000),
-      mEM8({0x86, 5000, 0}) {
+      mEM8({0x86, 5000, 0}),
+      mName(name) {
     mBuffer.reserve(16*1024*1024);
 }
 
@@ -42,8 +43,7 @@ bool EmissTdc::isOpen() const {
 }
 
 const string& EmissTdc::name() const {
-    static string n("E-Miss TDC");
-    return n;
+    return mName;
 }
 
 
@@ -83,6 +83,7 @@ void EmissTdc::readEvents(vector<EventHits>& buffer)  {
             } else if((word >> 14) == 0b11) {
                 
             }
+            ++i;
         }
     }
 }

@@ -11,3 +11,4 @@
 using ChannelFreq = std::unordered_map<unsigned, double>;
 
 std::function<ChannelFreq()> launchFreq(std::shared_ptr<Tdc> device, std::chrono::microseconds delay);
+

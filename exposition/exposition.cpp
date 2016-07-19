@@ -19,6 +19,7 @@ using std::setfill;
 using std::setw;
 using std::make_unique;
 using std::make_shared;
+using std::exception;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::chrono::system_clock;
@@ -41,25 +42,25 @@ struct EventID {
     unsigned nEvent;
 };
 
-static auto formatDir(const Exposition::Settings& settings) {
-    string dir = StringBuilder() << settings.writeDir << "/run_" << setw(5) << setfill('0') << settings.nRun;
-    if(!fs::exists(dir))
-        fs::create_directories(dir);
-    else if(!fs::is_directory(dir))
+static auto formatDir(const string& dir, unsigned run) {
+    string runDir = StringBuilder() << dir << "/run_" << setw(5) << setfill('0') << run;
+    if(!fs::exists(runDir))
+        fs::create_directories(runDir);
+    else if(!fs::is_directory(runDir))
         throw std::runtime_error("ProcessController::fromWriteDir invalid dir");
-    return dir;
+    return runDir;
 }
 
-static auto formatPrefix(const Exposition::Settings& settings) {
-    return string( StringBuilder() << "ctudc_" << setw(5) << setfill('0') << settings.nRun << '_' );
+static auto formatPrefix(unsigned run) {
+    return string( StringBuilder() << "ctudc_" << setw(5) << setfill('0') << run << '_' );
 }
 
-static auto printStartMeta(const Exposition::Settings& settings, Tdc& module) {
+static auto printStartMeta(const string& dir, unsigned run, Tdc& module) {
     std::ofstream stream;
     stream.exceptions(stream.failbit | stream.badbit);
-    auto filename = formatDir(settings) + "/meta";
+    auto filename = formatDir(dir, run) + "/meta";
     stream.open(filename, stream.binary | stream.trunc);
-    stream << "Run: " << settings.nRun << '\n';
+    stream << "Run: " << run << '\n';
     stream << "Time: " << system_clock::now() << '\n';
     stream << "TDC: " << module.name() << '\n';
     stream << module.settings();
@@ -87,7 +88,7 @@ static auto handleNvdPkg(vector<char>& buffer) {
     NevodPackage nvdPkg;
     trek::deserialize(stream, nvdPkg);
     if(memcmp(nvdPkg.keyword, "TRACK ", sizeof(nvdPkg.keyword)) != 0)
-        throw std::runtime_error("Exposition::handleNevodPackage invalid package");
+        throw std::runtime_error("NevodExposition::handleNevodPackage invalid package");
     return nvdPkg;
 }
 
@@ -99,45 +100,13 @@ static auto handleCtrlPkg(vector<char>& buffer) {
     trek::deserialize(stream, keyword, sizeof(keyword));
     
     if(memcmp(keyword, "NVDDC", sizeof(keyword)) != 0)
-        throw std::runtime_error("Exposition::handleNevodPackage invalid package");
+        throw std::runtime_error("NevodExposition::handleNevodPackage invalid package");
     uint8_t command;
     trek::deserialize(stream, command);
     return command;
 }
 
-static auto convertEdgeDetection(Tdc::EdgeDetection ed) {
-    switch(ed) {
-    case Tdc::EdgeDetection::leading:
-        return HitRecord::Type::leading;
-    case Tdc::EdgeDetection::trailing:
-        return HitRecord::Type::trailing;
-    default:
-        throw std::logic_error("EventWriter::convertEdgeDetection invalid value");
-    }
-}
-
-static auto convertEvents(const vector<Tdc::EventHits>& events, const ChannelConfig& conf) {
-    vector<EventHits> newEvents;
-    std::transform(events.begin(), events.end(), std::back_inserter(newEvents), [&](auto& eventHits){
-        return convertEventHits(eventHits, conf);
-    });
-    return newEvents;  
-}
-
-static auto convertEventHits(const Tdc::EventHits& hits, const ChannelConfig& conf) {
-    EventHits newHits;
-    std::transform(hits.begin(), hits.end(), std::back_inserter(newHits), [&](auto& hit){
-        return convertHit(hit, conf);
-    });
-    return newHits;      
-}
-
-static auto convertHit(const Tdc::Hit& hit, const ChannelConfig& conf) {
-    auto& c = conf.at(hit.channel);    
-    return HitRecord(convertEdgeDetection(hit.type), c.wire,  c.chamber, hit.time);
-}
-
-Exposition::Exposition(shared_ptr<Tdc> tdc,
+NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
                        const Settings& settings,
                        const ChannelConfig& config,
                        std::function<void(TrekFreq)> onMonitor)
@@ -151,31 +120,38 @@ Exposition::Exposition(shared_ptr<Tdc> tdc,
         throw std::logic_error("launchExpo tdc is not open");
     tdc->clear();
 
-    mReadThread = std::thread(&Exposition::readLoop, this, tdc, std::ref(settings));
-    mWriteThread = std::thread(&Exposition::writeLoop, this, std::ref(settings), std::ref(config));
-    mMonitorThread =  std::thread(&Exposition::monitorLoop, this, tdc, std::ref(config));
+    mReadThread = std::thread([this, tdc, settings] {
+        this->readLoop(tdc, settings);
+    });
+    mWriteThread = std::thread([this, settings, config] {
+        this->writeLoop(settings, config);
+    });
+    mMonitorThread = std::thread([this, tdc, config] {
+        this->monitorLoop(tdc, config);
+    });
 }
 
-Exposition::~Exposition() {
+NevodExposition::~NevodExposition() {
     stop();
     mReadThread.join();
     mMonitorThread.join();
     mWriteThread.join();
 }
 
-void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
-    auto metaFilename = printStartMeta(settings, *tdc);
+void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
+    auto metaFilename = printStartMeta(settings.writeDir, settings.nRun, *tdc);
     vector<Tdc::EventHits> buffer;
     while(mActive) {
         std::this_thread::sleep_for(microseconds(3000));
-        {
+        try {
             Lock lkt(mTdcMutex);
             tdc->readEvents(buffer);
+        } catch(exception& e) {
+            buffer.clear();
+            std::cerr << "ATTENTION!!! nevod read loop failure " << e.what() << std::endl;
         }
-        {
-            Lock lk(mBufferMutex);
-            std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
-        }
+        Lock lk(mBufferMutex);
+        std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
     }
     mInfoRecv.stop();
     mCtrlRecv.stop();
@@ -183,16 +159,19 @@ void Exposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
     printEndMeta(metaFilename);
 }
 
-void Exposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
+void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
     unique_ptr<EventID> nvdID;
-    EventWriter eventWriter(formatDir(settings), formatPrefix(settings), settings.eventsPerFile);
+    EventWriter eventWriter(formatDir(settings.writeDir, settings.nRun),
+                            formatPrefix(settings.nRun),
+                            settings.eventsPerFile);
 
     mInfoRecv.onRecv([this, &eventWriter, &nvdID, &config](vector<char>& nvdMsg) {
-        Lock lk(mBufferMutex);
         try {
+            Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
             if(nvdID) {
-                auto drop = !(nvdID && nvdID->nRun == nvdPkg.numberOfRun && nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
+                auto drop = !(nvdID && nvdID->nRun == nvdPkg.numberOfRun &&
+                              nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
                 auto num = nvdID->nEvent + 1;
                 std::function<void(EventHits&)> writer = [&](EventHits& event) {
                     eventWriter.writeEvent({nvdID->nRun, num++, event});
@@ -204,16 +183,15 @@ void Exposition::writeLoop(const Settings& settings, const ChannelConfig& config
             }
             mBuffer.clear();
             nvdID = make_unique<EventID>(nvdPkg.numberOfRun, nvdPkg.numberOfRecord);
-        } catch(std::exception& e) {
-            std::cerr << "Expo write loop " << e.what() << std::endl;
+        } catch(exception& e) {
+            std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
         }
     });
     mInfoRecv.run();
 }
 
-void Exposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
+void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
     mCtrlRecv.onRecv([this, tdc, conf](vector<char>& msg) {
-        
         try {
             auto command = handleCtrlPkg(msg);
             if(command == 6) {
@@ -232,13 +210,13 @@ void Exposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
                 mOnMonitor(convertFreq(freq, conf));
             }
         } catch(std::exception& e) {
-            std::cerr << "Expo monitor loop " << e.what() << std::endl;
+            std::cerr << "ATTENTION!!! nevod monitor loop failure " << e.what() << std::endl;
         }
     });
     mCtrlRecv.run();
 }
 
-vector<EventHits> Exposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop) {
+vector<EventHits> NevodExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop) {
     auto events = convertEvents(buffer, conf);
     auto i = drop ? 1 : 0;
     mTrgCount[i] += events.size();
@@ -253,6 +231,61 @@ vector<EventHits> Exposition::handleEvents(const EventBuffer& buffer, const Chan
     return events;
 }
 
+IHEPExposition::IHEPExposition(shared_ptr<Tdc> tdc,
+                               const Settings& settings,
+                               const ChannelConfig& config)
+    : mTrgCount(0),
+      mActive(true) {
+    if(!tdc->isOpen())
+        throw std::logic_error("launchExpo tdc is not open");
+    tdc->clear();
+    mReadThread = std::thread([this, tdc, settings, config]{
+        this->readLoop(tdc, settings, config);
+    });
+}
+
+IHEPExposition::~IHEPExposition() {
+    stop();
+    mReadThread.join();
+}
+
+void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf) {
+    auto metaFilename = printStartMeta(settings.writeDir, settings.nRun, *tdc);
+    vector<Tdc::EventHits> buffer;
+    EventWriter eventWriter(formatDir(settings.writeDir, settings.nRun),
+                            formatPrefix(settings.nRun),
+                            settings.eventsPerFile);
+    unsigned num = 0;
+    while(mActive) {
+        try {
+            std::this_thread::sleep_for(microseconds(settings.readFreq));
+            tdc->readEvents(buffer);
+            for(auto& e : handleEvents(buffer, chanConf)) {
+                eventWriter.writeEvent({settings.nRun, num++, e});
+            }
+        } catch(exception& e) {
+            std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
+        }
+    }
+    printEndMeta(metaFilename);
+}
+
+vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf) {
+    auto events = convertEvents(buffer, conf);
+    mTrgCount += events.size();
+    for(auto& event : events) {
+        for(auto& hit : event) {
+            if(mChambersCount.count(hit.chamber()) == 0)
+               mChambersCount.emplace(hit.chamber(), ChamberHitCount{{0, 0, 0, 0}});
+            ++mChambersCount.at(hit.chamber()).at(hit.wire());
+        }
+    }
+    return events;
+}
+
+
+
+
 TrekFreq convertFreq(const ChannelFreq& freq, const ChannelConfig& conf) {
     TrekFreq newFreq;
     for(auto& chanFreq : freq) {
@@ -262,26 +295,4 @@ TrekFreq convertFreq(const ChannelFreq& freq, const ChannelConfig& conf) {
         newFreq.at(c.chamber).at(c.wire) = chanFreq.second;
     }
     return newFreq;
-}
-    
-void Exposition::Settings::unMarshal(const json& doc) {
-    nRun = doc.at("number_of_run");
-    eventsPerFile = doc.at("events_per_file");
-    writeDir = doc.at("write_dir").get<string>();
-    infoIP = doc.at("info_pkg_ip").get<string>();
-    infoPort = doc.at("info_pkg_port");
-    ctrlIP = doc.at("ctrl_pkg_ip");
-    ctrlPort = doc.at("ctrl_pkg_port");
-}
-
-json Exposition::Settings::marshal() const {
-    return {
-        {"number_of_run", nRun},
-        {"events_per_file", eventsPerFile},
-        {"write_dir", writeDir},
-        {"info_pkg_ip", infoIP},
-        {"info_pkg_port", infoPort},
-        {"ctrl_pkg_ip", ctrlIP},
-        {"ctrl_pkg_port", ctrlPort},
-    };
 }
