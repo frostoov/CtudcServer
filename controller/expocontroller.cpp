@@ -114,10 +114,10 @@ Response ExpoContr::launchFreq(const Request& request) {
     if(mFreqFuture || mExposition)
         throw logic_error("ExpoContr::stopRead process is active");
     assert(!*mExposition);
-    auto delay = request.inputs.at(0).get<int>();
+    auto device = mDevices.at(request.inputs.at(0).get<string>());
+    auto delay = request.inputs.at(1).get<int>();
     if(delay <= 0)
         throw logic_error("ExpoContr::launchFreq invalid delay value");
-    auto device = mDevices.at(request.inputs.at(0).get<string>());
     mFreqFuture = ::launchFreq(device, microseconds(delay));
     broadcast(type({}));
     return { name(), __func__ };
