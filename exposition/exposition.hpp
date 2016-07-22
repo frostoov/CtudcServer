@@ -15,7 +15,7 @@
 
 class Exposition {
 public:
-    ~Exposition() { }
+    virtual ~Exposition() { }
     virtual operator bool() const = 0;
     virtual void stop() = 0;
     virtual uintmax_t triggerCount() const = 0;
