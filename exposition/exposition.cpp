@@ -66,7 +66,7 @@ static fs::path monitoringPath(const fs::path& dir, unsigned run, unsigned cham)
         fs::create_directories(monitDir);
     else if(!fs::is_directory(monitDir))
         throw runtime_error("monitoringPath invalid dir");
-    string filename = mkstr() << "chamber_" << setw(2) << setfill('0') << cham;
+    string filename = mkstr() << "chamber_" << setw(2) << setfill('0') << (cham+1);
     return monitDir / filename;            
 }
 
@@ -220,7 +220,6 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
             auto command = handleCtrlPkg(msg);
             if(command == 6) {
                 auto now = std::chrono::system_clock::now();
-                std::cout << now << "Monitoring" << std::endl;
                 Lock lkt(mTdcMutex);
                 Lock lk(mBufferMutex);
                 auto prevMode = tdc->mode();
@@ -241,9 +240,9 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
                     stream.open(filename, stream.binary | stream.app);
 
                     auto t = std::chrono::system_clock::to_time_t(now);
-                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y") << '\t';
+                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y");
                     for(auto& wireFreq : chamFreq.second)
-                        stream << '\t' << wireFreq;
+                        stream << ' ' << wireFreq;
                     stream << std::endl;
                 }
                 mOnMonitor(trekFreq);
@@ -291,6 +290,7 @@ IHEPExposition::~IHEPExposition() {
 
 void IHEPExposition::stop() {
     mActive = false;
+    mCv.notify_one();
     mReadThread.join();
 }
 
@@ -302,14 +302,17 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
     unsigned num = 0;
     while(mActive) {
         try {
-            std::this_thread::sleep_for(microseconds(settings.readFreq));
             tdc->readEvents(buffer);
+            std::cout << "transfered: " << buffer.size() << std::endl;
             for(auto& e : handleEvents(buffer, chanConf)) {
                 eventWriter.writeEvent({settings.nRun, num++, e});
             }
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
         }
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        mCv.wait_for(lk, microseconds(settings.readFreq));
     }
 }
 

@@ -162,7 +162,6 @@ set<int> Amplifier::readCellNums() {
 
 Amplifier::CellStats Amplifier::readCellStats(const set<int>& cells) {
     CellStats cellStats;
-    std::cout << __FILE__ << ':' << __LINE__ << std::endl;
     for(auto cell : cells) {
         auto uMesmax = readWord(cell, 22);
         auto uMax    = readWord(cell, 18);

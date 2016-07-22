@@ -1,6 +1,7 @@
 #include "caenv2718.hpp"
 
 #include <CAENVMElib.h>
+#include <iostream>
 
 #include <chrono>
 #include <thread>

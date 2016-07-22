@@ -46,7 +46,6 @@ const string& EmissTdc::name() const {
     return mName;
 }
 
-
 void EmissTdc::readEvents(vector<EventHits>& buffer)  {
     buffer.clear();
     mEM1.resetSignal(1);
@@ -61,29 +60,25 @@ void EmissTdc::readEvents(vector<EventHits>& buffer)  {
 
     EventHits event;
     for(size_t i = 0; i < mBuffer.size(); ++i) {
-        if(mBuffer.at(i) == 0xFFFFFFFF) {
-            i += 5;
-            buffer.emplace_back();
+        if(mBuffer.at(i) != 0xFFFFFFFF) {
+            continue;
         }
-        uint32_t module;
-        uint32_t word;
-        while(true) {
-            if(mBuffer.at(i) == 0xFFFFFFFF) {
-                --i;
-                break;
-            }
-            word = uint16_t(mBuffer.at(i)&0xFFFF);
-	    module = uint16_t((mBuffer.at(i)>>16)&0x3F);
+        buffer.emplace_back();
+        
+        for(size_t j = i+5; j < mBuffer.size() && mBuffer.at(j) != 0xFFFFFFFF; ++j) {
+            auto word = uint16_t(mBuffer.at(j)&0xFFFF);
             if((word >> 15) == 0) {
-                auto chan = (word >> 10) + 32*module;
+                auto module = uint16_t((mBuffer.at(j)>>16)&0x3F);
+                auto chan = (word >> 11) + 32*module;
                 auto time = word & 0x3FF;
                 buffer.back().emplace_back(EdgeDetection::leading, chan + module*32, time);
-            } if((word >> 14) == 0b10) {
-                //TODO
-            } else if((word >> 14) == 0b11) {
-                
             }
-            ++i;
+            /*
+              TODO 
+              ((word >> 14) == 0b10)
+              ((word >> 14) == 0b11)
+            */
+            i = j;
         }
     }
 }

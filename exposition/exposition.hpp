@@ -128,6 +128,7 @@ private:
     TrekHitCount mChambersCount;
     
     std::atomic_bool mActive;
+    std::condition_variable mCv;
 };
 
 
