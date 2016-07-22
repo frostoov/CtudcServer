@@ -19,20 +19,21 @@ using std::setfill;
 using std::setw;
 using std::make_unique;
 using std::make_shared;
+using std::ofstream;
 using std::exception;
 using std::shared_ptr;
 using std::unique_ptr;
+using std::unordered_map;
+using std::runtime_error;
 using std::chrono::system_clock;
 using std::chrono::microseconds;
 using std::chrono::seconds;
 
-using trek::StringBuilder;
+using mkstr = trek::StringBuilder;
 using trek::data::NevodPackage;
 using trek::data::EventHits;
 using trek::data::HitRecord;
 using trek::data::EventRecord;
-
-using nlohmann::json;
 
 namespace fs = boost::filesystem;
 
@@ -42,25 +43,35 @@ struct EventID {
     unsigned nEvent;
 };
 
-static string formatDir(const string& dir, unsigned run) {
-    string runDir = StringBuilder() << dir << "/run_" << setw(5) << setfill('0') << run;
+static string formatPrefix(unsigned run) {
+    return mkstr() << "ctudc_" << setw(5) << setfill('0') << run << '_';
+}
+
+static fs::path runPath(const fs::path& dir, unsigned run) {
+    auto runDir = dir/ fs::path(mkstr() << "run_" << setw(5) << setfill('0') << run);
     if(!fs::exists(runDir))
         fs::create_directories(runDir);
     else if(!fs::is_directory(runDir))
-        throw std::runtime_error("ProcessController::fromWriteDir invalid dir");
+        throw std::runtime_error("runPath invalid dir");
     return runDir;
 }
 
-static string formatPrefix(unsigned run) {
-    return StringBuilder() << "ctudc_" << setw(5) << setfill('0') << run << '_';
+static fs::path metaPath(const fs::path& dir, unsigned run) {
+    return runPath(dir, run) / "meta";
 }
 
-static string formatMetaFilename(const string& dir, unsigned run) {
-    return formatDir(dir, run) + "/meta";
+static fs::path monitoringPath(const fs::path& dir, unsigned run, unsigned cham) {
+    auto monitDir = runPath(dir, run) / "monitoring";
+    if(!fs::exists(monitDir))
+        fs::create_directories(monitDir);
+    else if(!fs::is_directory(monitDir))
+        throw runtime_error("monitoringPath invalid dir");
+    string filename = mkstr() << "chamber_" << setw(2) << setfill('0') << cham;
+    return monitDir / filename;            
 }
 
 static void printStartMeta(const string& dir, unsigned run, Tdc& module) {
-    auto filename = formatMetaFilename(dir, run);
+    auto filename = metaPath(dir, run).string();
     std::ofstream stream;
     stream.exceptions(stream.failbit | stream.badbit);
     stream.open(filename, stream.binary | stream.trunc);
@@ -71,7 +82,7 @@ static void printStartMeta(const string& dir, unsigned run, Tdc& module) {
 }
 
 static void printEndMeta(const string& dir, unsigned run) {
-    auto filename = formatMetaFilename(dir, run);
+    auto filename = metaPath(dir, run).string();
     std::ofstream stream;
     stream.exceptions(stream.failbit | stream.badbit);
     stream.open(filename, stream.binary | stream.app);
@@ -132,8 +143,8 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
     mWriteThread = std::thread([this, settings, config] {
         this->writeLoop(settings, config);
     });
-    mMonitorThread = std::thread([this, tdc, config] {
-        this->monitorLoop(tdc, config);
+    mMonitorThread = std::thread([this, tdc, settings, config] {
+        this->monitorLoop(tdc, settings, config);
     });
 }
 
@@ -173,11 +184,11 @@ void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
 
 void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
     unique_ptr<EventID> nvdID;
-    EventWriter eventWriter(formatDir(settings.writeDir, settings.nRun),
+    EventWriter eventWriter(runPath(settings.writeDir, settings.nRun).string(),
                             formatPrefix(settings.nRun),
                             settings.eventsPerFile);
 
-    mInfoRecv.onRecv([this, &eventWriter, &nvdID, &config](vector<char>& nvdMsg) {
+    mInfoRecv.onRecv([&](vector<char>& nvdMsg) {
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
@@ -202,12 +213,14 @@ void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& c
     mInfoRecv.run();
 }
 
-void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf) {
-    mCtrlRecv.onRecv([this, tdc, conf](vector<char>& msg) {
+void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf) {
+    unordered_map<unsigned, ofstream> streams;
+    mCtrlRecv.onRecv([&](vector<char>& msg) {
         try {
             auto command = handleCtrlPkg(msg);
             if(command == 6) {
-                std::cerr << std::chrono::system_clock::now() << "Monitoring" << std::endl;
+                auto now = std::chrono::system_clock::now();
+                std::cout << now << "Monitoring" << std::endl;
                 Lock lkt(mTdcMutex);
                 Lock lk(mBufferMutex);
                 auto prevMode = tdc->mode();
@@ -219,7 +232,21 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const ChannelConfig& conf
                 mCv.wait_for(l, seconds(50));
                 auto freq = stop();
                 tdc->setMode(prevMode);
-                mOnMonitor(convertFreq(freq, conf));
+                auto trekFreq = convertFreq(freq, conf);
+
+                for(auto& chamFreq : trekFreq) {
+                    auto filename = monitoringPath(settings.writeDir, settings.nRun, chamFreq.first).string();
+                    ofstream stream;
+                    stream.exceptions(stream.badbit | stream.failbit);
+                    stream.open(filename, stream.binary);
+
+                    auto t = std::chrono::system_clock::to_time_t(now);
+                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y") << '\t';
+                    for(auto& wireFreq : chamFreq.second)
+                        stream << '\t' << wireFreq;
+                    stream << std::endl;
+                }
+                mOnMonitor(trekFreq);
             }
         } catch(std::exception& e) {
             std::cerr << "ATTENTION!!! nevod monitor loop failure " << e.what() << std::endl;
@@ -269,7 +296,7 @@ void IHEPExposition::stop() {
 
 void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf) {
     vector<Tdc::EventHits> buffer;
-    EventWriter eventWriter(formatDir(settings.writeDir, settings.nRun),
+    EventWriter eventWriter(runPath(settings.writeDir, settings.nRun).string(),
                             formatPrefix(settings.nRun),
                             settings.eventsPerFile);
     unsigned num = 0;
@@ -298,9 +325,6 @@ vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const 
     }
     return events;
 }
-
-
-
 
 TrekFreq convertFreq(const ChannelFreq& freq, const ChannelConfig& conf) {
     TrekFreq newFreq;

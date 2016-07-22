@@ -65,7 +65,7 @@ public:
 protected:    
     void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
     void writeLoop(const Settings& settings, const ChannelConfig& config);
-    void monitorLoop(std::shared_ptr<Tdc> tdc, const ChannelConfig& conf);
+    void monitorLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf);
 
     std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
 private:
