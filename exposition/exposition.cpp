@@ -290,6 +290,7 @@ IHEPExposition::~IHEPExposition() {
 
 void IHEPExposition::stop() {
     mActive = false;
+    mCv.notify_one();
     mReadThread.join();
 }
 
@@ -301,14 +302,17 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
     unsigned num = 0;
     while(mActive) {
         try {
-            std::this_thread::sleep_for(microseconds(settings.readFreq));
             tdc->readEvents(buffer);
+            std::cout << "transfered: " << buffer.size() << std::endl;
             for(auto& e : handleEvents(buffer, chanConf)) {
                 eventWriter.writeEvent({settings.nRun, num++, e});
             }
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
         }
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        mCv.wait_for(lk, microseconds(settings.readFreq));
     }
 }
 
