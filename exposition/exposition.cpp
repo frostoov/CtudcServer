@@ -66,8 +66,8 @@ static fs::path monitoringPath(const fs::path& dir, unsigned run, unsigned cham)
         fs::create_directories(monitDir);
     else if(!fs::is_directory(monitDir))
         throw runtime_error("monitoringPath invalid dir");
-    string filename = mkstr() << "chamber_" << setw(2) << setfill('0') << cham;
-    return monitDir / filename;            
+    string filename = mkstr() << "chamber_" << setw(2) << setfill('0') << (cham+1);
+    return monitDir / filename;
 }
 
 static void printStartMeta(const string& dir, unsigned run, Tdc& module) {
@@ -220,7 +220,6 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
             auto command = handleCtrlPkg(msg);
             if(command == 6) {
                 auto now = std::chrono::system_clock::now();
-                std::cout << now << "Monitoring" << std::endl;
                 Lock lkt(mTdcMutex);
                 Lock lk(mBufferMutex);
                 auto prevMode = tdc->mode();
@@ -241,10 +240,10 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
                     stream.open(filename, stream.binary | stream.app);
 
                     auto t = std::chrono::system_clock::to_time_t(now);
-                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y") << '\t';
+                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y");
                     for(auto& wireFreq : chamFreq.second)
-                        stream << '\t' << wireFreq;
-                    stream << std::endl;
+                        stream << ' ' << wireFreq;
+                    stream << '\n';
                 }
                 mOnMonitor(trekFreq);
             }
