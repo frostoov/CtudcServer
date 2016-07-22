@@ -238,7 +238,7 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
                     auto filename = monitoringPath(settings.writeDir, settings.nRun, chamFreq.first).string();
                     ofstream stream;
                     stream.exceptions(stream.badbit | stream.failbit);
-                    stream.open(filename, stream.binary);
+                    stream.open(filename, stream.binary | stream.app);
 
                     auto t = std::chrono::system_clock::to_time_t(now);
                     stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y") << '\t';
