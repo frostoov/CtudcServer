@@ -42,7 +42,7 @@ struct EventID {
     unsigned nEvent;
 };
 
-static auto formatDir(const string& dir, unsigned run) {
+static string formatDir(const string& dir, unsigned run) {
     string runDir = StringBuilder() << dir << "/run_" << setw(5) << setfill('0') << run;
     if(!fs::exists(runDir))
         fs::create_directories(runDir);
@@ -51,23 +51,27 @@ static auto formatDir(const string& dir, unsigned run) {
     return runDir;
 }
 
-static auto formatPrefix(unsigned run) {
-    return string( StringBuilder() << "ctudc_" << setw(5) << setfill('0') << run << '_' );
+static string formatPrefix(unsigned run) {
+    return StringBuilder() << "ctudc_" << setw(5) << setfill('0') << run << '_';
 }
 
-static auto printStartMeta(const string& dir, unsigned run, Tdc& module) {
+static string formatMetaFilename(const string& dir, unsigned run) {
+    return formatDir(dir, run) + "/meta";
+}
+
+static void printStartMeta(const string& dir, unsigned run, Tdc& module) {
+    auto filename = formatMetaFilename(dir, run);
     std::ofstream stream;
     stream.exceptions(stream.failbit | stream.badbit);
-    auto filename = formatDir(dir, run) + "/meta";
     stream.open(filename, stream.binary | stream.trunc);
     stream << "Run: " << run << '\n';
     stream << "Time: " << system_clock::now() << '\n';
     stream << "TDC: " << module.name() << '\n';
     stream << module.settings();
-    return filename;
 }
 
-static auto printEndMeta(const string& filename) {
+static void printEndMeta(const string& dir, unsigned run) {
+    auto filename = formatMetaFilename(dir, run);
     std::ofstream stream;
     stream.exceptions(stream.failbit | stream.badbit);
     stream.open(filename, stream.binary | stream.app);
@@ -119,9 +123,11 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
     if(!tdc->isOpen())
         throw std::logic_error("launchExpo tdc is not open");
     tdc->clear();
-
+    printStartMeta(settings.writeDir, settings.nRun, *tdc);
+    
     mReadThread = std::thread([this, tdc, settings] {
         this->readLoop(tdc, settings);
+        printEndMeta(settings.writeDir, settings.nRun);
     });
     mWriteThread = std::thread([this, settings, config] {
         this->writeLoop(settings, config);
@@ -133,13 +139,19 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
 
 NevodExposition::~NevodExposition() {
     stop();
+}
+
+void NevodExposition::stop() {
+    mActive = false;
+    mInfoRecv.stop();
+    mCtrlRecv.stop();
+    mCv.notify_one();
     mReadThread.join();
     mMonitorThread.join();
     mWriteThread.join();
 }
 
 void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
-    auto metaFilename = printStartMeta(settings.writeDir, settings.nRun, *tdc);
     vector<Tdc::EventHits> buffer;
     while(mActive) {
         std::this_thread::sleep_for(microseconds(3000));
@@ -150,13 +162,13 @@ void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
             buffer.clear();
             std::cerr << "ATTENTION!!! nevod read loop failure " << e.what() << std::endl;
         }
-        Lock lk(mBufferMutex);
-        std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
+        try {
+            Lock lk(mBufferMutex);
+            std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
+        } catch(exception& e) {
+            std::cerr << "ATTENTION!!! nevod read loop failure " << e.what() << std::endl;
+        }
     }
-    mInfoRecv.stop();
-    mCtrlRecv.stop();
-    mCv.notify_one();
-    printEndMeta(metaFilename);
 }
 
 void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
@@ -240,17 +252,22 @@ IHEPExposition::IHEPExposition(shared_ptr<Tdc> tdc,
         throw std::logic_error("launchExpo tdc is not open");
     tdc->clear();
     mReadThread = std::thread([this, tdc, settings, config]{
+        printStartMeta(settings.writeDir, settings.nRun, *tdc);
         this->readLoop(tdc, settings, config);
+        printEndMeta(settings.writeDir, settings.nRun);
     });
 }
 
 IHEPExposition::~IHEPExposition() {
     stop();
+}
+
+void IHEPExposition::stop() {
+    mActive = false;
     mReadThread.join();
 }
 
 void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf) {
-    auto metaFilename = printStartMeta(settings.writeDir, settings.nRun, *tdc);
     vector<Tdc::EventHits> buffer;
     EventWriter eventWriter(formatDir(settings.writeDir, settings.nRun),
                             formatPrefix(settings.nRun),
@@ -267,7 +284,6 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
             std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
         }
     }
-    printEndMeta(metaFilename);
 }
 
 vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf) {

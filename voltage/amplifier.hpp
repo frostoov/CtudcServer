@@ -35,6 +35,8 @@ public:
     };
 public:
     Amplifier();
+    Amplifier(const std::string& name);
+    ~Amplifier();
 
     void open(const std::string& name);
     void close();
@@ -84,6 +86,7 @@ private:
 
     CellStats mCellStats;
     std::mutex mMutex;
+    std::mutex mStateMutex;
 };
 
 std::ostream& operator<<(std::ostream& stream, Amplifier::Stat stat);

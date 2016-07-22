@@ -52,7 +52,7 @@ public:
     ~NevodExposition();
     operator bool() const override { return mActive; }
     
-    void stop() override { mActive = false; }
+    void stop() override;
     
     uintmax_t triggerCount() const override { return mTrgCount[0]; }
     uintmax_t triggerDrop() const override { return mTrgCount[1]; }
@@ -108,7 +108,7 @@ public:
     ~IHEPExposition();
     operator bool() const override { return mActive; }
     
-    void stop() override { mActive = false; }
+    void stop() override;
     
     uintmax_t triggerCount() const override { return mTrgCount; }
     uintmax_t triggerDrop() const override { return 0; }

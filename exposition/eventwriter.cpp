@@ -43,7 +43,7 @@ void EventWriter::writeEvent(const EventRecord& record) {
 void EventWriter::writeDrop(const EventRecord &record) {
     try {
         if(!mDropStream.is_open()) {
-            auto name = string(StringBuilder() << mPath << '/' << mPrefix << "_drop.tds");
+            auto name = string(StringBuilder() << mPath << '/' << mPrefix << "drop.tds");
             mDropStream.open(name, mDropStream.binary | mDropStream.trunc);
             mDropStream << "TDSdrop\n";
         }

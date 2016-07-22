@@ -22,7 +22,17 @@ static constexpr int baudRate = 9600;
 
 Amplifier::Amplifier() : mPort(mIoService) {}
 
+Amplifier::Amplifier(const string& name)
+    : mPort(mIoService) {
+    open(name);
+}
+
+Amplifier::~Amplifier() {
+    close();
+}
+
 void Amplifier::open(const string& name) {
+    lock_guard<mutex> lk(mStateMutex);
     mPort.open(name);
     mPort.set_option(boost::asio::serial_port::baud_rate(baudRate));
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -32,6 +42,7 @@ void Amplifier::open(const string& name) {
 }
 
 void Amplifier::close() {
+    lock_guard<mutex> lk(mStateMutex);
     mCellStats.clear();
     mPort.close();
 }
