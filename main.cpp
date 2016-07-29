@@ -68,7 +68,7 @@ int main() {
         std::cerr << "Failed open ftd: " << e.what() << std::endl;
     }
     try {
-        vlt->open("/dev/my_uart");
+        vlt->open(VoltageDeviceName);
     } catch(exception& e) {
         std::cerr << "Failed open voltage: " << e.what() << std::endl;
     }
