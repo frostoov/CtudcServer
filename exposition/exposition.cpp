@@ -276,6 +276,7 @@ IHEPExposition::IHEPExposition(shared_ptr<Tdc> tdc,
       mActive(true) {
     if(!tdc->isOpen())
         throw std::logic_error("launchExpo tdc is not open");
+    tdc->reset();
     tdc->clear();
     mReadThread = std::thread([this, tdc, settings, config]{
         printStartMeta(settings.writeDir, settings.nRun, *tdc);
@@ -301,6 +302,9 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
                             settings.eventsPerFile);
     unsigned num = 0;
     while(mActive) {
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        mCv.wait_for(lk, microseconds(settings.readFreq));
         try {
             tdc->readEvents(buffer);
             std::cout << "transfered: " << buffer.size() << std::endl;
@@ -309,10 +313,12 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
             }
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
+            try {
+                tdc->reset();
+            } catch(exception& e) {
+                std::cerr << "Failed reset tdc " << tdc->name() << std::endl;
+            }
         }
-        std::mutex m;
-        std::unique_lock<std::mutex> lk(m);
-        mCv.wait_for(lk, microseconds(settings.readFreq));
     }
 }
 

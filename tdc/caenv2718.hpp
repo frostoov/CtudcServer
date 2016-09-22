@@ -26,7 +26,7 @@ public:
     void close();
     void updateSettings();
 
-    void reset();
+    void reset() override;
 
     Mode mode() override;
     void setMode(Mode mode) override;

@@ -8,6 +8,7 @@
 class EmissTdc : public Tdc {
 public:
     EmissTdc(const std::string& name);
+    ~EmissTdc();
     void open();
     void close();
     
@@ -19,6 +20,7 @@ public:
     void clear() override;
     Mode mode() override;
     void setMode(Mode mode) override;
+    void reset() override;
 private:
     ContrEM1 mEM1;
     ContrEM8 mEM8;

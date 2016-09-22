@@ -37,6 +37,7 @@ public:
     virtual Settings settings() = 0;
     virtual bool isOpen() const = 0;
     virtual void clear() = 0;
+    virtual void reset() = 0;
     virtual Mode mode() = 0;
     virtual void setMode(Mode mode) = 0;
 protected:
