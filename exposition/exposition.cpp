@@ -1,5 +1,4 @@
 #include "exposition.hpp"
-#include "freq.hpp"
 #include "eventwriter.hpp"
 
 #include <trek/common/stringbuilder.hpp>
@@ -11,6 +10,7 @@
 
 #include <chrono>
 #include <iomanip>
+#include <iostream>
 #include <future>
 
 using std::string;
@@ -131,6 +131,7 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
       mPkgCount{0, 0},
       mActive(true),
       mOnMonitor(onMonitor) {
+    verifySettings(settings);
     if(!tdc->isOpen())
         throw std::logic_error("launchExpo tdc is not open");
     tdc->clear();
@@ -187,24 +188,37 @@ void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& c
     EventWriter eventWriter(runPath(settings.writeDir, settings.nRun).string(),
                             formatPrefix(settings.nRun),
                             settings.eventsPerFile);
-
     mInfoRecv.onRecv([&](vector<char>& nvdMsg) {
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
-            if(nvdID) {
-                auto drop = !(nvdID && nvdID->nRun == nvdPkg.numberOfRun &&
-                              nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
-                auto num = nvdID->nEvent + 1;
-                std::function<void(EventHits&)> writer = [&](EventHits& event) {
-                    eventWriter.writeEvent({nvdID->nRun, num++, event});
-                };
-                if(drop) writer = [&](EventHits& event) { eventWriter.writeDrop({nvdID->nRun, num++, event}); };
-
-                auto events = handleEvents(mBuffer, config, drop);
-                std::for_each(events.begin(), events.end(), writer);
+            ++mCurrentGateWidth;
+            if(nvdID != nullptr) {
+                if(mCurrentGateWidth == settings.gateWidth) {
+                    auto drop = !(nvdID && nvdID->nRun == nvdPkg.numberOfRun &&
+                                  nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
+                    auto num = nvdID->nEvent + 1;
+                    std::function<void(EventHits&)> writer = [&](EventHits& event) {
+                        eventWriter.writeEvent({nvdID->nRun, num++, event});
+                    };
+                    if(drop) {
+                        writer = [&](EventHits& event) { eventWriter.writeDrop({nvdID->nRun, num++, event}); };
+                    }
+                    auto events = handleEvents(mBuffer, config, drop);
+                    std::for_each(events.begin(), events.end(), writer);
+                    mBuffer.clear();
+                    mCurrentGateWidth = 0;
+                }
+            } else {
+                mBuffer.clear();
+                mCurrentGateWidth = 0;
             }
-            mBuffer.clear();
+            if(mCurrentGateWidth >= settings.gateWidth) {
+                mBuffer.clear();
+                mCurrentGateWidth = 0;
+                nvdID = nullptr;
+                throw std::runtime_error("mCurrentGateWidth >= settings.gateWidth");
+            }
             nvdID = make_unique<EventID>(nvdPkg.numberOfRun, nvdPkg.numberOfRecord);
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
@@ -267,6 +281,15 @@ vector<EventHits> NevodExposition::handleEvents(const EventBuffer& buffer, const
         }
     }
     return events;
+}
+
+void NevodExposition::verifySettings(const NevodExposition::Settings &settings) {
+    if(settings.gateWidth == 0) {
+        throw std::runtime_error("NevodExposition invalid gate Width");
+    }
+    if(settings.eventsPerFile == 0) {
+        throw std::runtime_error("NevodExposition invalid event number per faile");
+    }
 }
 
 IHEPExposition::IHEPExposition(shared_ptr<Tdc> tdc,

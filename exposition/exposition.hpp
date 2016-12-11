@@ -7,7 +7,6 @@
 
 #include <trek/data/eventrecord.hpp>
 #include <trek/net/multicastreceiver.hpp>
-#include <json.hpp>
 
 #include <condition_variable>
 #include <atomic>
@@ -35,20 +34,18 @@ public:
     struct Settings {
         uintmax_t nRun;
         uintmax_t eventsPerFile;
+        uintmax_t gateWidth;
         std::string writeDir;
         std::string infoIP;
         uint16_t    infoPort;
         std::string ctrlIP;
         uint16_t    ctrlPort;
-
-        nlohmann::json marshal() const;
-        void unMarshal(const nlohmann::json& doc);
     };
 public:
     NevodExposition(std::shared_ptr<Tdc> tdc,
                     const Settings& settings,
                     const ChannelConfig& config,
-                    std::function<void(TrekFreq)> onMonitor = [](auto){});
+                    std::function<void(TrekFreq)> onMonitor = [](auto){ });
     ~NevodExposition();
     operator bool() const override { return mActive; }
     
@@ -68,6 +65,7 @@ protected:
     void monitorLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf);
 
     std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
+    void verifySettings(const Settings& settings);
 private:
     EventBuffer mBuffer;
     trek::net::MulticastReceiver mInfoRecv;
@@ -82,7 +80,8 @@ private:
     uintmax_t mPkgCount[2];
     
     TrekHitCount mChambersCount[2];
-    
+
+    uintmax_t mCurrentGateWidth = 0;
     std::atomic_bool mActive;
     std::function<void(TrekFreq)> mOnMonitor;
 

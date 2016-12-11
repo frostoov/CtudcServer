@@ -201,6 +201,7 @@ auto ExpoContr::createDeviceMap(const vector<DevicePtr>& devs) -> DeviceMap {
 void ExpoContr::Settings::unMarshal(const json& doc) {
     nRun = doc.at("number_of_run");
     eventsPerFile = doc.at("events_per_file");
+    gateWidth = doc.at("gate_width");
     writeDir = doc.at("write_dir").get<string>();
     infoIP = doc.at("info_pkg_ip").get<string>();
     infoPort = doc.at("info_pkg_port");
@@ -213,6 +214,7 @@ json ExpoContr::Settings::marshal() const {
     return {
         {"number_of_run", nRun},
         {"events_per_file", eventsPerFile},
+        {"gate_width", gateWidth},
         {"write_dir", writeDir},
         {"info_pkg_ip", infoIP},
         {"info_pkg_port", infoPort},
@@ -226,6 +228,7 @@ ExpoContr::Settings::operator NevodExposition::Settings() const {
     return {
         nRun,
         eventsPerFile,
+        gateWidth,
         writeDir,
         infoIP,
         infoPort,
