@@ -1,5 +1,7 @@
 #include "emisstdc.hpp"
 
+#include <iostream>
+
 using std::logic_error;
 using std::runtime_error;
 using std::string;
@@ -12,6 +14,11 @@ EmissTdc::EmissTdc(const string& name)
     mBuffer.reserve(16*1024*1024);
 }
 
+EmissTdc::~EmissTdc() {
+    if(isOpen())
+        close();
+}
+
 void EmissTdc::open() {
     if(mEM1.isOpen() && mEM8.isOpen())
         throw logic_error("EmissTdc::open device is opened");
@@ -22,10 +29,7 @@ void EmissTdc::open() {
         mEM1.close();
         throw e;
     }
-    mEM1.resetQbus();
-    mEM1.setAR();
-    mEM1.generateSignal(ContrEM1::TypeSignal::pulse, 0);
-    mEM1.generateSignal(ContrEM1::TypeSignal::potential, 1);
+    reset();
 }
 
 void EmissTdc::close() {
@@ -69,9 +73,9 @@ void EmissTdc::readEvents(vector<EventHits>& buffer)  {
             auto word = uint16_t(mBuffer.at(j)&0xFFFF);
             if((word >> 15) == 0) {
                 auto module = uint16_t((mBuffer.at(j)>>16)&0x3F);
-                auto chan = (word >> 11) + 32*module;
+                auto chan = (word >> 11);
                 auto time = word & 0x3FF;
-                buffer.back().emplace_back(EdgeDetection::leading, chan + module*32, time);
+                buffer.back().emplace_back(EdgeDetection::leading, chan + module*32, time*7.8125);
             }
             /*
               TODO 
@@ -98,6 +102,13 @@ Tdc::Settings EmissTdc::settings()  {
 
 void EmissTdc::clear()  {
     mEM1.generateSignal(ContrEM1::TypeSignal::pulse, 0);
+}
+
+void EmissTdc::reset() {
+    mEM1.resetQbus();
+    mEM1.setAR();
+    clear();
+    mEM1.generateSignal(ContrEM1::TypeSignal::potential, 1);
 }
 
 Tdc::Mode EmissTdc::mode()  {

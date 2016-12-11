@@ -57,21 +57,21 @@ bool ContrEM8::isOpen() const {
 }
 
 size_t ContrEM8::readData(std::vector<uint32_t>& buffer) {
-	size_t length = buffer.size()*sizeof(uint32_t);
-	if(length == 0 || length > size_t(std::numeric_limits<int>::max()))
-		throw runtime_error("ContrEM8::readData invalid buffer size");
-	auto ptr = reinterpret_cast<unsigned char*>(buffer.data());
-	int transfered = 0;
-	int status = libusb_bulk_transfer(
-		mHandle,
-		mConf.endpoint,
-		ptr,
-		int(length),
-		&transfered,
-		mConf.timeout);
-	if(status != 0)
-		throw runtime_error(libusb_strerror(libusb_error(status)));
-	if(transfered % sizeof(uint32_t) != 0)
-		throw runtime_error("ContrEM8::readData invalid transfer size");
-	return size_t( transfered/sizeof(uint32_t) );
+    size_t length = buffer.size()*sizeof(uint32_t);
+    if(length == 0 || length > size_t(std::numeric_limits<int>::max()))
+        throw runtime_error("ContrEM8::readData invalid buffer size");
+    auto ptr = reinterpret_cast<unsigned char*>(buffer.data());
+    int transfered = 0;
+    int status = libusb_bulk_transfer(
+                                      mHandle,
+                                      mConf.endpoint,
+                                      ptr,
+                                      int(length),
+                                      &transfered,
+                                      mConf.timeout);
+    if(status != 0)
+        throw runtime_error(libusb_strerror(libusb_error(status)));
+    if(transfered % sizeof(uint32_t) != 0)
+        throw runtime_error("ContrEM8::readData invalid transfer size");
+    return size_t( transfered/sizeof(uint32_t) );
 }
