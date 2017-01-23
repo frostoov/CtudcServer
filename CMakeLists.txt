@@ -21,51 +21,8 @@ include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${LibUSB_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(SOURCES
-    configparser/appconfigparser.cpp
-    configparser/channelsconfigparser.cpp
-    controller/tdccontroller.cpp
-    controller/expocontroller.cpp
-    controller/voltagecontroller.cpp
-    controller/emisscontr.cpp
-    appsettings.cpp
-    voltage/amplifier.cpp
-    exposition/channelconfig.cpp
-    exposition/exposition.cpp
-    exposition/eventwriter.cpp
-    exposition/freq.cpp
-    ftd/ftdmodule.cpp
-    tdc/caenv2718.cpp
-    tdc/emisstdc.cpp
-    tdc/tdc.cpp
-    emiss/controlerem1.cpp
-    emiss/controlerem8.cpp
-    emiss/pciqbus.cpp
-    main.cpp)
-
-set(HEADERS
-    configparser/configparser.hpp
-    configparser/appconfigparser.hpp
-    configparser/channelsconfigparser.hpp
-    controller/tdccontroller.hpp
-    controller/expocontroller.hpp
-    controller/voltagecontroller.hpp
-    controller/emisscontr.cpp
-    voltage/amplifier.hpp
-    exposition/channelconfig.hpp
-    exposition/process.hpp
-    exposition/eventwriter.hpp
-    exposition/exposition.hpp
-    exposition/freq.hpp
-    ftd/ftdmodule.hpp
-    ftd/defines.hpp
-    appsettings.hpp
-    tdc/tdc.hpp
-    tdc/caenv2718.hpp
-    tdc/emisstdc.cpp
-    emiss/controlerem1.hpp
-    emiss/controlerem8.hpp
-    emiss/pciqbus.hpp)
+file(GLOB_RECURSE SOURCES
+	"*.cpp")
 
 add_executable(CtudcServer ${SOURCES})
 

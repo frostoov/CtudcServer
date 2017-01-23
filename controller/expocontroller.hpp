@@ -2,7 +2,8 @@
 
 #include "tdc/tdc.hpp"
 #include "exposition/channelconfig.hpp"
-#include "exposition/process.hpp"
+#include "exposition/nevodexposition.hpp"
+#include "exposition/ihepexposition.hpp"
 #include "exposition/exposition.hpp"
 #include "exposition/freq.hpp"
 
