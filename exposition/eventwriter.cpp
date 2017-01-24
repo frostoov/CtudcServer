@@ -29,6 +29,14 @@ EventWriter::EventWriter(const string& path,
     mStream.exceptions(mStream.failbit | mStream.badbit);
 }
 
+void EventWriter::write(const EventRecord& record, bool matched) {
+	if(matched) {
+		writeEvent(record);
+	} else {
+		writeDrop(record);
+	}
+}
+
 void EventWriter::writeEvent(const EventRecord& record) {
     try {
         if(mEventCount % mEventsPerFile == 0)

@@ -208,6 +208,7 @@ void ExpoContr::Settings::unMarshal(const json& doc) {
     ctrlIP = doc.at("ctrl_pkg_ip");
     ctrlPort = doc.at("ctrl_pkg_port");
     readFreq = doc.at("read_freq").get<unsigned>();
+	debug = doc.at("debug").get<bool>();
 }
 
 json ExpoContr::Settings::marshal() const {
@@ -221,6 +222,7 @@ json ExpoContr::Settings::marshal() const {
         {"ctrl_pkg_ip", ctrlIP},
         {"ctrl_pkg_port", ctrlPort},
         {"read_freq", readFreq},
+		{"debug", debug},
     };
 }
 
@@ -234,6 +236,7 @@ ExpoContr::Settings::operator NevodExposition::Settings() const {
         infoPort,
         ctrlIP,
         ctrlPort,
+		debug,
     };
 }
 

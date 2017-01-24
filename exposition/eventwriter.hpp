@@ -9,9 +9,10 @@ public:
     EventWriter(const std::string& path,
                 const std::string& prefix,
                 uintmax_t eventsPerFile);
+    void write(const trek::data::EventRecord& record, bool matched);
+protected:
     void writeEvent(const trek::data::EventRecord& record);
     void writeDrop(const trek::data::EventRecord& record);
-protected:
     void reopenStream();
     void openStream();
     std::string formFileName() const;

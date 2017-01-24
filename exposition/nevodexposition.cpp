@@ -38,13 +38,6 @@ using trek::data::EventRecord;
 
 namespace fs = boost::filesystem;
 
-struct EventID {
-    EventID(unsigned r, unsigned e) : nRun(r), nEvent(e) { }
-    unsigned nRun;
-    unsigned nEvent;
-};
-
-
 static std::string monitoringPath(const std::string& dir, unsigned run, unsigned cham) {
     auto monitDir = fs::path(runPath(dir, run)) / "monitoring";
     if(!fs::exists(monitDir))
@@ -93,10 +86,9 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
                        const Settings& settings,
                        const ChannelConfig& config,
                        std::function<void(TrekFreq)> onMonitor)
-    : mInfoRecv(settings.infoIP, settings.infoPort),
+    : mMatcher(config),
+	  mInfoRecv(settings.infoIP, settings.infoPort),
       mCtrlRecv(settings.ctrlIP, settings.ctrlPort),
-      mTrgCount{0, 0},
-      mPkgCount{0, 0},
       mActive(true),
       mOnMonitor(onMonitor) {
     verifySettings(settings);
@@ -105,12 +97,17 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
     tdc->clear();
     printStartMeta(settings.writeDir, settings.nRun, *tdc);
 
+	if(settings.debug) {
+		mDebugStream.exceptions(ofstream::failbit | ofstream::badbit);
+		mDebugStream.open("expo_debug.log", ofstream::binary | ofstream::app);
+	}
+
     mReadThread = std::thread([this, tdc, settings] {
         this->readLoop(tdc, settings);
         printEndMeta(settings.writeDir, settings.nRun);
     });
-    mWriteThread = std::thread([this, settings, config] {
-        this->writeLoop(settings, config);
+    mWriteThread = std::thread([this, settings] {
+        this->writeLoop(settings);
     });
     mMonitorThread = std::thread([this, tdc, settings, config] {
         this->monitorLoop(tdc, settings, config);
@@ -151,7 +148,7 @@ void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
     }
 }
 
-void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& config) {
+void NevodExposition::writeLoop(const Settings& settings) {
     unique_ptr<EventID> nvdID;
     EventWriter eventWriter(runPath(settings.writeDir, settings.nRun),
                             formatPrefix(settings.nRun),
@@ -160,35 +157,27 @@ void NevodExposition::writeLoop(const Settings& settings, const ChannelConfig& c
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
-            ++mCurrentGateWidth;
-            if(nvdID != nullptr) {
-                if(mCurrentGateWidth == settings.gateWidth) {
-                    auto drop = !(nvdID->nRun == nvdPkg.numberOfRun &&
-                                  nvdPkg.numberOfRecord - nvdID->nEvent == mBuffer.size());
-                    auto num = nvdID->nEvent + 1;
-                    std::function<void(EventHits&)> writer = [&](EventHits& event) {
-                        eventWriter.writeEvent({nvdID->nRun, num++, event});
-                    };
-                    if(drop) {
-                        writer = [&](EventHits& event) { eventWriter.writeDrop({nvdID->nRun, num++, event}); };
-                    }
-                    auto events = handleEvents(mBuffer, config, drop);
-                    std::for_each(events.begin(), events.end(), writer);
-                    mBuffer.clear();
-                    mCurrentGateWidth = 0;
-                    nvdID = make_unique<EventID>(nvdPkg.numberOfRun, nvdPkg.numberOfRecord);
-                }
-            } else {
-                mBuffer.clear();
-                mCurrentGateWidth = 0;
-                nvdID = make_unique<EventID>(nvdPkg.numberOfRun, nvdPkg.numberOfRecord);
-            }
-            if(mCurrentGateWidth >= settings.gateWidth) {
-                mBuffer.clear();
-                mCurrentGateWidth = 0;
-                nvdID = nullptr;
-                throw std::runtime_error("mCurrentGateWidth >= settings.gateWidth");
-            }
+			mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
+			mBuffer.clear();
+			if(mMatcher.frames() == settings.gateWidth) {
+				const auto frames = mMatcher.frames();
+				const auto triggers = mMatcher.triggers();
+
+				vector<EventRecord> records;
+				auto matched = mMatcher.unload(records);
+				if(!matched && settings.debug) {
+					mDebugStream << std::chrono::system_clock::now() 
+					             << " dropping" 
+					             << " triggers: " << triggers
+					             << " packets:  " << frames << '\n';
+				}
+				mStats.incrementTriggers(triggers, matched);
+				mStats.incrementPackages(frames, matched);
+				mStats.incrementChambersCount(records, matched);
+				for(auto record : records) {
+					eventWriter.write(record, matched);
+				}
+			}
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
         }
@@ -201,55 +190,43 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
     mCtrlRecv.onRecv([&](vector<char>& msg) {
         try {
             auto command = handleCtrlPkg(msg);
-            if(command == 6) {
-                auto now = std::chrono::system_clock::now();
-                Lock lkt(mTdcMutex);
-                Lock lk(mBufferMutex);
-                auto prevMode = tdc->mode();
-                tdc->setMode(Tdc::Mode::continuous);
-                //For conditional variable
-                std::mutex m;
-                std::unique_lock<std::mutex> l(m);
-                auto stop = launchFreq(tdc, microseconds(100));
-                mCv.wait_for(l, seconds(50));
-                auto freq = stop();
-                tdc->setMode(prevMode);
-                auto trekFreq = convertFreq(freq, conf);
+			if(command != 6) {
+				return;
+			}
+			auto now = std::chrono::system_clock::now();
+			Lock lkt(mTdcMutex);
+			Lock lk(mBufferMutex);
+			mMatcher.reset();
+			mBuffer.clear();
+			auto prevMode = tdc->mode();
+			tdc->setMode(Tdc::Mode::continuous);
+			//For conditional variable
+			std::mutex m;
+			std::unique_lock<std::mutex> l(m);
+			auto stop = launchFreq(tdc, microseconds(100));
+			mCv.wait_for(l, seconds(50));
+			auto freq = stop();
+			tdc->setMode(prevMode);
+			auto trekFreq = convertFreq(freq, conf);
 
-                for(auto& chamFreq : trekFreq) {
-                    auto filename = monitoringPath(settings.writeDir, settings.nRun, chamFreq.first);
-                    ofstream stream;
-                    stream.exceptions(stream.badbit | stream.failbit);
-                    stream.open(filename, stream.binary | stream.app);
+			for(auto& chamFreq : trekFreq) {
+				auto filename = monitoringPath(settings.writeDir, settings.nRun, chamFreq.first);
+				ofstream stream;
+				stream.exceptions(stream.badbit | stream.failbit);
+				stream.open(filename, stream.binary | stream.app);
 
-                    auto t = std::chrono::system_clock::to_time_t(now);
-                    stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y");
-                    for(auto& wireFreq : chamFreq.second)
-                        stream << ' ' << wireFreq;
-                    stream << '\n';
-                }
-                mOnMonitor(trekFreq);
-            }
+				auto t = std::chrono::system_clock::to_time_t(now);
+				stream << std::put_time(std::gmtime(&t), "%H:%M:%S %d-%m-%Y");
+				for(auto& wireFreq : chamFreq.second)
+					stream << ' ' << wireFreq;
+				stream << '\n';
+			}
+			mOnMonitor(trekFreq);
         } catch(std::exception& e) {
             std::cerr << "ATTENTION!!! nevod monitor loop failure " << e.what() << std::endl;
         }
     });
     mCtrlRecv.run();
-}
-
-vector<EventHits> NevodExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop) {
-    auto events = convertEvents(buffer, conf);
-    auto i = drop ? 1 : 0;
-    mTrgCount[i] += events.size();
-    mPkgCount[i] += 1;
-    for(auto& event : events) {
-        for(auto& hit : event) {
-            if(mChambersCount[i].count(hit.chamber()) == 0)
-               mChambersCount[i].emplace(hit.chamber(), ChamberHitCount{{0, 0, 0, 0}});
-            ++mChambersCount[i].at(hit.chamber()).at(hit.wire());
-        }
-    }
-    return events;
 }
 
 void NevodExposition::verifySettings(const NevodExposition::Settings &settings) {

@@ -44,6 +44,7 @@ void IHEPExposition::stop() {
 }
 
 void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf) {
+	/*
     vector<Tdc::EventHits> buffer;
     EventWriter eventWriter(runPath(settings.writeDir, settings.nRun),
                             formatPrefix(settings.nRun),
@@ -68,9 +69,11 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
             }
         }
     }
+	*/
 }
 
 vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf) {
+	/*
     auto events = convertEvents(buffer, conf);
     mTrgCount += events.size();
     for(auto& event : events) {
@@ -81,4 +84,5 @@ vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const 
         }
     }
     return events;
+	*/
 }

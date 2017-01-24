@@ -1,12 +1,14 @@
 #pragma once
 
 #include "exposition.hpp"
+#include "matcher.hpp"
+#include "stats.hpp"
 
+#include <fstream>
 
 class NevodExposition : public Exposition {
     using Mutex = std::mutex;
     using Lock = std::lock_guard<Mutex>;
-    using EventBuffer = std::vector<Tdc::EventHits>;
 public:
     struct Settings {
         uintmax_t nRun;
@@ -17,6 +19,7 @@ public:
         uint16_t    infoPort;
         std::string ctrlIP;
         uint16_t    ctrlPort;
+		bool debug;
     };
 public:
     NevodExposition(std::shared_ptr<Tdc> tdc,
@@ -28,38 +31,34 @@ public:
     
     void stop() override;
     
-    uintmax_t triggerCount() const override { return mTrgCount[0]; }
-    uintmax_t triggerDrop() const override { return mTrgCount[1]; }
+    uintmax_t triggerCount() const override { return mStats.triggerCount(); }
+    uintmax_t triggerDrop() const override { return mStats.triggerDrops(); }
     
-    uintmax_t packageCount() const override { return mPkgCount[0]; }
-    uintmax_t packageDrop() const override { return mPkgCount[1]; }
+    uintmax_t packageCount() const override { return mStats.packageCount(); }
+    uintmax_t packageDrop() const override { return mStats.packageDrops(); }
     
-    TrekHitCount chambersCount() const override { return mChambersCount[0]; }
-    TrekHitCount chambersDrop() const override { return mChambersCount[1]; }
+    TrekHitCount chambersCount() const override { return mStats.chambersCount(); }
+    TrekHitCount chambersDrop() const override { return mStats.chambersDrops(); }
     TimePoint startPoint() const override { return mStartPoint; }
 protected:    
     void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
-    void writeLoop(const Settings& settings, const ChannelConfig& config);
+    void writeLoop(const Settings& settings);
     void monitorLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf);
 
-    std::vector<trek::data::EventHits> handleEvents(const EventBuffer& buffer, const ChannelConfig& conf, bool drop);
     void verifySettings(const Settings& settings);
 private:
-    EventBuffer mBuffer;
+    std::vector<Tdc::EventHits> mBuffer;
+	EventMatcher mMatcher;
+	Statistics mStats;
     trek::net::MulticastReceiver mInfoRecv;
     trek::net::MulticastReceiver mCtrlRecv;
     
     std::thread mWriteThread;
     std::thread mMonitorThread;
     std::thread mReadThread;
-    
-    uintmax_t mTrgCount[2];
-    
-    uintmax_t mPkgCount[2];
-    
-    TrekHitCount mChambersCount[2];
 
-    uintmax_t mCurrentGateWidth = 0;
+	std::ofstream mDebugStream;
+
     std::atomic_bool mActive;
     std::function<void(TrekFreq)> mOnMonitor;
 

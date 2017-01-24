@@ -31,6 +31,8 @@ using trek::StringBuilder;
 
 using nlohmann::json;
 
+const std::string version("1.0.1");
+
 void fatal(const string& msg) {
     std::cerr << msg << endl;
     std::exit(EXIT_FAILURE);
@@ -38,6 +40,8 @@ void fatal(const string& msg) {
 
 int main() {
     std::ios_base::sync_with_stdio(false);
+
+	std::cout << system_clock::now() << " Starting CtudcServer v." << version << std::endl;
 
     string confPath = std::getenv("HOME");
     if(!confPath.empty()) {

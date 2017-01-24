@@ -30,6 +30,7 @@ public:
         std::string ctrlIP;
         uint16_t    ctrlPort;
         uintmax_t   readFreq;
+		bool debug;
         
         nlohmann::json marshal() const;
         void unMarshal(const nlohmann::json& doc);
