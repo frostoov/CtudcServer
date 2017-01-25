@@ -46,6 +46,7 @@ protected:
     void monitorLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf);
 
     void verifySettings(const Settings& settings);
+    ChannelFreq measureFrequency(std::shared_ptr<Tdc> tdc);
 private:
     std::vector<Tdc::EventHits> mBuffer;
 	EventMatcher mMatcher;

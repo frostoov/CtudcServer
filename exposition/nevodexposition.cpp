@@ -193,20 +193,20 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
 			if(command != 6) {
 				return;
 			}
+        } catch(std::exception e) {
+            std::cerr << "Failed parse nevod ctrl message: " << e.what() << std::endl;
+        }
+
+        mInfoRecv.pause();
+        try {
 			auto now = std::chrono::system_clock::now();
-			Lock lkt(mTdcMutex);
-			Lock lk(mBufferMutex);
-			mMatcher.reset();
-			mBuffer.clear();
-			auto prevMode = tdc->mode();
-			tdc->setMode(Tdc::Mode::continuous);
-			//For conditional variable
-			std::mutex m;
-			std::unique_lock<std::mutex> l(m);
-			auto stop = launchFreq(tdc, microseconds(100));
-			mCv.wait_for(l, seconds(50));
-			auto freq = stop();
-			tdc->setMode(prevMode);
+
+            Lock lkt(mTdcMutex);
+            Lock lk(mBufferMutex);
+            mMatcher.reset();
+            mBuffer.clear();
+
+            auto freq = measureFrequency(tdc);
 			auto trekFreq = convertFreq(freq, conf);
 
 			for(auto& chamFreq : trekFreq) {
@@ -223,8 +223,9 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
 			}
 			mOnMonitor(trekFreq);
         } catch(std::exception& e) {
-            std::cerr << "ATTENTION!!! nevod monitor loop failure " << e.what() << std::endl;
+            std::cerr << "Monitoring failed: " << e.what() << std::endl;
         }
+        mInfoRecv.resume();
     });
     mCtrlRecv.run();
 }
@@ -238,3 +239,16 @@ void NevodExposition::verifySettings(const NevodExposition::Settings &settings) 
     }
 }
 
+ChannelFreq NevodExposition::measureFrequency(shared_ptr<Tdc> tdc) {
+    auto prevMode = tdc->mode();
+    tdc->setMode(Tdc::Mode::continuous);
+    //For conditional variable
+    std::mutex m;
+    std::unique_lock<std::mutex> l(m);
+    auto stop = launchFreq(tdc, microseconds(100));
+    mCv.wait_for(l, seconds(50));
+    auto freq = stop();
+    tdc->setMode(prevMode);
+    tdc->clear();
+    return freq;
+}
