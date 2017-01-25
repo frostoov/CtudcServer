@@ -9,15 +9,15 @@
 class Statistics {
 public:
 	void incrementTriggers(uintmax_t d, bool matched) {
-		mTrgCount[matched ? 0 : 1] += d;
+		mTrgCount[index(matched)] += d;
 	}
 
 	void incrementPackages(uintmax_t d, bool matched) {
-		mPkgCount[matched ? 0 : 1] += d;
+		mPkgCount[index(matched)] += d;
 	}
 
 	void incrementChambersCount(const std::vector<trek::data::EventRecord>& records, bool matched) {
-		int i = matched ? 1 : 0;
+		int i = index(matched);;
 		
 		for(auto& event : records) {
 			for(auto& hit : event) {
@@ -50,6 +50,10 @@ public:
 
 	TrekHitCount chambersDrops() const {
 		return mChambersCount[1];
+	}
+protected:
+	static int index(bool matched) {
+		return matched ? 0 : 1;
 	}
 private:
     uintmax_t mTrgCount[2] = {0, 0};
