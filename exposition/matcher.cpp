@@ -40,7 +40,6 @@ bool EventMatcher::unload(vector<EventRecord>& records) {
 	mBuffer.clear();
 	mOpenID = std::move(mCloseID);
 	return matched;
-	
 }
 
 void EventMatcher::reset() {

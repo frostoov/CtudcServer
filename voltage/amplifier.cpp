@@ -125,26 +125,16 @@ static string& replace(string& str, const string& s, const string& t) {
     return str;
 }
 
-static std::string unescape(const std::string& s) {
-    auto t = s;
-    replace(t, "\t", "\\t");
-    replace(t, "\n", "\\n");
-    replace(t, "\r", "\\r");
-    return t;
-}
-
 std::string Amplifier::send(asio::serial_port& port, const std::string& msg) {
-    //std::cout << "port_send: " << unescape(msg) << std::endl;
     asio::streambuf buffer;
     {
         lock_guard<mutex> lk(mMutex);
-        asio::write(mPort, asio::buffer(msg));
-        asio::read_until(mPort, buffer, '\n');
+        asio::write(port, asio::buffer(msg));
+        asio::read_until(port, buffer, '\n');
     }
     std::istream istr(&buffer);
     string response;
     std::getline(istr, response);
-    //std::cout << "port_recv: " << unescape(response) << std::endl;
     return response;
 }
 

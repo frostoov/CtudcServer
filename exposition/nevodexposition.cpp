@@ -158,6 +158,11 @@ void NevodExposition::writeLoop(const Settings& settings) {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
 			mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
+            if (settings.debug) {
+                mDebugStream << std::chrono::system_clock::now() 
+                             << " event: " << nvdMsg.numberOfRecord
+                             << " triggers: " << mBuffer.size() << '.';
+            }
 			mBuffer.clear();
 			if(mMatcher.frames() == settings.gateWidth) {
 				const auto frames = mMatcher.frames();
@@ -166,11 +171,10 @@ void NevodExposition::writeLoop(const Settings& settings) {
 				vector<EventRecord> records;
 				auto matched = mMatcher.unload(records);
 				if(!matched && settings.debug) {
-					mDebugStream << std::chrono::system_clock::now() 
-					             << " dropping" 
-					             << " triggers: " << triggers
-					             << " packets:  " << frames << '\n';
-				}
+					mDebugStream << " drop!";
+				} else {
+                    mDebugStream << "good!";
+                }
 				mStats.incrementTriggers(triggers, matched);
 				mStats.incrementPackages(frames, matched);
 				mStats.incrementChambersCount(records, matched);
@@ -178,6 +182,7 @@ void NevodExposition::writeLoop(const Settings& settings) {
 					eventWriter.write(record, matched);
 				}
 			}
+            mDebugStream << '\n';
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
         }
