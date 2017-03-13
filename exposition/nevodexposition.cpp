@@ -234,9 +234,6 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
 }
 
 void NevodExposition::verifySettings(const NevodExposition::Settings &settings) {
-    if(settings.gateWidth == 0) {
-        throw std::runtime_error("NevodExposition invalid gate Width");
-    }
     if(settings.eventsPerFile == 0) {
         throw std::runtime_error("NevodExposition invalid event number per faile");
     }

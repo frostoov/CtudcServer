@@ -23,7 +23,6 @@ public:
     struct Settings {
         uintmax_t   nRun;
         uintmax_t   eventsPerFile;
-        uintmax_t   gateWidth;
         std::string writeDir;
         std::string infoIP;
         uint16_t    infoPort;

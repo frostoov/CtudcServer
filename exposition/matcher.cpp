@@ -20,7 +20,7 @@ auto triggerCount(const deque<vector<Tdc::EventHits>>& buf) {
 
 auto packetCount(const deque<EventID>& ids) {
     if (ids.empty()) {
-        return 0;
+        return uintmax_t(0);
     }
     return ids.back().num - ids.front().num;
 }
