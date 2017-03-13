@@ -5,6 +5,7 @@
 #include <trek/data/eventrecord.hpp>
 
 #include <vector>
+#include <deque>
 #include <memory>
 
 struct EventID {
@@ -18,18 +19,17 @@ class EventMatcher {
 public:
 	EventMatcher(const ChannelConfig& conf)
 		: mConf(conf) { }
-	void load(const std::vector<Tdc::EventHits> hits, const EventID& id);
-	uintmax_t frames() const { return mFrames; }
-	uintmax_t triggers() const { return mBuffer.size(); }
+	bool load(const std::vector<Tdc::EventHits>& hits, const EventID& id);
 	bool unload(std::vector<trek::data::EventRecord>& events);
 	void reset();
+    uintmax_t triggers() const;
+    uintmax_t frames() const;
 protected:
-	uintmax_t packetCount() const;
 	auto makeRecords(const std::vector<trek::data::EventHits>& events, int run, int num) const;
+    void verifyBufferLength(size_t n) const;
 private:
-	uintmax_t mFrames = 0;
-	std::unique_ptr<EventID> mOpenID = nullptr;
-	std::unique_ptr<EventID> mCloseID = nullptr;
-	std::vector<Tdc::EventHits> mBuffer;
+	std::deque<std::vector<Tdc::EventHits>> mBuffer;
+    std::deque<EventID> mEvents;
 	ChannelConfig mConf;
+    bool matched;
 };

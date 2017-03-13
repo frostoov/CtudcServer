@@ -81,7 +81,6 @@ static auto handleCtrlPkg(vector<char>& buffer) {
 }
 
 
-
 NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
                        const Settings& settings,
                        const ChannelConfig& config,
@@ -157,17 +156,16 @@ void NevodExposition::writeLoop(const Settings& settings) {
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
-			mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
+			bool ready = mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
             if (settings.debug) {
                 mDebugStream << std::chrono::system_clock::now() 
-                             << " event: " << nvdMsg.numberOfRecord
+                             << " event: " << nvdPkg.numberOfRecord
                              << " triggers: " << mBuffer.size() << '.';
             }
 			mBuffer.clear();
-			if(mMatcher.frames() == settings.gateWidth) {
-				const auto frames = mMatcher.frames();
-				const auto triggers = mMatcher.triggers();
-
+			if(ready) {
+                auto triggers = mMatcher.triggers();
+                auto frames   = mMatcher.frames();
 				vector<EventRecord> records;
 				auto matched = mMatcher.unload(records);
 				if(!matched && settings.debug) {
