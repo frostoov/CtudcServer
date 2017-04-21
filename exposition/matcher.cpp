@@ -70,9 +70,11 @@ bool EventMatcher::unload(vector<EventRecord>& records) {
         std::move(events.begin(), events.end(), back_inserter(buf));
     }
 	records = makeRecords(buf, front.run, front.num + 1);
-    mEvents.clear();
+    while(mEvents.size() > 1) {
+        mEvents.pop_front();
+    }
     mBuffer.clear();
-	return matched;
+    return matched;
 }
 
 void EventMatcher::reset() {
