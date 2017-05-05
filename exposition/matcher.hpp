@@ -17,19 +17,18 @@ struct EventID {
 
 class EventMatcher {
 public:
-	EventMatcher(const ChannelConfig& conf)
-		: mConf(conf) { }
-	bool load(const std::vector<Tdc::EventHits>& hits, const EventID& id);
-	bool unload(std::vector<trek::data::EventRecord>& events);
+    EventMatcher(const ChannelConfig& conf);
+	void load(const std::vector<Tdc::EventHits>& hits, const EventID& id);
+	void unload(std::vector<trek::data::EventRecord> records[2], size_t packetCount[2]);
 	void reset();
-    uintmax_t triggers() const;
-    uintmax_t frames() const;
 protected:
 	auto makeRecords(const std::vector<trek::data::EventHits>& events, int run, int num) const;
     void verifyBufferLength(size_t n) const;
+    void dump(const std::vector<Tdc::EventHits>& src, const EventID& eid, bool matched);
 private:
 	std::deque<std::vector<Tdc::EventHits>> mBuffer;
+    std::vector<trek::data::EventRecord> mRecords[2];
+    size_t mFrameCount[2];
     std::deque<EventID> mEvents;
 	ChannelConfig mConf;
-    bool matched;
 };

@@ -38,6 +38,8 @@ using trek::data::EventRecord;
 
 namespace fs = boost::filesystem;
 
+const char *recordType[] = {"drop", "good"};
+
 static std::string monitoringPath(const std::string& dir, unsigned run, unsigned cham) {
     auto monitDir = fs::path(runPath(dir, run)) / "monitoring";
     if(!fs::exists(monitDir))
@@ -156,30 +158,34 @@ void NevodExposition::writeLoop(const Settings& settings) {
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
-			bool ready = mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
+            mBuffer.clear();
+			mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
             if (settings.debug) {
                 mDebugStream << std::chrono::system_clock::now() 
                              << " event: " << nvdPkg.numberOfRecord
                              << " triggers: " << mBuffer.size() << '.';
             }
-			mBuffer.clear();
-			if(ready) {
-                auto triggers = mMatcher.triggers();
-                auto frames   = mMatcher.frames();
-				vector<EventRecord> records;
-				auto matched = mMatcher.unload(records);
-				if(!matched && settings.debug) {
-					mDebugStream << " drop!";
-				} else {
-                    mDebugStream << "good!";
+            vector<EventRecord> recordss[2];
+            size_t frameCount[2];
+            mMatcher.unload(recordss, frameCount);
+            for(size_t i = 0; i < 2; ++i) {
+                auto matched = bool(i);
+                auto& records = recordss[i];
+                auto triggers = records.size();
+                auto frames = frameCount[i];
+                if (settings.debug) {
+                    std::cout << recordType[i] << " " 
+                              << "triggers: " << triggers << ", "
+                              << "packets: " << frames << ".\n";
                 }
-				mStats.incrementTriggers(triggers, matched);
-				mStats.incrementPackages(frames, matched);
-				mStats.incrementChambersCount(records, matched);
-				for(auto record : records) {
-					eventWriter.write(record, matched);
-				}
-			}
+                    
+                mStats.incrementTriggers(records.size(), matched);
+                mStats.incrementPackages(frameCount[i], matched);
+                mStats.incrementChambersCount(records, matched);
+                for(auto& record : records) {
+                    eventWriter.write(record, matched);
+                }
+            }
             mDebugStream << '\n';
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
@@ -206,7 +212,7 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
 
             Lock lkt(mTdcMutex);
             Lock lk(mBufferMutex);
-            mMatcher.reset();
+            mMatcher = EventMatcher(conf);
             mBuffer.clear();
 
             auto freq = measureFrequency(tdc);
