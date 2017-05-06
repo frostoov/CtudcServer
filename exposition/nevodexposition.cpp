@@ -158,13 +158,13 @@ void NevodExposition::writeLoop(const Settings& settings) {
         try {
             Lock lk(mBufferMutex);
             auto nvdPkg = handleNvdPkg(nvdMsg);
-            mBuffer.clear();
-			mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
             if (settings.debug) {
                 mDebugStream << std::chrono::system_clock::now() 
                              << " event: " << nvdPkg.numberOfRecord
                              << " triggers: " << mBuffer.size() << '.';
             }
+            mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
+            mBuffer.clear();
             vector<EventRecord> recordss[2];
             size_t frameCount[2];
             mMatcher.unload(recordss, frameCount);
@@ -174,7 +174,7 @@ void NevodExposition::writeLoop(const Settings& settings) {
                 auto triggers = records.size();
                 auto frames = frameCount[i];
                 if (settings.debug) {
-                    std::cout << recordType[i] << " " 
+                    mDebugStream << recordType[i] << " "
                               << "triggers: " << triggers << ", "
                               << "packets: " << frames << ".\n";
                 }
