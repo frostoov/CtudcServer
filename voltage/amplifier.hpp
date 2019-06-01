@@ -2,6 +2,7 @@
 
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <boost/asio/io_service.hpp>
 
 #include <mutex>
 #include <iostream>

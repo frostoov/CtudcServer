@@ -1,5 +1,5 @@
 #include <fstream>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include "channelsconfigparser.hpp"
 

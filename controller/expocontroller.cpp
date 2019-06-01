@@ -1,12 +1,15 @@
 #include "expocontroller.hpp"
 
-#include <gsl/gsl_util.h>
+#include <gsl/gsl_util>
 
 #include <trek/net/request.hpp>
 #include <trek/net/response.hpp>
 #include <trek/net/controller.hpp>
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
+
+#include <iomanip>
+#include <iostream>
 
 using std::make_unique;
 using std::string;
@@ -113,7 +116,6 @@ Response ExpoContr::stopRead(const Request&) {
 Response ExpoContr::launchFreq(const Request& request) {
     if(mFreqFuture || mExposition)
         throw logic_error("ExpoContr::stopRead process is active");
-    assert(!*mExposition);
     auto device = mDevices.at(request.inputs.at(0).get<string>());
     auto delay = request.inputs.at(1).get<int>();
     if(delay <= 0)

@@ -10,7 +10,7 @@
 #include <trek/net/controller.hpp>
 #include <trek/common/callback.hpp>
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <future>
 

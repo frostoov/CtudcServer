@@ -4,7 +4,7 @@
 #include "ftd/ftdmodule.hpp"
 
 #include <trek/net/controller.hpp>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 
 #include <future>
 #include <memory>
