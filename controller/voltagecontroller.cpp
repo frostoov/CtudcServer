@@ -124,13 +124,15 @@ protected:
     }
     
     void setDigital(unsigned pin, const string& level) {
+        if (!isOpen())
+            return;
         std::ostringstream stream;
         stream << "digitalWrite:" << pin << ',' << level << '\n';
-	Response response(send(stream.str()));
-	if(response.status != 0)
-		throw runtime_error("Arduino::setDigital failed set digital");
-	if(response.command != "digitalWrite" || stoul(response.args.at(0)) != pin || response.args.at(1) != level)
-		throw runtime_error("Arduino::setDigital invalid response");
+        Response response(send(stream.str()));
+        if(response.status != 0)
+            throw runtime_error("Arduino::setDigital failed set digital");
+        if(response.command != "digitalWrite" || stoul(response.args.at(0)) != pin || response.args.at(1) != level)
+            throw runtime_error("Arduino::setDigital invalid response");
     }
 private:
     asio::io_service mIoService;
@@ -158,7 +160,7 @@ VoltageContr::VoltageContr(const string& name, const ModulePtr& module, const Ft
         std::cerr << "Failed open arduino" << std::endl;
     }
     if(mDevice->isOpen()) {
-            mMonitor = launchMonitoring();
+        mMonitor = launchMonitoring();
     }
 }
 
