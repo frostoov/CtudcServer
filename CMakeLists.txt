@@ -6,7 +6,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
-set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_LIBS ON)
 find_package(
     Boost
     1.55.0
