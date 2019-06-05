@@ -47,6 +47,7 @@ int main() {
     if(!confPath.empty()) {
         confPath += "/.config/ctudc/";
     }
+    confPath = "/etc/ctudc/";
     AppSettings appSettings;
     try {
         appSettings.load(confPath + "CtudcServer.conf");
@@ -124,29 +125,6 @@ int main() {
         std::cout << system_clock::now() << " Send " << session.remoteAddress() << ": " << message << endl;
     };
 
-    std::atomic_bool runnig(true);
-    auto future = std::async(std::launch::async, [&] {
-        while(runnig.load()) {
-            try {
-                server.run();
-            } catch(exception& e) {
-                std::cout << system_clock::now() << " Server failed: " << e.what() << std::endl;
-                server.stop();
-            }
-        }
-    });
-    string command;
-    while(true) {
-        std::getline(cin, command);
-        if(command == "exit") {
-            if(future.valid()) {
-                runnig.store(false);
-                std::cout << "trying to stop server" << std::endl;
-                server.stop();
-                future.get();
-            }
-            break;
-        }
-    }
+    server.run();
     return 0;
 }

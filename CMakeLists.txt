@@ -17,12 +17,13 @@ find_package(
 
 find_package (LibUSB)
 
+include_directories("src")
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${LibUSB_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 
 file(GLOB_RECURSE SOURCES
-	"*.cpp")
+	"src/*.cpp")
 
 add_executable(CtudcServer ${SOURCES})
 
@@ -37,3 +38,5 @@ target_link_libraries(
     pthread
     ${Boost_LIBRARIES}
     ${LibUSB_LIBRARIES})
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
