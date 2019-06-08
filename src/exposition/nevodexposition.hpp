@@ -40,29 +40,24 @@ public:
     TrekHitCount chambersDrop() const override { return mStats.chambersDrops(); }
     TimePoint startPoint() const override { return mStartPoint; }
 protected:    
-    void readLoop(std::shared_ptr<Tdc> tdc, const Settings& settings);
-    void writeLoop(const Settings& settings);
+    void writeLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config);
     void monitorLoop(std::shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf);
 
     void verifySettings(const Settings& settings);
     ChannelFreq measureFrequency(std::shared_ptr<Tdc> tdc);
 private:
-    std::vector<Tdc::EventHits> mBuffer;
 	EventMatcher mMatcher;
 	Statistics mStats;
-    trek::net::MulticastReceiver mInfoRecv;
     trek::net::MulticastReceiver mCtrlRecv;
     
     std::thread mWriteThread;
     std::thread mMonitorThread;
-    std::thread mReadThread;
 
 	std::ofstream mDebugStream;
 
     std::atomic_bool mActive;
     std::function<void(TrekFreq)> mOnMonitor;
 
-    Mutex mBufferMutex;
     Mutex mTdcMutex;
     std::condition_variable mCv;
 

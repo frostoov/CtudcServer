@@ -44,7 +44,6 @@ void IHEPExposition::stop() {
 }
 
 void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig chanConf) {
-	/*
     vector<Tdc::EventHits> buffer;
     EventWriter eventWriter(runPath(settings.writeDir, settings.nRun),
                             formatPrefix(settings.nRun),
@@ -56,9 +55,8 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
         mCv.wait_for(lk, microseconds(settings.readFreq));
         try {
             tdc->readEvents(buffer);
-            std::cout << "transfered: " << buffer.size() << std::endl;
             for(auto& e : handleEvents(buffer, chanConf)) {
-                eventWriter.writeEvent({settings.nRun, num++, e});
+                eventWriter.write({settings.nRun, num++, e}, true);
             }
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! ihep read loop failure " << e.what() << std::endl;
@@ -69,11 +67,9 @@ void IHEPExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings, con
             }
         }
     }
-	*/
 }
 
 vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const ChannelConfig& conf) {
-	/*
     auto events = convertEvents(buffer, conf);
     mTrgCount += events.size();
     for(auto& event : events) {
@@ -84,5 +80,4 @@ vector<EventHits> IHEPExposition::handleEvents(const EventBuffer& buffer, const 
         }
     }
     return events;
-	*/
 }

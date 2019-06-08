@@ -57,17 +57,6 @@ struct membuf : public std::streambuf {
     }
 };
 
-static auto handleNvdPkg(vector<char>& buffer) {
-    membuf tempBuffer(buffer.data(), buffer.size());
-    std::istream stream(&tempBuffer);
-    stream.exceptions(stream.badbit | stream.failbit);
-    NevodPackage nvdPkg;
-    trek::deserialize(stream, nvdPkg);
-    if(memcmp(nvdPkg.keyword, "TRACK ", sizeof(nvdPkg.keyword)) != 0)
-        throw std::runtime_error("NevodExposition::handleNevodPackage invalid package");
-    return nvdPkg;
-}
-
 static auto handleCtrlPkg(vector<char>& buffer) {
     membuf tempBuffer(buffer.data(), buffer.size());
     std::istream stream(&tempBuffer);
@@ -88,7 +77,6 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
                        const ChannelConfig& config,
                        std::function<void(TrekFreq)> onMonitor)
     : mMatcher(config),
-	  mInfoRecv(settings.infoIP, settings.infoPort),
       mCtrlRecv(settings.ctrlIP, settings.ctrlPort),
       mActive(true),
       mOnMonitor(onMonitor) {
@@ -103,12 +91,9 @@ NevodExposition::NevodExposition(shared_ptr<Tdc> tdc,
 		mDebugStream.open("expo_debug.log", ofstream::binary | ofstream::app);
 	}
 
-    mReadThread = std::thread([this, tdc, settings] {
-        this->readLoop(tdc, settings);
+    mWriteThread = std::thread([this, tdc, settings, config] {
+        this->writeLoop(tdc, settings, config);
         printEndMeta(settings.writeDir, settings.nRun);
-    });
-    mWriteThread = std::thread([this, settings] {
-        this->writeLoop(settings);
     });
     mMonitorThread = std::thread([this, tdc, settings, config] {
         this->monitorLoop(tdc, settings, config);
@@ -121,16 +106,20 @@ NevodExposition::~NevodExposition() {
 
 void NevodExposition::stop() {
     mActive = false;
-    mInfoRecv.stop();
     mCtrlRecv.stop();
     mCv.notify_one();
-    mReadThread.join();
     mMonitorThread.join();
     mWriteThread.join();
 }
 
-void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
+void NevodExposition::writeLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& config) {
     vector<Tdc::EventHits> buffer;
+    vector<trek::data::EventRecord> records;
+    EventWriter eventWriter(runPath(settings.writeDir, settings.nRun),
+                            formatPrefix(settings.nRun),
+                            settings.eventsPerFile);
+    const auto matched = true;
+    uint64_t nEvent = 0;
     while(mActive) {
         std::this_thread::sleep_for(microseconds(3000));
         try {
@@ -141,59 +130,18 @@ void NevodExposition::readLoop(shared_ptr<Tdc> tdc, const Settings& settings) {
             std::cerr << "ATTENTION!!! nevod read loop failure " << e.what() << std::endl;
         }
         try {
-            Lock lk(mBufferMutex);
-            std::move(buffer.begin(), buffer.end(), std::back_inserter(mBuffer));
-        } catch(exception& e) {
-            std::cerr << "ATTENTION!!! nevod read loop failure " << e.what() << std::endl;
-        }
-    }
-}
-
-void NevodExposition::writeLoop(const Settings& settings) {
-    unique_ptr<EventID> nvdID;
-    EventWriter eventWriter(runPath(settings.writeDir, settings.nRun),
-                            formatPrefix(settings.nRun),
-                            settings.eventsPerFile);
-    mInfoRecv.onRecv([&](vector<char>& nvdMsg) {
-        try {
-            Lock lk(mBufferMutex);
-            auto nvdPkg = handleNvdPkg(nvdMsg);
-            if (settings.debug) {
-                mDebugStream << std::chrono::system_clock::now() 
-                             << " event: " << nvdPkg.numberOfRecord
-                             << " triggers: " << mBuffer.size() << '.';
+            records.clear();
+            for (const auto& event : convertEvents(buffer, config)) {
+                records.emplace_back(settings.nRun, nEvent++, event);
+                eventWriter.write(records.back(), matched);
             }
-            mMatcher.load(mBuffer, {nvdPkg.numberOfRecord, nvdPkg.numberOfRun});
-            mBuffer.clear();
-            vector<EventRecord> recordss[2];
-            size_t frameCount[2];
-            mMatcher.unload(recordss, frameCount);
-            for(size_t i = 0; i < 2; ++i) {
-                auto matched = bool(i);
-                auto& records = recordss[i];
-                auto triggers = records.size();
-                auto frames = frameCount[i];
-                if (settings.debug) {
-                    mDebugStream << recordType[i] << " "
-                              << "triggers: " << triggers << ", "
-                              << "packets: " << frames << ".\n";
-                }
-                    
-                mStats.incrementTriggers(records.size(), matched);
-                mStats.incrementPackages(frameCount[i], matched);
-                mStats.incrementChambersCount(records, matched);
-                for(auto& record : records) {
-                    eventWriter.write(record, matched);
-                }
-            }
-            mDebugStream << '\n';
+            mStats.incrementTriggers(records.size(), matched);
+            mStats.incrementChambersCount(records, matched);
         } catch(exception& e) {
             std::cerr << "ATTENTION!!! nevod write loop failure " << e.what() << std::endl;
         }
-    });
-    mInfoRecv.run();
+    }
 }
-
 void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings, const ChannelConfig& conf) {
     unordered_map<unsigned, ofstream> streams;
     mCtrlRecv.onRecv([&](vector<char>& msg) {
@@ -206,14 +154,11 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
             std::cerr << "Failed parse nevod ctrl message: " << e.what() << std::endl;
         }
 
-        mInfoRecv.pause();
         try {
 			auto now = std::chrono::system_clock::now();
 
             Lock lkt(mTdcMutex);
-            Lock lk(mBufferMutex);
             mMatcher = EventMatcher(conf);
-            mBuffer.clear();
 
             auto freq = measureFrequency(tdc);
 			auto trekFreq = convertFreq(freq, conf);
@@ -234,7 +179,6 @@ void NevodExposition::monitorLoop(shared_ptr<Tdc> tdc, const Settings& settings,
         } catch(std::exception& e) {
             std::cerr << "Monitoring failed: " << e.what() << std::endl;
         }
-        mInfoRecv.resume();
     });
     mCtrlRecv.run();
 }
